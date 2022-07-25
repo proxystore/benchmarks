@@ -2,12 +2,12 @@ name: Bug Report
 description: Report errors or unexpected results.
 labels: ["bug"]
 assignees:
-  - foobar-bug-assign-dev
+  - gpauloski
 body:
   - type: textarea
     id: install
     attributes:
-      label: How did you install foobar?
+      label: How did you install the benchmarks?
       description: >
         E.g., install via pip, install from source, etc. **Note:** this will
         be rendered as console text automatically.
@@ -23,10 +23,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: What version of foobar are you using?
+      label: What version are you using?
       description: >
-        Package version if installed via Pip or commit ID if installed
-        from source.
+        Commit ID or Git tag.
       placeholder: v1.2.3
     validations:
       required: true
