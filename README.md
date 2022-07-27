@@ -7,7 +7,7 @@
 
 Install via pip:
 ```
-$ pip install ps_bench
+$ pip install psbench
 ```
 
 For local development:

@@ -1,2 +1,2 @@
-"""ps_bench unit tests."""
+"""psbench unit tests."""
 from __future__ import annotations
