@@ -6,34 +6,35 @@ configurable function payload transfer methods, sizes, etc.
 from __future__ import annotations
 
 import argparse
-import functools
+import dataclasses
 import logging
 import sys
 import time
-from typing import Any
-from typing import NamedTuple
 from typing import Sequence
 
+import funcx
 import proxystore
-from funcx import FuncXClient
-from funcx import FuncXExecutor
 from proxystore.store.base import Store
 
 from psbench.argparse import add_funcx_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.logging import CSVLogger
+from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.proxystore import proxystore_version
 from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
-logger = logging.getLogger('simple_funcx.test')
+logger = logging.getLogger(__name__)
 
 
-class TaskStats(NamedTuple):
+@dataclasses.dataclass
+class TaskStats:
+    """Stats for individual task. Represents a row in the output CSV."""
+
     proxystore_backend: str
     task_name: str
     input_size_bytes: int
@@ -52,13 +53,24 @@ class TaskStats(NamedTuple):
 
 def time_task(
     *,
-    fx: FuncXExecutor,
+    fx: funcx.FuncXExecutor,
     endpoint: str,
     input_size: int,
     output_size: int,
     task_sleep: float,
-    stats: Any,
 ) -> TaskStats:
+    """Execute and time a single FuncX task.
+
+    Args:
+        fx (FuncXExecutor): FuncX Executor to submit task through.
+        endpoint (str): Endpoint ID to submit task to.
+        input_size (int): number of bytes to send as input to task.
+        output_size (int): number of bytes task should return.
+        task_sleep (int): number of seconds to sleep inside task.
+
+    Returns:
+        TaskStats
+    """
     data = randbytes(input_size)
     start = time.perf_counter_ns()
     fut = fx.submit(
@@ -73,19 +85,38 @@ def time_task(
     end = time.perf_counter_ns()
     assert isinstance(result, bytes)
 
-    return stats(total_time_ms=(end - start) / 1e6)
+    return TaskStats(
+        proxystore_backend='',
+        task_name='pong',
+        input_size_bytes=input_size,
+        output_size_bytes=output_size,
+        task_sleep_seconds=task_sleep,
+        total_time_ms=(end - start) / 1e6,
+    )
 
 
 def time_task_proxy(
     *,
-    fx: FuncXExecutor,
+    fx: funcx.FuncXExecutor,
     endpoint: str,
     store: Store,
     input_size: int,
     output_size: int,
     task_sleep: float,
-    stats: Any,
 ) -> TaskStats:
+    """Execute and time a single FuncX task with proxied inputs.
+
+    Args:
+        fx (FuncXExecutor): FuncX Executor to submit task through.
+        endpoint (str): Endpoint ID to submit task to.
+        store (Store): ProxyStore Store to use for proxying input/outputs.
+        input_size (int): number of bytes to send as input to task.
+        output_size (int): number of bytes task should return.
+        task_sleep (int): number of seconds to sleep inside task.
+
+    Returns:
+        TaskStats
+    """
     data = store.proxy(randbytes(input_size), evict=True)
     start = time.perf_counter_ns()
     fut = fx.submit(
@@ -103,7 +134,12 @@ def time_task_proxy(
     end = time.perf_counter_ns()
     assert isinstance(result, bytes)
 
-    return stats(
+    return TaskStats(
+        proxystore_backend=store.__class__.__name__,
+        task_name='pong',
+        input_size_bytes=input_size,
+        output_size_bytes=output_size,
+        task_sleep_seconds=task_sleep,
         total_time_ms=(end - start) / 1e6,
         input_get_ms=task_proxy_stats.input_get_ms,
         input_set_ms=store.stats(data)['set'].avg_time_ms,
@@ -126,6 +162,7 @@ def runner(
     task_sleep: float,
     csv_file: str | None,
 ) -> None:
+    """Run all task configurations and log results."""
     store_class_name = None if store is None else store.__class__.__name__
     logger.log(
         TESTING_LOG_LEVEL,
@@ -140,7 +177,7 @@ def runner(
     )
 
     runner_start = time.perf_counter_ns()
-    fx = FuncXExecutor(FuncXClient())
+    fx = funcx.FuncXExecutor(funcx.FuncXClient())
 
     if csv_file is not None:
         csv_logger = CSVLogger(csv_file, TaskStats)
@@ -148,15 +185,6 @@ def runner(
     for input_size in input_sizes:
         for output_size in output_sizes:
             for _ in range(task_repeat):
-                stats_type = functools.partial(
-                    TaskStats,
-                    proxystore_backend=str(store_class_name),
-                    task_name='ping-pong',
-                    input_size_bytes=input_size,
-                    output_size_bytes=output_size,
-                    task_sleep_seconds=task_sleep,
-                )
-
                 if store is None:
                     stats = time_task(
                         fx=fx,
@@ -164,7 +192,6 @@ def runner(
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
-                        stats=stats_type,
                     )
                 else:
                     stats = time_task_proxy(
@@ -174,7 +201,6 @@ def runner(
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
-                        stats=stats_type,
                     )
 
                 logger.log(
@@ -196,10 +222,11 @@ def runner(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Simple FuncX Task Benchmark with ProxyStore."""
     argv = argv if argv is not None else sys.argv[1:]
 
     parser = argparse.ArgumentParser(
-        prog='test',
+        description='Simple FuncX task benchmark with ProxyStore.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -231,7 +258,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_funcx_options(parser, required=True)
     add_logging_options(parser)
     add_proxystore_options(parser, required=False)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
 
@@ -248,7 +275,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     if store is not None:
-        store.close()
+        if proxystore_version() > (0, 3, 3):  # pragma: no cover
+            store.close()
+        else:
+            store.cleanup()
 
     return 0
 

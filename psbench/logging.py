@@ -1,50 +1,13 @@
 from __future__ import annotations
 
-import csv
 import logging
-import os
 import sys
 import warnings
 from typing import Any
-from typing import Generic
-from typing import NamedTuple
-from typing import TypeVar
+
+from psbench.utils import make_parent_dirs
 
 TESTING_LOG_LEVEL = 25
-
-DTYPE = TypeVar('DTYPE', bound=NamedTuple)
-
-
-class CSVLogger(Generic[DTYPE]):
-    """CSV logger where rows are represented as a NamedTuple."""
-
-    def __init__(self, filepath: str, data_type: type[DTYPE]) -> None:
-        """Init CSVLogger."""
-        has_headers = False
-        if os.path.isfile(filepath):
-            with open(filepath) as f:
-                header_row = f.readline()
-                headers = [h.strip() for h in header_row.split(',')]
-                if set(headers) != set(data_type._fields):
-                    raise ValueError(
-                        f'File {filepath} already exists and its headers '
-                        f'do not match {data_type._fields}.',
-                    )
-                has_headers = True
-
-        make_parent_dirs(filepath)
-        self.f = open(filepath, 'a', newline='')
-        self.writer = csv.DictWriter(self.f, fieldnames=data_type._fields)
-        if not has_headers:
-            self.writer.writeheader()
-
-    def log(self, data: DTYPE) -> None:
-        """Log new row."""
-        self.writer.writerow(data._asdict())
-
-    def close(self) -> None:
-        """Close file handles."""
-        self.f.close()
 
 
 def init_logging(
@@ -95,10 +58,3 @@ def init_logging(
         handlers=handlers,
         **kwargs,
     )
-
-
-def make_parent_dirs(filepath: str) -> None:
-    """Make parent directories of a filepath."""
-    parent_dir = os.path.dirname(filepath)
-    if len(parent_dir) > 0 and not os.path.isdir(parent_dir):
-        os.makedirs(parent_dir, exist_ok=True)

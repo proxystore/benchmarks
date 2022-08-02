@@ -21,3 +21,10 @@ def randbytes(size: int) -> bytes:
         return random.randbytes(size)
     else:  # pragma: <3.9 cover
         return os.urandom(size)
+
+
+def make_parent_dirs(filepath: str) -> None:
+    """Make parent directories of a filepath."""
+    parent_dir = os.path.dirname(filepath)
+    if len(parent_dir) > 0 and not os.path.isdir(parent_dir):
+        os.makedirs(parent_dir, exist_ok=True)
