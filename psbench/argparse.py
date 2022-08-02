@@ -84,8 +84,6 @@ def add_proxystore_options(
     )
 
     args_str = ' '.join(sys.argv)
-    print(args_str)
-    print(re.search('--ps-backend( |=)ENDPOINT', args_str))
     group.add_argument(
         '--ps-endpoints',
         metavar='UUID',

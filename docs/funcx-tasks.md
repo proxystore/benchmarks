@@ -16,11 +16,7 @@ specified.
    ```
    $ pip install .
    ```
-3. Install the dependencies.
-   ```
-   $ pip install -r requirements.txt
-   ```
-4. Create a FuncX endpoint.
+3. Create a FuncX endpoint.
    ```
    $ funcx-endpoint configure psbench
    $ funcx-endpoint start psbench
@@ -34,7 +30,7 @@ Here's an example of a minimal working example that uses the ProxyStore
 file backend.
 
 ```
-$ python benchmark.py \
+$ python -m psbench.benchmarks.funcx_tasks \
     --funcx-endpoint {UUID} \  # UUID returned by funcx-endpoint start
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
@@ -48,4 +44,4 @@ be repeated *n* times with the `--task-repeat` parameter. A sleep can be added
 to tasks with `--task-sleep`. Task timing stats can be saved to a CSV file
 with `--csv-file PATH` (this will append to existing files as well).
 
-The full list of options can be found using `$ python test.py --help`.
+The full list of options can be found using `--help`.
