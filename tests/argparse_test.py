@@ -7,7 +7,6 @@ import pytest
 from psbench.argparse import add_funcx_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.proxystore import proxystore_version
 
 
 def test_add_funcx_options() -> None:
@@ -42,11 +41,7 @@ def test_add_proxystore_options() -> None:
     parser = argparse.ArgumentParser()
     add_proxystore_options(parser)
 
-    if proxystore_version() > (0, 3, 3):  # pragma: no cover
-        parser.parse_args(
-            ['--ps-backend', 'ENDPOINT', '--ps-endpoints', 'ABCD'],
-        )
-
+    parser.parse_args(['--ps-backend', 'ENDPOINT', '--ps-endpoints', 'ABCD'])
     parser.parse_args(['--ps-backend', 'FILE', '--ps-file-dir', '/tmp/x'])
     parser.parse_args(['--ps-backend', 'GLOBUS', '--ps-globus-config', 'cfg'])
     parser.parse_args(

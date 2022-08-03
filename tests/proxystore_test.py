@@ -6,6 +6,7 @@ from unittest import mock
 
 import pytest
 from proxystore.store.base import Store
+from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusStore
 from proxystore.store.redis import RedisStore
@@ -22,6 +23,7 @@ def test_proxystore_version() -> None:
 @pytest.mark.parametrize(
     'backend,backend_type,kwargs',
     (
+        ('ENDPOINT', EndpointStore, {'ps_endpoints': ['abcd']}),
         ('FILE', FileStore, {'ps_file_dir': '/tmp/file'}),
         ('GLOBUS', GlobusStore, {'ps_globus_config': '/tmp/file'}),
         (
@@ -32,7 +34,7 @@ def test_proxystore_version() -> None:
         (None, None, {}),
     ),
 )
-def test_file_store(
+def test_store_from_args(
     backend: str | None,
     backend_type: type[Store] | None,
     kwargs: dict[str, Any],

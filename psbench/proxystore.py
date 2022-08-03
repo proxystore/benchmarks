@@ -37,10 +37,7 @@ def init_store_from_args(
     store: Store | None = None
     name = 'default-store'
 
-    if (
-        proxystore_version() > (0, 3, 3)
-        and args.ps_backend == STORES.ENDPOINT.name
-    ):  # pragma: no cover
+    if args.ps_backend == STORES.ENDPOINT.name:
         store = init_store(
             STORES.ENDPOINT,
             name=name,

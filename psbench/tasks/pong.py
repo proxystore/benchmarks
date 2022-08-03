@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from proxystore.proxy import Proxy
-
 
 class ProxyStats(NamedTuple):
     """Proxy stats from within task."""
@@ -60,15 +58,11 @@ def pong_proxy(
     """
     import time
 
+    from proxystore.proxy import Proxy
     from proxystore.store import get_store
+    from proxystore.store import UnknownStoreError
 
     from psbench.utils import randbytes
-    from psbench.proxystore import proxystore_version
-
-    if proxystore_version() > (0, 3, 3):  # pragma: no cover
-        from proxystore.store import UnknownStoreError
-    else:
-        UnknownStoreError = ValueError  # noqa: N806
 
     assert isinstance(data, bytes) and isinstance(data, Proxy)
     time.sleep(sleep)
@@ -78,7 +72,7 @@ def pong_proxy(
     if store is None:  # pragma: no cover
         # init_store does not return None in ProxyStore <= 0.3.3
         raise UnknownStoreError('Cannot find ProxyStore backend to use.')
-    result = store.proxy(result_data, evict=evict_result)
+    result: Proxy[bytes] = store.proxy(result_data, evict=evict_result)
 
     stats: ProxyStats | None = None
     if store.has_stats:

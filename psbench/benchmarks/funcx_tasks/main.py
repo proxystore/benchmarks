@@ -14,6 +14,7 @@ from typing import Sequence
 
 import funcx
 import proxystore
+from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 
 from psbench.argparse import add_funcx_options
@@ -23,12 +24,11 @@ from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
-from psbench.proxystore import proxystore_version
 from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('funcx-test')
 
 
 @dataclasses.dataclass
@@ -117,7 +117,7 @@ def time_task_proxy(
     Returns:
         TaskStats
     """
-    data = store.proxy(randbytes(input_size), evict=True)
+    data: Proxy[bytes] = store.proxy(randbytes(input_size), evict=True)
     start = time.perf_counter_ns()
     fut = fx.submit(
         pong_proxy,
@@ -130,9 +130,12 @@ def time_task_proxy(
     (result, task_proxy_stats) = fut.result()
 
     proxystore.proxy.resolve(result)
-    store.evict(proxystore.proxy.get_key(result))
+    key = proxystore.proxy.get_key(result)
+    assert key is not None
+    store.evict(key)
     end = time.perf_counter_ns()
     assert isinstance(result, bytes)
+    assert isinstance(result, Proxy)
 
     return TaskStats(
         proxystore_backend=store.__class__.__name__,
@@ -275,10 +278,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     if store is not None:
-        if proxystore_version() > (0, 3, 3):  # pragma: no cover
-            store.close()
-        else:
-            store.cleanup()
+        store.close()
 
     return 0
 
