@@ -12,12 +12,6 @@ from proxystore.store.globus import GlobusStore
 from proxystore.store.redis import RedisStore
 
 from psbench.proxystore import init_store_from_args
-from psbench.proxystore import proxystore_version
-
-
-def test_proxystore_version() -> None:
-    # ProxyStore 0.3.3 is minimum version required by setup.cfg
-    assert proxystore_version() >= (0, 3, 3)
 
 
 @pytest.mark.parametrize(
