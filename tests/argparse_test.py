@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from unittest import mock
 
 import pytest
 
@@ -9,7 +10,7 @@ from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 
 
-def test_add_funcx_options() -> None:
+def test_add_funcx_options(capsys) -> None:
     parser = argparse.ArgumentParser()
     add_funcx_options(parser)
     parser.parse_args([])
@@ -18,8 +19,10 @@ def test_add_funcx_options() -> None:
 
     parser = argparse.ArgumentParser()
     add_funcx_options(parser, required=True)
-    with pytest.raises(SystemExit):
-        parser.parse_args([])
+    # Suppress argparse error message
+    with mock.patch('argparse.ArgumentParser._print_message'):
+        with pytest.raises(SystemExit):
+            parser.parse_args([])
 
 
 def test_add_logging_options() -> None:
@@ -35,8 +38,10 @@ def test_add_proxystore_options() -> None:
 
     parser = argparse.ArgumentParser()
     add_proxystore_options(parser, required=True)
-    with pytest.raises(SystemExit):
-        parser.parse_args([])
+    # Suppress argparse error message
+    with mock.patch('argparse.ArgumentParser._print_message'):
+        with pytest.raises(SystemExit):
+            parser.parse_args([])
 
     parser = argparse.ArgumentParser()
     add_proxystore_options(parser)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import tempfile
 import uuid
 from unittest import mock
@@ -65,7 +66,9 @@ def test_time_task_proxy() -> None:
     'use_proxystore,log_to_csv',
     ((True, False), (False, True)),
 )
-def test_runner(use_proxystore: bool, log_to_csv: bool) -> None:
+def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
+    caplog.set_level(logging.ERROR)
+
     store = (
         init_store('local', 'test-store', stats=True)
         if use_proxystore
