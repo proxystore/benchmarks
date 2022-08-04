@@ -1,9 +1,9 @@
 # ProxyStore Benchmark Suite
 
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/gpauloski/proxystore-benchmarks/main.svg)](https://results.pre-commit.ci/latest/github/gpauloski/proxystore-benchmarks/main)
-[![Tests](https://github.com/gpauloski/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/gpauloski/proxystore-benchmarks/actions)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore-benchmarks/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore-benchmarks/main)
+[![Tests](https://github.com/proxystore/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/proxystore/proxystore-benchmarks/actions)
 
-[ProxyStore](https://github.com/gpauloski/proxystore) benchmark repository.
+[ProxyStore](https://github.com/proxystore/proxystore) benchmark repository.
 Check out the [benchmark instructions](docs/) to get started.
 
 # Installation
