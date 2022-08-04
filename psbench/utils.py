@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import random
 import sys
+import time
 
 
 def randbytes(size: int) -> bytes:
@@ -28,3 +29,11 @@ def make_parent_dirs(filepath: str) -> None:
     parent_dir = os.path.dirname(filepath)
     if len(parent_dir) > 0 and not os.path.isdir(parent_dir):
         os.makedirs(parent_dir, exist_ok=True)
+
+
+def wait_until(timestamp: float) -> None:
+    """Sleep until UNIX timestamp."""
+    if timestamp < time.time():
+        return
+
+    time.sleep(timestamp - time.time())
