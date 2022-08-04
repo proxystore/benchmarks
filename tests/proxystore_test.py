@@ -6,22 +6,18 @@ from unittest import mock
 
 import pytest
 from proxystore.store.base import Store
+from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusStore
 from proxystore.store.redis import RedisStore
 
 from psbench.proxystore import init_store_from_args
-from psbench.proxystore import proxystore_version
-
-
-def test_proxystore_version() -> None:
-    # ProxyStore 0.3.3 is minimum version required by setup.cfg
-    assert proxystore_version() >= (0, 3, 3)
 
 
 @pytest.mark.parametrize(
     'backend,backend_type,kwargs',
     (
+        ('ENDPOINT', EndpointStore, {'ps_endpoints': ['abcd']}),
         ('FILE', FileStore, {'ps_file_dir': '/tmp/file'}),
         ('GLOBUS', GlobusStore, {'ps_globus_config': '/tmp/file'}),
         (
@@ -32,7 +28,7 @@ def test_proxystore_version() -> None:
         (None, None, {}),
     ),
 )
-def test_file_store(
+def test_store_from_args(
     backend: str | None,
     backend_type: type[Store] | None,
     kwargs: dict[str, Any],

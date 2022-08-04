@@ -22,7 +22,7 @@ def test_pong() -> None:
 
 def test_pong_proxy() -> None:
     store = init_store('local', 'test-store')
-    input_data = store.proxy(b'abcd')
+    input_data: Proxy[bytes] = store.proxy(b'abcd')
 
     start = time.perf_counter_ns()
     result_data, stats = pong_proxy(input_data, result_size=10, sleep=0.01)
@@ -36,7 +36,7 @@ def test_pong_proxy() -> None:
 
 def test_pong_proxy_stats() -> None:
     store = init_store('local', 'test-store', stats=True)
-    input_data = store.proxy(b'abcd')
+    input_data: Proxy[bytes] = store.proxy(b'abcd')
     _, stats = pong_proxy(input_data, result_size=10)
     assert stats is not None
     assert stats.input_get_ms is not None and stats.input_get_ms > 0

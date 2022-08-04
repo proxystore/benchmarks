@@ -4,7 +4,17 @@
 [![Tests](https://github.com/gpauloski/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/gpauloski/proxystore-benchmarks/actions)
 
 [ProxyStore](https://github.com/gpauloski/proxystore) benchmark repository.
-Check out the [benchmarks](benchmarks) to get started.
+Check out the [benchmark instructions](docs/) to get started.
+
+# Installation
+
+```
+$ virtualenv venv
+$ . venv/bin/activate
+$ pip install -e .
+```
+The `psbench` package can also be installed into a Conda environment if that
+is your jam.
 
 ## Development Installation
 
@@ -18,8 +28,13 @@ $ pre-commit install
 
 Alternatively, a development environment can be manually configured.
 ```
-$ virtualenv ven
+$ virtualenv venv
 $ . venv/bin/activate
 $ pip install -e .
 $ pip install -r requirements-dev.txt
+$ pre-commit install
 ```
+
+The test suite can be run with `tox` or for a specific Python version with
+`tox -e py39`. Linting/type-checking/etc. can be run using pre-commit:
+`pre-commit run --all-files`.

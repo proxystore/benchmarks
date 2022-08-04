@@ -3,16 +3,10 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-import proxystore
 from proxystore.store import init_store
 from proxystore.store import STORES
 from proxystore.store.base import Store
 from proxystore.store.globus import GlobusEndpoints
-
-
-def proxystore_version() -> tuple[int, ...]:
-    """Return the ProxyStore version as a tuple of ints."""
-    return tuple(int(v) for v in proxystore.__version__.split('.'))
 
 
 def init_store_from_args(
@@ -37,10 +31,7 @@ def init_store_from_args(
     store: Store | None = None
     name = 'default-store'
 
-    if (
-        proxystore_version() > (0, 3, 3)
-        and args.ps_backend == STORES.ENDPOINT.name
-    ):  # pragma: no cover
+    if args.ps_backend == STORES.ENDPOINT.name:
         store = init_store(
             STORES.ENDPOINT,
             name=name,

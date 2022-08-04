@@ -25,7 +25,7 @@ specified.
 
 ## Benchmark
 
-The benchmark can be configure using CLI parameters.
+The benchmark can be configured using CLI parameters.
 Here's an example of a minimal working example that uses the ProxyStore
 file backend.
 
