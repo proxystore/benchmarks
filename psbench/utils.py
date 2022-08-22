@@ -33,7 +33,8 @@ def make_parent_dirs(filepath: str) -> None:
 
 def wait_until(timestamp: float) -> None:
     """Sleep until UNIX timestamp."""
-    if timestamp < time.time():
+    current = time.time()
+    if timestamp <= current:
         return
 
-    time.sleep(timestamp - time.time())
+    time.sleep(timestamp - current)

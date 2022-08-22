@@ -16,6 +16,7 @@ import funcx
 import proxystore
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.utils import get_key
 
 from psbench.argparse import add_funcx_options
 from psbench.argparse import add_logging_options
@@ -25,10 +26,21 @@ from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.tasks.pong import pong
-from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
 logger = logging.getLogger('funcx-test')
+
+
+def pong_proxy(*args, **kwargs):  # type: ignore
+    """Trampoline function for psbench.tasks.pong.pong_proxy.
+
+    The trampoline is needed to remove type annotations since there is an
+    issue in FuncX with serializing functions with type annotations.
+    (See FuncX #901)
+    """
+    from psbench.tasks.pong import pong_proxy as _pong_proxy
+
+    return _pong_proxy(*args, **kwargs)
 
 
 @dataclasses.dataclass
@@ -130,7 +142,7 @@ def time_task_proxy(
     (result, task_proxy_stats) = fut.result()
 
     proxystore.proxy.resolve(result)
-    key = proxystore.proxy.get_key(result)
+    key = get_key(result)
     assert key is not None
     store.evict(key)
     end = time.perf_counter_ns()
