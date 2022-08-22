@@ -16,6 +16,7 @@ import funcx
 import proxystore
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.utils import get_key
 
 from psbench.argparse import add_funcx_options
 from psbench.argparse import add_logging_options
@@ -130,7 +131,7 @@ def time_task_proxy(
     (result, task_proxy_stats) = fut.result()
 
     proxystore.proxy.resolve(result)
-    key = proxystore.proxy.get_key(result)
+    key = get_key(result)
     assert key is not None
     store.evict(key)
     end = time.perf_counter_ns()
