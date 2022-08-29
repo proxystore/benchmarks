@@ -46,7 +46,9 @@ def pong_proxy(
         data (bytes): input data.
         evict_result (bool): Set evict flag in returned proxy (default: True).
         result_size (int): size of results byte array.
-        sleep (float): seconds to sleep for to simulate work (default: 0).
+        sleep (float): seconds to sleep for to simulate work (default: 0). If
+            the sleep is non-zero, the input proxy will be asynchronously
+            resolved during the sleep.
 
     Returns:
         Tuple of bytes and ProxyStats is stat tracking on the store is enabled.
@@ -59,15 +61,23 @@ def pong_proxy(
     import time
 
     from proxystore.proxy import Proxy
+    from proxystore.proxy import is_resolved
+    from proxystore.proxy import resolve_async
     from proxystore.store import get_store
     from proxystore.store import UnknownStoreError
 
     from psbench.utils import randbytes
 
-    assert isinstance(data, bytes) and isinstance(data, Proxy)
-    time.sleep(sleep)
-    result_data = randbytes(result_size)
+    assert isinstance(data, Proxy)
+    assert not is_resolved(data)
 
+    if sleep > 0.0:
+        resolve_async(data)
+        time.sleep(sleep)
+
+    assert isinstance(data, bytes) and isinstance(data, Proxy)
+
+    result_data = randbytes(result_size)
     store = get_store(data)
     if store is None:  # pragma: no cover
         # init_store does not return None in ProxyStore <= 0.3.3
