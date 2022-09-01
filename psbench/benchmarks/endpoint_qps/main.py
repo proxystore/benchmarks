@@ -52,7 +52,7 @@ class RunStats(NamedTuple):
     qps: float
 
 
-def runner(
+def run(
     endpoint: str,
     route: ROUTE_TYPE,
     *,
@@ -175,6 +175,51 @@ def runner(
     return run_stats
 
 
+def runner(
+    endpoint: str,
+    routes: list[ROUTE_TYPE],
+    *,
+    payload_sizes: list[int],
+    queries: int,
+    sleeps: list[float],
+    workers: list[int],
+    csv_file: str | None = None,
+) -> None:
+    """Run matrix of test test configurations.
+
+    Args:
+        endpoint (str): endpoint uuid.
+        routes (str): endpoint routes to query.
+        payload_sizes (int): bytes to send/receive for GET/SET routes.
+        queries (int): number of queries to perform per worker.
+        sleeps (float): sleep (seconds) between queries.
+        workers (int): number of worker processes to use.
+        csv_file (str): optional csv filepath to log results to.
+    """
+    if csv_file is not None:
+        csv_logger = CSVLogger(csv_file, RunStats)
+
+    for route in routes:
+        for payload_size in payload_sizes:
+            for sleep in sleeps:
+                for workers_ in workers:
+                    run_stats = run(
+                        endpoint,
+                        route,
+                        payload_size=payload_size,
+                        queries=queries,
+                        sleep=sleep,
+                        workers=workers_,
+                    )
+
+                    if csv_file is not None:
+                        csv_logger.log(run_stats)
+
+    if csv_file is not None:
+        csv_logger.close()
+        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Endpoint QPS test entrypoint."""
     argv = argv if argv is not None else sys.argv[1:]
@@ -188,28 +233,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='ProxyStore Endpoint UUID',
     )
     parser.add_argument(
-        '--route',
+        '--routes',
         choices=['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT'],
+        nargs='+',
         required=True,
-        help='Endpoint route to query',
+        help='Endpoint routes to query',
     )
     parser.add_argument(
-        '--payload-size',
+        '--payload-sizes',
         type=int,
+        nargs='+',
         default=0,
         help='Payload sizes for GET/SET queries',
     )
     parser.add_argument(
         '--workers',
         type=int,
+        nargs='+',
         default=1,
         help='Number of workers (processes) making queries',
     )
     parser.add_argument(
         '--sleep',
         type=float,
+        nargs='+',
         default=0,
-        help='Sleep (seconds) between queries',
+        help='Sleeps (seconds) between queries',
     )
     parser.add_argument(
         '--queries',
@@ -222,20 +271,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     init_logging(args.log_file, args.log_level, force=True)
 
-    run_stats = runner(
+    runner(
         args.endpoint,
-        args.route,
-        payload_size=args.payload_size,
+        args.routes,
+        payload_sizes=args.payload_sizes,
         queries=args.queries,
-        sleep=args.sleep,
+        sleeps=args.sleep,
         workers=args.workers,
+        csv_file=args.csv_file,
     )
-
-    if args.csv_file is not None:
-        csv_logger = CSVLogger(args.csv_file, RunStats)
-        csv_logger.log(run_stats)
-        csv_logger.close()
-
-        logger.log(TESTING_LOG_LEVEL, f'results logged to {args.csv_file}')
 
     return 0
