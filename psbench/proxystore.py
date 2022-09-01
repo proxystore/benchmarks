@@ -29,19 +29,18 @@ def init_store_from_args(
         Store or None if no store was specified.
     """
     store: Store | None = None
-    name = 'default-store'
 
     if args.ps_backend == STORES.ENDPOINT.name:
         store = init_store(
             STORES.ENDPOINT,
-            name=name,
+            name='endpoint-store',
             endpoints=args.ps_endpoints,
             **kwargs,
         )
     elif args.ps_backend == STORES.FILE.name:
         store = init_store(
             STORES.FILE,
-            name=name,
+            name='file-store',
             store_dir=args.ps_file_dir,
             **kwargs,
         )
@@ -49,14 +48,14 @@ def init_store_from_args(
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
         store = init_store(
             STORES.GLOBUS,
-            name=name,
+            name='globus-store',
             endpoints=endpoints,
             **kwargs,
         )
     elif args.ps_backend == STORES.REDIS.name:
         store = init_store(
             STORES.REDIS,
-            name=name,
+            name='redis-store',
             hostname=args.ps_redis_host,
             port=args.ps_redis_port,
             **kwargs,

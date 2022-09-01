@@ -18,7 +18,7 @@ def randbytes(size: int) -> bytes:
     Returns:
         random byte string.
     """
-    if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+    if sys.version_info >= (3, 9) and size < 1e9:  # pragma: >=3.9 cover
         return random.randbytes(size)
     else:  # pragma: <3.9 cover
         return os.urandom(size)

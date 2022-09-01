@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from statistics import stdev
 from typing import NamedTuple
 
 import requests
@@ -19,6 +20,7 @@ class Stats(NamedTuple):
     min_latency_ms: float
     max_latency_ms: float
     avg_latency_ms: float
+    stdev_latency_ms: float
 
 
 def endpoint_test(
@@ -64,6 +66,7 @@ def endpoint_test(
         min_latency_ms=min(latencies),
         max_latency_ms=max(latencies),
         avg_latency_ms=sum(latencies) / len(latencies),
+        stdev_latency_ms=stdev(latencies) if len(latencies) > 1 else 0,
     )
 
 
@@ -104,6 +107,7 @@ def evict_test(
         min_latency_ms=min(latencies),
         max_latency_ms=max(latencies),
         avg_latency_ms=sum(latencies) / len(latencies),
+        stdev_latency_ms=stdev(latencies) if len(latencies) > 1 else 0,
     )
 
 
@@ -144,6 +148,7 @@ def exists_test(
         min_latency_ms=min(latencies),
         max_latency_ms=max(latencies),
         avg_latency_ms=sum(latencies) / len(latencies),
+        stdev_latency_ms=stdev(latencies) if len(latencies) > 1 else 0,
     )
 
 
@@ -190,6 +195,7 @@ def get_test(
         min_latency_ms=min(latencies),
         max_latency_ms=max(latencies),
         avg_latency_ms=sum(latencies) / len(latencies),
+        stdev_latency_ms=stdev(latencies) if len(latencies) > 1 else 0,
     )
 
 
@@ -240,4 +246,5 @@ def set_test(
         min_latency_ms=min(latencies),
         max_latency_ms=max(latencies),
         avg_latency_ms=sum(latencies) / len(latencies),
+        stdev_latency_ms=stdev(latencies) if len(latencies) > 1 else 0,
     )
