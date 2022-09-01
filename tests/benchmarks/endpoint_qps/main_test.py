@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 from unittest import mock
 
 if sys.version_info >= (3, 8):  # pragma: >3.7 cover
@@ -12,6 +13,7 @@ import pytest
 
 from psbench.benchmarks.endpoint_qps.main import main
 from psbench.benchmarks.endpoint_qps.main import runner
+from psbench.benchmarks.endpoint_qps.main import RunStats
 from psbench.benchmarks.endpoint_qps.routes import Stats
 
 
@@ -36,3 +38,26 @@ def test_runner(
 @mock.patch('psbench.benchmarks.endpoint_qps.main.runner')
 def test_main(mock_runner) -> None:
     assert main(['UUID', '--route', 'GET']) == 0
+
+
+@mock.patch('psbench.benchmarks.endpoint_qps.main.runner')
+def test_csv_logging(mock_runner) -> None:
+    mock_runner.return_value = RunStats(
+        route='GET',
+        payload_size_bytes=0,
+        queries_per_worker=1,
+        sleep_seconds=0.0,
+        workers=1,
+        min_worker_elapsed_time_ms=1,
+        max_worker_elapsed_time_ms=1,
+        avg_worker_elapsed_time_ms=1,
+        min_latency_ms=1,
+        max_latency_ms=1,
+        avg_latency_ms=1,
+        qps=1,
+    )
+
+    with tempfile.NamedTemporaryFile() as f:
+        assert len(f.readlines()) == 0
+        assert main(['UUID', '--route', 'GET', '--csv-file', f.name]) == 0
+        assert len(f.readlines()) == 2
