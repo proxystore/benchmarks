@@ -26,7 +26,9 @@ def test_runner(
 ) -> None:
     def call_directly(func, *args, **kwargs):
         result = mock.MagicMock()
-        result.get = mock.MagicMock(return_value=Stats(2, 0.1, 0.1, 0.1, 0.1))
+        result.get = mock.MagicMock(
+            return_value=Stats(2, 0.1, 0.1, 0.1, 0.1, 0.1),
+        )
         return result
 
     with mock.patch(
@@ -45,15 +47,17 @@ def test_csv_logging(mock_runner) -> None:
     mock_runner.return_value = RunStats(
         route='GET',
         payload_size_bytes=0,
-        queries_per_worker=1,
+        total_queries=1,
         sleep_seconds=0.0,
         workers=1,
         min_worker_elapsed_time_ms=1,
         max_worker_elapsed_time_ms=1,
         avg_worker_elapsed_time_ms=1,
+        stdev_worker_elapsed_time_ms=1,
         min_latency_ms=1,
         max_latency_ms=1,
         avg_latency_ms=1,
+        stdev_latency_ms=1,
         qps=1,
     )
 

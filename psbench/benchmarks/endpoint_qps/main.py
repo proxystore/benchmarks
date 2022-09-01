@@ -5,9 +5,11 @@ import argparse
 import datetime
 import functools
 import logging
+import math
 import multiprocessing
 import sys
 import time
+from statistics import stdev
 from typing import Callable
 from typing import NamedTuple
 from typing import Sequence
@@ -36,15 +38,17 @@ class RunStats(NamedTuple):
 
     route: ROUTE_TYPE
     payload_size_bytes: int
-    queries_per_worker: int
+    total_queries: int
     sleep_seconds: float
     workers: int
     min_worker_elapsed_time_ms: float
     max_worker_elapsed_time_ms: float
     avg_worker_elapsed_time_ms: float
+    stdev_worker_elapsed_time_ms: float
     min_latency_ms: float
     max_latency_ms: float
     avg_latency_ms: float
+    stdev_latency_ms: float
     qps: float
 
 
@@ -126,23 +130,33 @@ def runner(
     min_elapsed_ms = min(s.total_elapsed_ms for s in stats)
     max_elapsed_ms = max(s.total_elapsed_ms for s in stats)
     avg_elapsed_ms = sum(s.total_elapsed_ms for s in stats) / len(stats)
+    stdev_elapsed_ms = (
+        stdev([s.total_elapsed_ms for s in stats]) if len(stats) > 1 else 0
+    )
     min_latency_ms = min(s.min_latency_ms for s in stats)
     max_latency_ms = max(s.max_latency_ms for s in stats)
     avg_latency_ms = sum(s.avg_latency_ms for s in stats) / len(stats)
+    # Avg standard deviation among k groups with equal samples in each group:
+    #   sqrt( (s_1^2 + s_2^2 + ...) / k)
+    stdev_latency_ms = math.sqrt(
+        sum(s.stdev_latency_ms**2 for s in stats) / len(stats),
+    )
     queries = sum(s.queries for s in stats)
 
     run_stats = RunStats(
         route=route,
         payload_size_bytes=payload_size,
-        queries_per_worker=queries,
+        total_queries=queries,
         sleep_seconds=sleep,
         workers=workers,
         min_worker_elapsed_time_ms=min_elapsed_ms,
         max_worker_elapsed_time_ms=max_elapsed_ms,
         avg_worker_elapsed_time_ms=avg_elapsed_ms,
+        stdev_worker_elapsed_time_ms=stdev_elapsed_ms,
         min_latency_ms=min_latency_ms,
         max_latency_ms=max_latency_ms,
         avg_latency_ms=avg_latency_ms,
+        stdev_latency_ms=stdev_latency_ms,
         qps=queries / (max_elapsed_ms / 1000),
     )
 
@@ -153,7 +167,8 @@ def runner(
         f'fastest worker elapsed time: {min_elapsed_ms / 1000:.3f} seconds\n'
         f'minimum request latency: {min_latency_ms:.3f} ms\n'
         f'maximum request latency: {max_latency_ms:.3f} ms\n'
-        f'average request latency: {avg_latency_ms:.3f} ms\n'
+        'average request latency: '
+        f'{avg_latency_ms:.3f} ± {stdev_latency_ms:.3f} ms\n'
         f'total QPS: {run_stats.qps:.3f}',
     )
 
