@@ -62,7 +62,7 @@ def pong_proxy(
 
     from proxystore.proxy import Proxy
     from proxystore.proxy import is_resolved
-    from proxystore.proxy import resolve_async
+    from proxystore.store import resolve_async
     from proxystore.store import get_store
     from proxystore.store import UnknownStoreError
 
@@ -81,16 +81,16 @@ def pong_proxy(
     store = get_store(data)
     if store is None:  # pragma: no cover
         # init_store does not return None in ProxyStore <= 0.3.3
-        raise UnknownStoreError('Cannot find ProxyStore backend to use.')
+        raise UnknownStoreError("Cannot find ProxyStore backend to use.")
     result: Proxy[bytes] = store.proxy(result_data, evict=evict_result)
 
     stats: ProxyStats | None = None
     if store.has_stats:
         stats = ProxyStats(
-            input_get_ms=store.stats(data)['get'].avg_time_ms,
-            input_resolve_ms=store.stats(data)['resolve'].avg_time_ms,
-            output_set_ms=store.stats(result)['set'].avg_time_ms,
-            output_proxy_ms=store.stats(result)['proxy'].avg_time_ms,
+            input_get_ms=store.stats(data)["get"].avg_time_ms,
+            input_resolve_ms=store.stats(data)["resolve"].avg_time_ms,
+            output_set_ms=store.stats(result)["set"].avg_time_ms,
+            output_proxy_ms=store.stats(result)["proxy"].avg_time_ms,
         )
 
     return (result, stats)
