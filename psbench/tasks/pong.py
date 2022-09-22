@@ -62,6 +62,7 @@ def pong_proxy(
     from proxystore.store import get_store
     from proxystore.store import UnknownStoreError
 
+    from psbench.tasks.pong import ProxyStats
     from psbench.utils import randbytes
 
     assert isinstance(data, bytes) and isinstance(data, Proxy)
