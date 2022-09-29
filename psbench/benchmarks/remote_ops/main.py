@@ -50,7 +50,7 @@ class RunStats(NamedTuple):
     avg_bandwidth_mbps: float | None
 
 
-async def run(
+async def run_endpoint(
     endpoint: Endpoint,
     remote_endpoint: uuid.UUID | None,
     op: OP_TYPE,
@@ -118,7 +118,7 @@ async def run(
     )
 
 
-async def runner(
+async def runner_endpoint(
     remote_endpoint: uuid.UUID | None,
     ops: list[OP_TYPE],
     *,
@@ -147,7 +147,7 @@ async def runner(
     ) as endpoint:
         for op in ops:
             for payload_size in payload_sizes:
-                run_stats = await run(
+                run_stats = await run_endpoint(
                     endpoint,
                     remote_endpoint=remote_endpoint,
                     op=op,
@@ -173,9 +173,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        '--remote',
-        required=True,
+        'backend',
+        choices=['ENDPOINT', 'REDIS'],
+        help='Remote objects store backend to test',
+    )
+    parser.add_argument(
+        '--endpoint',
+        required='ENDPOINT' in sys.argv,
         help='Remote Endpoint UUID',
+    )
+    parser.add_argument(
+        '--redis-host',
+        required='REDIS' in sys.argv,
+        help='Redis server hostname/IP',
+    )
+    parser.add_argument(
+        '--redis-port',
+        required='REDIS' in sys.argv,
+        help='Redis server port',
     )
     parser.add_argument(
         '--ops',
@@ -193,7 +208,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         '--server',
-        required=True,
+        required='ENDPOINT' in sys.argv,
         help='Signaling server address for connecting to the remote endpoint',
     )
     parser.add_argument(
@@ -205,33 +220,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         '--no-uvloop',
         action='store_true',
-        help='Override using uvloop if available',
+        help='Override using uvloop if available (for ENDPOINT backend only)',
     )
     add_logging_options(parser)
     args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
 
-    if not args.no_uvloop:
-        try:
-            import uvloop
+    if args.backend == 'ENDPOINT':
+        if not args.no_uvloop:
+            try:
+                import uvloop
 
-            uvloop.install()
-            logger.info('uvloop available... using as event loop')
-        except ImportError:  # pragma: no cover
-            logger.info('uvloop unavailable... using asyncio event loop')
+                uvloop.install()
+                logger.info('uvloop available... using as event loop')
+            except ImportError:  # pragma: no cover
+                logger.info('uvloop unavailable... using asyncio event loop')
+        else:
+            logger.info('uvloop override... using asyncio event loop')
+
+        asyncio.run(
+            runner_endpoint(
+                uuid.UUID(args.endpoint),
+                args.ops,
+                payload_sizes=args.payload_sizes,
+                repeat=args.repeat,
+                server=args.server,
+                csv_file=args.csv_file,
+            ),
+        )
+    elif args.backend == 'REDIS':
+        pass
     else:
-        logger.info('uvloop override... using asyncio event loop')
-
-    asyncio.run(
-        runner(
-            uuid.UUID(args.remote),
-            args.ops,
-            payload_sizes=args.payload_sizes,
-            repeat=args.repeat,
-            server=args.server,
-            csv_file=args.csv_file,
-        ),
-    )
+        raise AssertionError('Unreachable.')
 
     return 0

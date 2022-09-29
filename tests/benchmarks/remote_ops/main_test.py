@@ -13,12 +13,12 @@ else:  # pragma: <3.8 cover
 import pytest
 
 from psbench.benchmarks.remote_ops.main import main
-from psbench.benchmarks.remote_ops.main import runner
+from psbench.benchmarks.remote_ops.main import runner_endpoint
 
 
 @pytest.mark.asyncio
-async def test_runner() -> None:
-    await runner(
+async def test_runner_endpoint() -> None:
+    await runner_endpoint(
         None,
         ['GET', 'SET', 'EVICT', 'EXISTS'],
         payload_sizes=[100, 1000],
@@ -28,10 +28,10 @@ async def test_runner() -> None:
 
 
 @pytest.mark.asyncio
-async def test_csv_logging() -> None:
+async def test_csv_logging_endpoint() -> None:
     with tempfile.NamedTemporaryFile() as f:
         assert len(f.readlines()) == 0
-        await runner(
+        await runner_endpoint(
             remote_endpoint=None,
             ops=['EXISTS', 'EVICT'],
             payload_sizes=[1, 2, 3],
@@ -44,13 +44,14 @@ async def test_csv_logging() -> None:
 
 def test_main() -> None:
     with mock.patch(
-        'psbench.benchmarks.remote_ops.main.runner',
+        'psbench.benchmarks.remote_ops.main.runner_endpoint',
         AsyncMock(),
     ):
         assert (
             main(
                 [
-                    '--remote',
+                    'ENDPOINT',
+                    '--endpoint',
                     str(uuid.uuid4()),
                     '--ops',
                     'GET',
@@ -66,7 +67,8 @@ def test_main() -> None:
         assert (
             main(
                 [
-                    '--remote',
+                    'ENDPOINT',
+                    '--endpoint',
                     str(uuid.uuid4()),
                     '--ops',
                     'GET',
