@@ -12,8 +12,10 @@ else:  # pragma: <3.8 cover
 
 import pytest
 
+from testing.mocking import MockStrictRedis
 from psbench.benchmarks.remote_ops.main import main
 from psbench.benchmarks.remote_ops.main import runner_endpoint
+from psbench.benchmarks.remote_ops.main import runner_redis
 
 
 @pytest.mark.asyncio
@@ -25,6 +27,17 @@ async def test_runner_endpoint() -> None:
         repeat=1,
         server=None,
     )
+
+
+def test_runner_redis() -> None:
+    with mock.patch('redis.StrictRedis', side_effect=MockStrictRedis):
+        runner_redis(
+            'localhost',
+            1234,
+            ['GET', 'SET', 'EVICT', 'EXISTS'],
+            payload_sizes=[100, 1000],
+            repeat=1,
+        )
 
 
 @pytest.mark.asyncio
@@ -42,11 +55,26 @@ async def test_csv_logging_endpoint() -> None:
         assert len(f.readlines()) == 1 + (2 * 3)
 
 
+def test_csv_logging_redis() -> None:
+    with tempfile.NamedTemporaryFile() as f:
+        assert len(f.readlines()) == 0
+        with mock.patch('redis.StrictRedis', side_effect=MockStrictRedis):
+            runner_redis(
+                'localhost',
+                1234,
+                ops=['EXISTS', 'EVICT'],
+                payload_sizes=[1, 2, 3],
+                repeat=3,
+                csv_file=f.name,
+            )
+        assert len(f.readlines()) == 1 + (2 * 3)
+
+
 def test_main() -> None:
     with mock.patch(
         'psbench.benchmarks.remote_ops.main.runner_endpoint',
         AsyncMock(),
-    ):
+    ), mock.patch('psbench.benchmarks.remote_ops.main.runner_redis'):
         assert (
             main(
                 [
@@ -77,6 +105,23 @@ def test_main() -> None:
                     '--server',
                     'wss://localhost:8765',
                     '--no-uvloop',
+                ],
+            )
+            == 0
+        )
+
+        assert (
+            main(
+                [
+                    'REDIS',
+                    '--redis-host',
+                    'localhost',
+                    '--redis-port',
+                    '1234',
+                    '--ops',
+                    'GET',
+                    '--payload-sizes',
+                    '1000',
                 ],
             )
             == 0

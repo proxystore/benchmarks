@@ -11,6 +11,7 @@ import logging
 import socket
 import sys
 import uuid
+from typing import Any
 from typing import NamedTuple
 from typing import Sequence
 
@@ -19,30 +20,29 @@ if sys.version_info >= (3, 8):  # pragma: >3.7 cover
 else:  # pragma: <3.8 cover
     from typing_extensions import Literal
 
+import redis
 from proxystore.endpoint.endpoint import Endpoint
 
 from psbench.argparse import add_logging_options
-from psbench.benchmarks.remote_ops.ops import test_evict
-from psbench.benchmarks.remote_ops.ops import test_exists
-from psbench.benchmarks.remote_ops.ops import test_get
-from psbench.benchmarks.remote_ops.ops import test_set
+import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
+import psbench.benchmarks.remote_ops.redis_ops as redis_ops
 from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 
+BACKEND_TYPE = Literal['ENDPOINT', 'REDIS']
 OP_TYPE = Literal['EVICT', 'EXISTS', 'GET', 'SET']
 
-logger = logging.getLogger('endpoint-peering')
+logger = logging.getLogger('remote-ops')
 
 
 class RunStats(NamedTuple):
     """Stats for a given run configuration."""
 
+    backend: BACKEND_TYPE
     op: OP_TYPE
     payload_size_bytes: int | None
     repeat: int
-    local_endpoint_uuid: str
-    remote_endpoint_uuid: str
     total_time_ms: float
     avg_time_ms: float
     min_time_ms: float
@@ -75,18 +75,26 @@ async def run_endpoint(
     logger.log(TESTING_LOG_LEVEL, f'starting endpoint peering test for {op}')
 
     if op == 'EVICT':
-        times_ms = await test_evict(endpoint, remote_endpoint, repeat)
+        times_ms = await endpoint_ops.test_evict(
+            endpoint,
+            remote_endpoint,
+            repeat,
+        )
     elif op == 'EXISTS':
-        times_ms = await test_exists(endpoint, remote_endpoint, repeat)
+        times_ms = await endpoint_ops.test_exists(
+            endpoint,
+            remote_endpoint,
+            repeat,
+        )
     elif op == 'GET':
-        times_ms = await test_get(
+        times_ms = await endpoint_ops.test_get(
             endpoint,
             remote_endpoint,
             payload_size,
             repeat,
         )
     elif op == 'SET':
-        times_ms = await test_set(
+        times_ms = await endpoint_ops.test_set(
             endpoint,
             remote_endpoint,
             payload_size,
@@ -105,11 +113,65 @@ async def run_endpoint(
     )
 
     return RunStats(
+        backend='ENDPOINT',
         op=op,
         payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
         repeat=repeat,
-        local_endpoint_uuid=str(endpoint.uuid),
-        remote_endpoint_uuid=str(remote_endpoint),
+        total_time_ms=sum(times_ms),
+        avg_time_ms=sum(times_ms) / len(times_ms),
+        min_time_ms=min(times_ms),
+        max_time_ms=max(times_ms),
+        avg_bandwidth_mbps=avg_bandwidth_mbps,
+    )
+
+
+def run_redis(
+    client: redis.StrictRedis[Any],
+    op: OP_TYPE,
+    payload_size: int = 0,
+    repeat: int = 3,
+) -> RunStats:
+    """Run test for single operation and measure performance.
+
+    Args:
+        client (StrictRedis): Redis client connected to remote server.
+        op (str): endpoint operation to test.
+        payload_size (int): bytes to send/receive for GET/SET operations.
+        repeat (int): number of times to repeat operation. If repeat is greater
+            than or equal to three, the slowest and fastest times will be
+            dropped to account for the first op being slower while establishing
+            a connection.
+
+    Returns:
+        RunStats with summary of test run.
+    """
+    logger.log(TESTING_LOG_LEVEL, f'starting remote redis test for {op}')
+
+    if op == 'EVICT':
+        times_ms = redis_ops.test_evict(client, repeat)
+    elif op == 'EXISTS':
+        times_ms = redis_ops.test_exists(client, repeat)
+    elif op == 'GET':
+        times_ms = redis_ops.test_get(client, payload_size, repeat)
+    elif op == 'SET':
+        times_ms = redis_ops.test_set(client, payload_size, repeat)
+    else:
+        raise AssertionError(f'Unsupported operation {op}')
+
+    if len(times_ms) >= 3:
+        times_ms = times_ms[1:-1]
+
+    avg_time_s = sum(times_ms) / 1000 / len(times_ms)
+    payload_mb = payload_size / 1e6
+    avg_bandwidth_mbps = (
+        payload_mb / avg_time_s if op in ('GET', 'SET') else None
+    )
+
+    return RunStats(
+        backend='REDIS',
+        op=op,
+        payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+        repeat=repeat,
         total_time_ms=sum(times_ms),
         avg_time_ms=sum(times_ms) / len(times_ms),
         min_time_ms=min(times_ms),
@@ -127,7 +189,7 @@ async def runner_endpoint(
     server: str | None = None,
     csv_file: str | None = None,
 ) -> None:
-    """Run matrix of test test configurations.
+    """Run matrix of test test configurations with an Endpoint.
 
     Args:
         remote_endpoint (UUID): remote endpoint UUID to peer with.
@@ -158,6 +220,47 @@ async def runner_endpoint(
                 logger.log(TESTING_LOG_LEVEL, run_stats)
                 if csv_file is not None:
                     csv_logger.log(run_stats)
+
+    if csv_file is not None:
+        csv_logger.close()
+        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+
+
+def runner_redis(
+    host: str,
+    port: int,
+    ops: list[OP_TYPE],
+    *,
+    payload_sizes: list[int],
+    repeat: int,
+    csv_file: str | None = None,
+) -> None:
+    """Run matrix of test test configurations with a Redis server.
+
+    Args:
+        host (str): remote Redis server hostname/IP.
+        port (int): remote Redis server port.
+        ops (str): endpoint operations to test.
+        payload_sizes (int): bytes to send/receive for GET/SET operations.
+        repeat (int): number of times to repeat operations.
+        csv_file (str): optional csv filepath to log results to.
+    """
+    if csv_file is not None:
+        csv_logger = CSVLogger(csv_file, RunStats)
+
+    client = redis.StrictRedis(host=host, port=port)
+    for op in ops:
+        for payload_size in payload_sizes:
+            run_stats = run_redis(
+                client,
+                op=op,
+                payload_size=payload_size,
+                repeat=repeat,
+            )
+
+            logger.log(TESTING_LOG_LEVEL, run_stats)
+            if csv_file is not None:
+                csv_logger.log(run_stats)
 
     if csv_file is not None:
         csv_logger.close()
@@ -250,7 +353,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
         )
     elif args.backend == 'REDIS':
-        pass
+        runner_redis(
+            args.redis_host,
+            args.redis_port,
+            args.ops,
+            payload_sizes=args.payload_sizes,
+            repeat=args.repeat,
+            csv_file=args.csv_file,
+        )
     else:
         raise AssertionError('Unreachable.')
 
