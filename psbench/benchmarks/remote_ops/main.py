@@ -1,4 +1,8 @@
-"""Endpoint Peering Performance Test."""
+"""Remote Operation Performance Test.
+
+Provides comparisons between remote operations with endpoints
+and Redis servers.
+"""
 from __future__ import annotations
 
 import argparse
@@ -18,10 +22,10 @@ else:  # pragma: <3.8 cover
 from proxystore.endpoint.endpoint import Endpoint
 
 from psbench.argparse import add_logging_options
-from psbench.benchmarks.endpoint_peering.ops import test_evict
-from psbench.benchmarks.endpoint_peering.ops import test_exists
-from psbench.benchmarks.endpoint_peering.ops import test_get
-from psbench.benchmarks.endpoint_peering.ops import test_set
+from psbench.benchmarks.remote_ops.ops import test_evict
+from psbench.benchmarks.remote_ops.ops import test_exists
+from psbench.benchmarks.remote_ops.ops import test_get
+from psbench.benchmarks.remote_ops.ops import test_set
 from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
@@ -161,11 +165,11 @@ async def runner(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Endpoint Peering test entrypoint."""
+    """Remote ops test entrypoint."""
     argv = argv if argv is not None else sys.argv[1:]
 
     parser = argparse.ArgumentParser(
-        description='ProxyStore Endpoint Peering Bandwidth/Latency Test.',
+        description='Remote ops performance test.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

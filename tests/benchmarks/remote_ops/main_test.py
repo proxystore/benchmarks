@@ -12,8 +12,8 @@ else:  # pragma: <3.8 cover
 
 import pytest
 
-from psbench.benchmarks.endpoint_peering.main import main
-from psbench.benchmarks.endpoint_peering.main import runner
+from psbench.benchmarks.remote_ops.main import main
+from psbench.benchmarks.remote_ops.main import runner
 
 
 @pytest.mark.asyncio
@@ -44,7 +44,7 @@ async def test_csv_logging() -> None:
 
 def test_main() -> None:
     with mock.patch(
-        'psbench.benchmarks.endpoint_peering.main.runner',
+        'psbench.benchmarks.remote_ops.main.runner',
         AsyncMock(),
     ):
         assert (

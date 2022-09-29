@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from proxystore.endpoint.endpoint import Endpoint
 
-from psbench.benchmarks.endpoint_peering import ops
+from psbench.benchmarks.remote_ops import ops
 
 
 @pytest_asyncio.fixture
