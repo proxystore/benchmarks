@@ -208,18 +208,20 @@ async def runner_endpoint(
         signaling_server=server,
     ) as endpoint:
         for op in ops:
-            for payload_size in payload_sizes:
-                run_stats = await run_endpoint(
-                    endpoint,
-                    remote_endpoint=remote_endpoint,
-                    op=op,
-                    payload_size=payload_size,
-                    repeat=repeat,
-                )
+            for i, payload_size in enumerate(payload_sizes):
+                # Only need to repeat for payload_size for GET/SET
+                if i == 0 or op in ['GET', 'SET']:
+                    run_stats = await run_endpoint(
+                        endpoint,
+                        remote_endpoint=remote_endpoint,
+                        op=op,
+                        payload_size=payload_size,
+                        repeat=repeat,
+                    )
 
-                logger.log(TESTING_LOG_LEVEL, run_stats)
-                if csv_file is not None:
-                    csv_logger.log(run_stats)
+                    logger.log(TESTING_LOG_LEVEL, run_stats)
+                    if csv_file is not None:
+                        csv_logger.log(run_stats)
 
     if csv_file is not None:
         csv_logger.close()
@@ -250,17 +252,19 @@ def runner_redis(
 
     client = redis.StrictRedis(host=host, port=port)
     for op in ops:
-        for payload_size in payload_sizes:
-            run_stats = run_redis(
-                client,
-                op=op,
-                payload_size=payload_size,
-                repeat=repeat,
-            )
+        for i, payload_size in enumerate(payload_sizes):
+            # Only need to repeat for payload_size for GET/SET
+            if i == 0 or op in ['GET', 'SET']:
+                run_stats = run_redis(
+                    client,
+                    op=op,
+                    payload_size=payload_size,
+                    repeat=repeat,
+                )
 
-            logger.log(TESTING_LOG_LEVEL, run_stats)
-            if csv_file is not None:
-                csv_logger.log(run_stats)
+                logger.log(TESTING_LOG_LEVEL, run_stats)
+                if csv_file is not None:
+                    csv_logger.log(run_stats)
 
     if csv_file is not None:
         csv_logger.close()

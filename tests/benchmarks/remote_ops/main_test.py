@@ -46,13 +46,14 @@ async def test_csv_logging_endpoint() -> None:
         assert len(f.readlines()) == 0
         await runner_endpoint(
             remote_endpoint=None,
-            ops=['EXISTS', 'EVICT'],
+            ops=['EXISTS', 'EVICT', 'GET'],
             payload_sizes=[1, 2, 3],
             repeat=3,
             server=None,
             csv_file=f.name,
         )
-        assert len(f.readlines()) == 1 + (2 * 3)
+        # 1 for header, 1 for exists, 1 for evict, 3 for get (3 payload sizes)
+        assert len(f.readlines()) == 1 + 2 + 3
 
 
 def test_csv_logging_redis() -> None:
@@ -62,12 +63,12 @@ def test_csv_logging_redis() -> None:
             runner_redis(
                 'localhost',
                 1234,
-                ops=['EXISTS', 'EVICT'],
+                ops=['EXISTS', 'EVICT', 'GET'],
                 payload_sizes=[1, 2, 3],
                 repeat=3,
                 csv_file=f.name,
             )
-        assert len(f.readlines()) == 1 + (2 * 3)
+        assert len(f.readlines()) == 1 + 2 + 3
 
 
 def test_main() -> None:
