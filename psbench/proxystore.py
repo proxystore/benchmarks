@@ -61,11 +61,12 @@ def init_store_from_args(
             **kwargs,
         )
 
-    elif args.ps_backend == STORES.MARGO.name:
+    elif args.ps_backend == STORES.INTRASITE.name:
         store = init_store(
-            STORES.MARGO,
-            name="margo-store",
-            port=args.ps_redis_port,
+            STORES.INTRASITE,
+            name="intrasite-store",
+            interface=args.ps_intrasite_interface,
+            port=args.ps_intrasite_port,
             **kwargs,
         )
 

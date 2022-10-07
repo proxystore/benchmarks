@@ -62,7 +62,7 @@ def pong_proxy(
 
     from proxystore.proxy import Proxy
     from proxystore.proxy import is_resolved
-    from proxystore.store import resolve_async
+    from proxystore.store.base import StoreFactory
     from proxystore.store import get_store
     from proxystore.store import UnknownStoreError
 
@@ -73,7 +73,7 @@ def pong_proxy(
     assert not is_resolved(data)
 
     if sleep > 0.0:
-        resolve_async(data)
+        data.resolve_async()
         time.sleep(sleep)
 
     assert isinstance(data, bytes) and isinstance(data, Proxy)
