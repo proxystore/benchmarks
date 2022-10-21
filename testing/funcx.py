@@ -24,8 +24,6 @@ class MockFuncXExecutor(funcx.FuncXExecutor):
         self,
         func: Callable[..., RT],
         *args: Any,
-        endpoint_id: str | None = None,
-        container_uuid: str | None = None,
         **kwargs: Any,
     ) -> Future[RT]:
         """Mock submit to run function locally and return future."""
