@@ -4,8 +4,6 @@ import argparse
 import re
 import sys
 
-from proxystore.store import STORES
-
 
 def add_funcx_options(
     parser: argparse.ArgumentParser,
@@ -78,7 +76,7 @@ def add_proxystore_options(
     )
     group.add_argument(
         '--ps-backend',
-        choices=[name for name, _ in STORES.__members__.items()],
+        choices=['FILE', 'GLOBUS', 'REDIS', 'ENDPOINT'],
         required=required,
         help='ProxyStore backend to use',
     )

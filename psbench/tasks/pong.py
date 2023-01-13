@@ -54,7 +54,7 @@ def pong_proxy(
         Tuple of bytes and ProxyStats is stat tracking on the store is enabled.
 
     Raises:
-        UnknownStoreError:
+        RuntimeError:
             if the ProxyStore backend cannot be extracted from the input
             Proxy.
     """
@@ -62,9 +62,8 @@ def pong_proxy(
 
     from proxystore.proxy import Proxy
     from proxystore.proxy import is_resolved
-    from proxystore.proxy import resolve_async
+    from proxystore.store.utils import resolve_async
     from proxystore.store import get_store
-    from proxystore.store import UnknownStoreError
 
     from psbench.tasks.pong import ProxyStats
     from psbench.utils import randbytes
@@ -82,7 +81,7 @@ def pong_proxy(
     store = get_store(data)
     if store is None:  # pragma: no cover
         # init_store does not return None in ProxyStore <= 0.3.3
-        raise UnknownStoreError('Cannot find ProxyStore backend to use.')
+        raise RuntimeError('Cannot find ProxyStore backend to use.')
     result: Proxy[bytes] = store.proxy(result_data, evict=evict_result)
 
     stats: ProxyStats | None = None
