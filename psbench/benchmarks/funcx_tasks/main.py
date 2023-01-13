@@ -56,7 +56,6 @@ class TaskStats:
 def time_task(
     *,
     fx: funcx.FuncXExecutor,
-    endpoint: str,
     input_size: int,
     output_size: int,
     task_sleep: float,
@@ -65,7 +64,6 @@ def time_task(
 
     Args:
         fx (FuncXExecutor): FuncX Executor to submit task through.
-        endpoint (str): Endpoint ID to submit task to.
         input_size (int): number of bytes to send as input to task.
         output_size (int): number of bytes task should return.
         task_sleep (int): number of seconds to sleep inside task.
@@ -80,7 +78,6 @@ def time_task(
         data,
         result_size=output_size,
         sleep=task_sleep,
-        endpoint_id=endpoint,
     )
     result = fut.result()
 
@@ -100,7 +97,6 @@ def time_task(
 def time_task_proxy(
     *,
     fx: funcx.FuncXExecutor,
-    endpoint: str,
     store: Store,
     input_size: int,
     output_size: int,
@@ -110,7 +106,6 @@ def time_task_proxy(
 
     Args:
         fx (FuncXExecutor): FuncX Executor to submit task through.
-        endpoint (str): Endpoint ID to submit task to.
         store (Store): ProxyStore Store to use for proxying input/outputs.
         input_size (int): number of bytes to send as input to task.
         output_size (int): number of bytes task should return.
@@ -127,7 +122,6 @@ def time_task_proxy(
         evict_result=False,
         result_size=output_size,
         sleep=task_sleep,
-        endpoint_id=endpoint,
     )
     (result, task_proxy_stats) = fut.result()
 
@@ -182,7 +176,11 @@ def runner(
     )
 
     runner_start = time.perf_counter_ns()
-    fx = funcx.FuncXExecutor(funcx.FuncXClient())
+    fx = funcx.FuncXExecutor(
+        endpoint_id=funcx_endpoint,
+        funcx_client=funcx.FuncXClient(),
+        batch_size=1,
+    )
 
     if csv_file is not None:
         csv_logger = CSVLogger(csv_file, TaskStats)
@@ -193,7 +191,6 @@ def runner(
                 if store is None:
                     stats = time_task(
                         fx=fx,
-                        endpoint=funcx_endpoint,
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
@@ -201,7 +198,6 @@ def runner(
                 else:
                     stats = time_task_proxy(
                         fx=fx,
-                        endpoint=funcx_endpoint,
                         store=store,
                         input_size=input_size,
                         output_size=output_size,
@@ -215,6 +211,8 @@ def runner(
 
                 if csv_file is not None:
                     csv_logger.log(stats)
+
+    fx.shutdown()
 
     if csv_file is not None:
         csv_logger.close()

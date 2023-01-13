@@ -22,7 +22,6 @@ def test_time_task() -> None:
 
     stats = time_task(
         fx=fx,
-        endpoint=str(uuid.uuid4()),
         input_size=100,
         output_size=50,
         task_sleep=0.01,
@@ -41,7 +40,6 @@ def test_time_task_proxy() -> None:
     stats = time_task_proxy(
         fx=fx,
         store=store,
-        endpoint=str(uuid.uuid4()),
         input_size=100,
         output_size=50,
         task_sleep=0.01,

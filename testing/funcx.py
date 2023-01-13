@@ -33,6 +33,10 @@ class MockFuncXExecutor(funcx.FuncXExecutor):
         fut.set_result(func(*args, **kwargs))
         return fut
 
+    def shutdown(self, *args: Any, **kwargs: Any) -> None:
+        """Mock executor shutdown."""
+        pass
+
 
 @contextlib.contextmanager
 def mock_funcx() -> Generator[None, None, None]:
