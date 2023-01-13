@@ -55,4 +55,4 @@ repos:
     hooks:
     -   id: mypy
         # Add any additional typed package dependencies here
-        additional_dependencies: [types-redis, types-requests, proxystore==0.4.0a1]
+        additional_dependencies: [types-redis, types-requests]
