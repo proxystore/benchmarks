@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-from proxystore.store import init_store
-from proxystore.store import STORES
+from proxystore.store import register_store
 from proxystore.store.base import Store
+from proxystore.store.endpoint import EndpointStore
+from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoints
+from proxystore.store.globus import GlobusStore
+from proxystore.store.redis import RedisStore
 
 
 def init_store_from_args(
@@ -30,35 +33,35 @@ def init_store_from_args(
     """
     store: Store | None = None
 
-    if args.ps_backend == STORES.ENDPOINT.name:
-        store = init_store(
-            STORES.ENDPOINT,
-            name='endpoint-store',
-            endpoints=args.ps_endpoints,
-            **kwargs,
-        )
-    elif args.ps_backend == STORES.FILE.name:
-        store = init_store(
-            STORES.FILE,
-            name='file-store',
-            store_dir=args.ps_file_dir,
-            **kwargs,
-        )
-    elif args.ps_backend == STORES.GLOBUS.name:
-        endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-        store = init_store(
-            STORES.GLOBUS,
-            name='globus-store',
-            endpoints=endpoints,
-            **kwargs,
-        )
-    elif args.ps_backend == STORES.REDIS.name:
-        store = init_store(
-            STORES.REDIS,
-            name='redis-store',
-            hostname=args.ps_redis_host,
-            port=args.ps_redis_port,
-            **kwargs,
-        )
+    if args.ps_backend:
+        if args.ps_backend == 'ENDPOINT':
+            store = EndpointStore(
+                name='endpoint-store',
+                endpoints=args.ps_endpoints,
+                **kwargs,
+            )
+        elif args.ps_backend == 'FILE':
+            store = FileStore(
+                name='file-store',
+                store_dir=args.ps_file_dir,
+                **kwargs,
+            )
+        elif args.ps_backend == 'GLOBUS':
+            endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
+            store = GlobusStore(
+                name='globus-store',
+                endpoints=endpoints,
+                **kwargs,
+            )
+        elif args.ps_backend == 'REDIS':
+            store = RedisStore(
+                name='redis-store',
+                hostname=args.ps_redis_host,
+                port=args.ps_redis_port,
+                **kwargs,
+            )
+        else:
+            raise ValueError(f'Invalid backend: {args.ps_backend}')
+        register_store(store)
 
     return store

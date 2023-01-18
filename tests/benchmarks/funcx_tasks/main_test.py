@@ -6,7 +6,8 @@ import uuid
 from unittest import mock
 
 import pytest
-from proxystore.store import init_store
+from proxystore.store import register_store
+from proxystore.store import unregister_store
 from proxystore.store.local import LocalStore
 
 from psbench.benchmarks.funcx_tasks.main import main
@@ -35,7 +36,8 @@ def test_time_task() -> None:
 
 def test_time_task_proxy() -> None:
     fx = mock_executor()
-    store = init_store('local', 'test-store', stats=True)
+    store = LocalStore(name='test-time-task-store', stats=True)
+    register_store(store)
 
     stats = time_task_proxy(
         fx=fx,
@@ -58,6 +60,7 @@ def test_time_task_proxy() -> None:
     assert stats.output_set_ms is not None and stats.output_set_ms > 0
     assert stats.output_proxy_ms is not None and stats.output_proxy_ms > 0
     assert stats.output_resolve_ms is not None and stats.output_resolve_ms > 0
+    unregister_store(store)
 
 
 @pytest.mark.parametrize(
@@ -67,11 +70,11 @@ def test_time_task_proxy() -> None:
 def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
     caplog.set_level(logging.ERROR)
 
-    store = (
-        init_store('local', 'test-store', stats=True)
-        if use_proxystore
-        else None
-    )
+    if use_proxystore:
+        store = LocalStore(name='test-runner-store', stats=True)
+        register_store(store)
+    else:
+        store = None
     csv_file: str | None = None
     if log_to_csv:
         temp_file = tempfile.NamedTemporaryFile()
@@ -97,6 +100,8 @@ def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
             (len(input_sizes) * len(output_sizes) * task_repeat) + 1
         )
         temp_file.close()
+    if use_proxystore:
+        unregister_store(store)
 
 
 @mock.patch('psbench.benchmarks.funcx_tasks.main.runner')
@@ -115,7 +120,7 @@ def test_main(mock_runner) -> None:
 
     with mock.patch(
         'psbench.benchmarks.funcx_tasks.main.init_store_from_args',
-        return_value=LocalStore('test-store'),
+        return_value=LocalStore('test-main-store'),
     ):
         main(
             [

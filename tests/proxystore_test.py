@@ -26,6 +26,7 @@ from psbench.proxystore import init_store_from_args
             {'ps_redis_host': 'localhost', 'ps_redis_port': 1234},
         ),
         (None, None, {}),
+        ('INVALID_BACKEND', None, {}),
     ),
 )
 def test_store_from_args(
@@ -38,11 +39,21 @@ def test_store_from_args(
     for key, value in kwargs.items():
         setattr(args, key, value)
 
-    with mock.patch('psbench.proxystore.init_store'), mock.patch(
+    with mock.patch('psbench.proxystore.register_store'), mock.patch(
+        'psbench.proxystore.FileStore',
+    ), mock.patch('psbench.proxystore.RedisStore'), mock.patch(
+        'psbench.proxystore.EndpointStore',
+    ), mock.patch(
+        'psbench.proxystore.GlobusStore',
+    ), mock.patch(
         'psbench.proxystore.GlobusEndpoints.from_json',
     ):
-        store = init_store_from_args(args)
-        if backend is None:
-            assert store is None
+        if backend in ['ENDPOINT', 'FILE', 'GLOBUS', 'REDIS', None]:
+            store = init_store_from_args(args)
+            if backend is None:
+                assert store is None
+            else:
+                assert store is not None
         else:
-            assert store is not None
+            with pytest.raises(ValueError):
+                init_store_from_args(args)
