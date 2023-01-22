@@ -76,7 +76,15 @@ def add_proxystore_options(
     )
     group.add_argument(
         '--ps-backend',
-        choices=['FILE', 'GLOBUS', 'REDIS', 'ENDPOINT'],
+        choices=[
+            'FILE',
+            'GLOBUS',
+            'REDIS',
+            'ENDPOINT',
+            'WEBSOCKET',
+            'MARGO',
+            'UCX',
+        ],
         required=required,
         help='ProxyStore backend to use',
     )
@@ -102,15 +110,31 @@ def add_proxystore_options(
         help='Globus Endpoint config for ProxyStore',
     )
     group.add_argument(
-        '--ps-redis-host',
+        '--ps-host',
         metavar='HOST',
-        required=bool(re.search('--ps-backend( |=)REDIS', args_str)),
-        help='Hostname of Redis server to use with ProxyStore',
+        required=bool(
+            re.search(
+                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX)',
+                args_str,
+            ),
+        ),
+        help='Hostname of server or network interface to use with ProxyStore',
     )
     group.add_argument(
-        '--ps-redis-port',
+        '--ps-port',
         metavar='PORT',
         type=int,
-        required=bool(re.search('--ps-backend( |=)REDIS', args_str)),
-        help='Port of Redis server to use with ProxyStore',
+        required=bool(
+            re.search(
+                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX)',
+                args_str,
+            ),
+        ),
+        help='Port of server to use with ProxyStore',
+    )
+    group.add_argument(
+        '--ps-margo-protocol',
+        metavar='PROTOCOL',
+        help='Optionally specify the Margo protocol to use with ProxyStore',
+        default='tcp',
     )

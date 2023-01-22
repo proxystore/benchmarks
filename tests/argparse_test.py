@@ -53,9 +53,9 @@ def test_add_proxystore_options() -> None:
         [
             '--ps-backend',
             'REDIS',
-            '--ps-redis-host',
+            '--ps-host',
             'localhost',
-            '--ps-redis-port',
+            '--ps-port',
             '1234',
         ],
     )
