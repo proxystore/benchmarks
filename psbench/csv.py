@@ -14,7 +14,7 @@ from typing import Sequence
 from typing import TypeVar
 from typing import Union
 
-if sys.version_info >= (3, 8):  # pragma: >3.8 cover
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from typing import Protocol
     from typing import runtime_checkable
 else:  # pragma: <3.8 cover
@@ -81,6 +81,19 @@ class CSVLogger(Generic[DTYPE]):
         self.writer = csv.DictWriter(self.f, fieldnames=fields)
         if not has_headers:
             self.writer.writeheader()
+
+    def __enter__(self) -> CSVLogger[DTYPE]:
+        """Enter context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exception_type: Any,
+        exception_value: Any,
+        traceback: Any,
+    ) -> None:
+        """Exit context manager."""
+        self.close()
 
     def log(self, data: DTYPE) -> None:
         """Log new row."""
