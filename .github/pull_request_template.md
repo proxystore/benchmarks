@@ -17,7 +17,7 @@
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update (no changes to the code)
 - [ ] CI change (changes to CI workflows, packages, templates, etc.)
-- Version changes (changes to the package or dependency versions)
+- [ ] Version changes (changes to the package or dependency versions)
 
 ## Testing
 <!--- Please describe the test ran to verify changes --->
