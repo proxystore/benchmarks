@@ -5,6 +5,9 @@ from typing import Any
 
 from proxystore.store import register_store
 from proxystore.store.base import Store
+from proxystore.store.dim.margo import MargoStore
+from proxystore.store.dim.ucx import UCXStore
+from proxystore.store.dim.websockets import WebsocketStore
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoints
@@ -56,8 +59,30 @@ def init_store_from_args(
         elif args.ps_backend == 'REDIS':
             store = RedisStore(
                 name='redis-store',
-                hostname=args.ps_redis_host,
-                port=args.ps_redis_port,
+                hostname=args.ps_host,
+                port=args.ps_port,
+                **kwargs,
+            )
+        elif args.ps_backend == 'WEBSOCKET':
+            store = WebsocketStore(
+                name='websocket-store',
+                interface=args.ps_host,
+                port=args.ps_port,
+                **kwargs,
+            )
+        elif args.ps_backend == 'MARGO':
+            store = MargoStore(
+                name='margo-store',
+                interface=args.ps_host,
+                port=args.ps_port,
+                protocol=args.ps_margo_protocol,
+                **kwargs,
+            )
+        elif args.ps_backend == 'UCX':
+            store = UCXStore(
+                name='ucx-store',
+                interface=args.ps_host,
+                port=args.ps_port,
                 **kwargs,
             )
         else:
