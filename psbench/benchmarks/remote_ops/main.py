@@ -23,9 +23,9 @@ else:  # pragma: <3.8 cover
 import redis
 from proxystore.endpoint.endpoint import Endpoint
 
-from psbench.argparse import add_logging_options
 import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
 import psbench.benchmarks.remote_ops.redis_ops as redis_ops
+from psbench.argparse import add_logging_options
 from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
