@@ -12,10 +12,10 @@ else:  # pragma: <3.8 cover
 
 import pytest
 
-from testing.mocking import MockStrictRedis
 from psbench.benchmarks.remote_ops.main import main
 from psbench.benchmarks.remote_ops.main import runner_endpoint
 from psbench.benchmarks.remote_ops.main import runner_redis
+from testing.mocking import MockStrictRedis
 
 
 @pytest.mark.asyncio

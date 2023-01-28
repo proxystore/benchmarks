@@ -60,10 +60,10 @@ def pong_proxy(
     """
     import time
 
-    from proxystore.proxy import Proxy
     from proxystore.proxy import is_resolved
-    from proxystore.store.utils import resolve_async
+    from proxystore.proxy import Proxy
     from proxystore.store import get_store
+    from proxystore.store.utils import resolve_async
 
     from psbench.tasks.pong import ProxyStats
     from psbench.utils import randbytes

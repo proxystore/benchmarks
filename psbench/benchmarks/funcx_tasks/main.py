@@ -29,7 +29,6 @@ from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
-
 logger = logging.getLogger('funcx-test')
 
 
@@ -225,7 +224,7 @@ def runner(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Simple FuncX Task Benchmark with ProxyStore."""
+    """Simple FuncX Task Benchmark with ProxyStore."""  # noqa: D401
     argv = argv if argv is not None else sys.argv[1:]
 
     parser = argparse.ArgumentParser(

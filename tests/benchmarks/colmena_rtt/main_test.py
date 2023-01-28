@@ -11,7 +11,6 @@ from psbench.benchmarks.colmena_rtt.main import main
 from testing.colmena import MockFuncXTaskServer
 from testing.funcx import mock_funcx
 
-
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 try:

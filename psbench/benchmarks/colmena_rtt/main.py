@@ -43,7 +43,6 @@ from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 
-
 logger = logging.getLogger('colmena-rtt')
 
 
@@ -199,6 +198,7 @@ def target_function(
         bytes with size output_size_bytes.
     """
     import time
+
     from proxystore.proxy import Proxy
     from proxystore.store import get_store
     from proxystore.store.utils import get_key
