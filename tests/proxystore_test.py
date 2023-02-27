@@ -9,6 +9,7 @@ from proxystore.store.base import Store
 from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.ucx import UCXStore
 from proxystore.store.dim.websockets import WebsocketStore
+from proxystore.store.dim.zmq import ZeroMQStore
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusStore
@@ -43,6 +44,7 @@ from psbench.proxystore import init_store_from_args
             },
         ),
         ('UCX', UCXStore, {'ps_host': 'localhost', 'ps_port': 1234}),
+        ('ZMQ', ZeroMQStore, {'ps_host': 'localhost', 'ps_port': 1234}),
         (None, None, {}),
         ('INVALID_BACKEND', None, {}),
     ),
@@ -71,6 +73,8 @@ def test_store_from_args(
         'psbench.proxystore.MargoStore',
     ), mock.patch(
         'psbench.proxystore.UCXStore',
+    ), mock.patch(
+        'psbench.proxystore.ZeroMQStore',
     ):
         if backend in [
             'ENDPOINT',
@@ -80,6 +84,7 @@ def test_store_from_args(
             'WEBSOCKET',
             'MARGO',
             'UCX',
+            'ZMQ',
             None,
         ]:
             store = init_store_from_args(args)

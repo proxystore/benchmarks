@@ -8,6 +8,7 @@ from proxystore.store.base import Store
 from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.ucx import UCXStore
 from proxystore.store.dim.websockets import WebsocketStore
+from proxystore.store.dim.zmq import ZeroMQStore
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoints
@@ -81,6 +82,13 @@ def init_store_from_args(
         elif args.ps_backend == 'UCX':
             store = UCXStore(
                 name='ucx-store',
+                interface=args.ps_host,
+                port=args.ps_port,
+                **kwargs,
+            )
+        elif args.ps_backend == 'ZMQ':
+            store = ZeroMQStore(
+                name='zmq-store',
                 interface=args.ps_host,
                 port=args.ps_port,
                 **kwargs,

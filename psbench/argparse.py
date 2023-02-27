@@ -84,6 +84,7 @@ def add_proxystore_options(
             'WEBSOCKET',
             'MARGO',
             'UCX',
+            'ZMQ',
         ],
         required=required,
         help='ProxyStore backend to use',
@@ -114,7 +115,7 @@ def add_proxystore_options(
         metavar='HOST',
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX)',
+                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
                 args_str,
             ),
         ),
@@ -126,7 +127,7 @@ def add_proxystore_options(
         type=int,
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX)',
+                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
                 args_str,
             ),
         ),

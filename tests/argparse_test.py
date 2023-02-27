@@ -59,3 +59,45 @@ def test_add_proxystore_options() -> None:
             '1234',
         ],
     )
+    parser.parse_args(
+        [
+            '--ps-backend',
+            'WEBSOCKET',
+            '--ps-host',
+            'localhost',
+            '--ps-port',
+            '1234',
+        ],
+    )
+    parser.parse_args(
+        [
+            '--ps-backend',
+            'MARGO',
+            '--ps-host',
+            'localhost',
+            '--ps-port',
+            '1234',
+            '--ps-margo-protocol',
+            'tcp',
+        ],
+    )
+    parser.parse_args(
+        [
+            '--ps-backend',
+            'UCX',
+            '--ps-host',
+            'localhost',
+            '--ps-port',
+            '1234',
+        ],
+    )
+    parser.parse_args(
+        [
+            '--ps-backend',
+            'ZMQ',
+            '--ps-host',
+            'localhost',
+            '--ps-port',
+            '1234',
+        ],
+    )
