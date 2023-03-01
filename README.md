@@ -30,8 +30,7 @@ Alternatively, a development environment can be manually configured.
 ```
 $ virtualenv venv
 $ . venv/bin/activate
-$ pip install -e .
-$ pip install -r requirements-dev.txt
+$ pip install -e .[dev]
 $ pre-commit install
 ```
 
