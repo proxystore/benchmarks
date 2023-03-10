@@ -12,7 +12,7 @@ def add_funcx_options(
     """Add CLI arguments for FuncX.
 
     Args:
-        parser (ArgumentParser): parser object to FuncX endpoint argument to.
+        parser (ArgumentParser): parser object to add FuncX arguments to.
         required (bool): require the FuncX endpoint to be specified
             (default: False).
     """
@@ -25,6 +25,31 @@ def add_funcx_options(
         metavar='UUID',
         required=required,
         help='FuncX endpoint for task execution',
+    )
+
+
+def add_ipfs_options(parser: argparse.ArgumentParser) -> None:
+    """Add CLI arguments for IPFS.
+
+    Args:
+        parser (ArgumentParser): parser object to add IPFS arguments to.
+    """
+    args_str = ' '.join(sys.argv)
+    parser.add_argument(
+        '--ipfs',
+        action='store_true',
+        default=False,
+        help='Use IPFS for data transfer.',
+    )
+    parser.add_argument(
+        '--ipfs-local-dir',
+        required=bool(re.search(r'--ipfs($|\s)', args_str)),
+        help='Local directory to write IPFS files to.',
+    )
+    parser.add_argument(
+        '--ipfs-remote-dir',
+        required=bool(re.search(r'--ipfs($|\s)', args_str)),
+        help='Local directory to write IPFS files to.',
     )
 
 

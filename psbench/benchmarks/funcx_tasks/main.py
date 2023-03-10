@@ -8,8 +8,11 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import logging
+import os
+import shutil
 import sys
 import time
+import uuid
 from typing import Sequence
 
 import funcx
@@ -18,7 +21,9 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.utils import get_key
 
+from psbench import ipfs
 from psbench.argparse import add_funcx_options
+from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 from psbench.csv import CSVLogger
@@ -26,6 +31,7 @@ from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.tasks.pong import pong
+from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
@@ -93,6 +99,60 @@ def time_task(
     )
 
 
+def time_task_ipfs(
+    *,
+    fx: funcx.FuncXExecutor,
+    ipfs_local_dir: str,
+    ipfs_remote_dir: str,
+    input_size: int,
+    output_size: int,
+    task_sleep: float,
+) -> TaskStats:
+    """Execute and time a single FuncX task with IPFS for data transfer.
+
+    Args:
+        fx (FuncXExecutor): FuncX Executor to submit task through.
+        ipfs_local_dir (str): Local IPFS directory to write files to.
+        ipfs_remote_dir (str): Remote IPFS directory to write files to.
+        input_size (int): number of bytes to send as input to task.
+        output_size (int): number of bytes task should return.
+        task_sleep (int): number of seconds to sleep inside task.
+
+    Returns:
+        TaskStats
+    """
+    data = randbytes(input_size)
+    start = time.perf_counter_ns()
+
+    os.makedirs(ipfs_local_dir, exist_ok=True)
+    filepath = os.path.join(ipfs_local_dir, str(uuid.uuid4()))
+    cid = ipfs.add_data(data, filepath)
+
+    fut = fx.submit(
+        pong_ipfs,
+        cid,
+        ipfs_remote_dir,
+        result_size=output_size,
+        sleep=task_sleep,
+    )
+    result = fut.result()
+
+    if result is not None:
+        data = ipfs.get_data(result)
+
+    end = time.perf_counter_ns()
+    assert isinstance(data, bytes)
+
+    return TaskStats(
+        proxystore_backend='IPFS',
+        task_name='pong',
+        input_size_bytes=input_size,
+        output_size_bytes=output_size,
+        task_sleep_seconds=task_sleep,
+        total_time_ms=(end - start) / 1e6,
+    )
+
+
 def time_task_proxy(
     *,
     fx: funcx.FuncXExecutor,
@@ -113,11 +173,13 @@ def time_task_proxy(
     Returns:
         TaskStats
     """
-    data: Proxy[bytes] = store.proxy(randbytes(input_size), evict=True)
+    data = randbytes(input_size)
     start = time.perf_counter_ns()
+
+    proxy: Proxy[bytes] = store.proxy(data, evict=True)
     fut = fx.submit(
         pong_proxy,
-        data,
+        proxy,
         evict_result=False,
         result_size=output_size,
         sleep=task_sleep,
@@ -140,8 +202,8 @@ def time_task_proxy(
         task_sleep_seconds=task_sleep,
         total_time_ms=(end - start) / 1e6,
         input_get_ms=task_proxy_stats.input_get_ms,
-        input_set_ms=store.stats(data)['set'].avg_time_ms,
-        input_proxy_ms=store.stats(data)['proxy'].avg_time_ms,
+        input_set_ms=store.stats(proxy)['set'].avg_time_ms,
+        input_proxy_ms=store.stats(proxy)['proxy'].avg_time_ms,
         input_resolve_ms=task_proxy_stats.input_resolve_ms,
         output_get_ms=store.stats(result)['get'].avg_time_ms,
         output_set_ms=task_proxy_stats.output_set_ms,
@@ -154,6 +216,9 @@ def runner(
     *,
     funcx_endpoint: str,
     store: Store | None,
+    use_ipfs: bool,
+    ipfs_local_dir: str | None,
+    ipfs_remote_dir: str | None,
     input_sizes: list[int],
     output_sizes: list[int],
     task_repeat: int,
@@ -167,12 +232,18 @@ def runner(
         'Starting test runner\n'
         f' - FuncX Endpoint: {funcx_endpoint}\n'
         f' - ProxyStore backend: {store_class_name}\n'
+        f' - IPFS enabled: {use_ipfs}\n'
         f' - Task type: ping-pong\n'
         f' - Task repeat: {task_repeat}\n'
         f' - Task input sizes: {input_sizes} bytes\n'
         f' - Task output sizes: {output_sizes} bytes\n'
         f' - Task sleep time: {task_sleep} s',
     )
+
+    if store is not None and use_ipfs:
+        raise ValueError(
+            'IPFS and ProxyStore cannot be used at the same time.',
+        )
 
     runner_start = time.perf_counter_ns()
     fx = funcx.FuncXExecutor(
@@ -187,17 +258,28 @@ def runner(
     for input_size in input_sizes:
         for output_size in output_sizes:
             for _ in range(task_repeat):
-                if store is None:
-                    stats = time_task(
+                if store is not None:
+                    stats = time_task_proxy(
                         fx=fx,
+                        store=store,
+                        input_size=input_size,
+                        output_size=output_size,
+                        task_sleep=task_sleep,
+                    )
+                elif use_ipfs:
+                    assert ipfs_local_dir is not None
+                    assert ipfs_remote_dir is not None
+                    stats = time_task_ipfs(
+                        fx=fx,
+                        ipfs_local_dir=ipfs_local_dir,
+                        ipfs_remote_dir=ipfs_remote_dir,
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
                     )
                 else:
-                    stats = time_task_proxy(
+                    stats = time_task(
                         fx=fx,
-                        store=store,
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
@@ -215,6 +297,19 @@ def runner(
 
     if csv_file is not None:
         csv_logger.close()
+    if use_ipfs:
+        # Clean up local and remote IPFS files
+        assert ipfs_local_dir is not None
+        shutil.rmtree(ipfs_local_dir)
+
+        def _remote_cleanup() -> None:
+            import shutil
+
+            assert ipfs_remote_dir is not None
+            shutil.rmtree(ipfs_remote_dir)
+
+        fut = fx.submit(_remote_cleanup)
+        fut.result()
 
     runner_end = time.perf_counter_ns()
     logger.log(
@@ -260,6 +355,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_funcx_options(parser, required=True)
     add_logging_options(parser)
     add_proxystore_options(parser, required=False)
+    add_ipfs_options(parser)
     args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
@@ -269,6 +365,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     runner(
         funcx_endpoint=args.funcx_endpoint,
         store=store,
+        use_ipfs=args.ipfs,
+        ipfs_local_dir=args.ipfs_local_dir,
+        ipfs_remote_dir=args.ipfs_remote_dir,
         input_sizes=args.input_sizes,
         output_sizes=args.output_sizes,
         task_repeat=args.task_repeat,

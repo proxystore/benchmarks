@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pathlib
 import time
 
 import pytest
@@ -8,8 +9,11 @@ from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.local import LocalStore
 
+from psbench import ipfs
 from psbench.tasks.pong import pong
+from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
+from testing.ipfs import mock_ipfs
 
 
 def test_pong() -> None:
@@ -20,6 +24,21 @@ def test_pong() -> None:
     assert len(res) == 10
     assert isinstance(res, bytes)
     assert (end - start) / 1e9 >= 0.01
+
+
+def test_pong_ipfs(tmp_path: pathlib.Path):
+    with mock_ipfs():
+        cid = ipfs.add_data(b'data', tmp_path / 'data')
+        start = time.perf_counter_ns()
+        res = pong_ipfs(cid, str(tmp_path), result_size=10, sleep=0.01)
+        end = time.perf_counter_ns()
+        assert res is not None
+        data = ipfs.get_data(res)
+
+        assert len(data) == 10
+        assert (end - start) / 1e9 >= 0.01
+
+        assert pong_ipfs(cid, str(tmp_path), result_size=0) is None
 
 
 def test_pong_proxy() -> None:

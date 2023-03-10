@@ -33,6 +33,44 @@ def pong(data: bytes, *, result_size: int = 0, sleep: float = 0) -> bytes:
     return randbytes(result_size)
 
 
+def pong_ipfs(
+    cid: str,
+    ipfs_dir: str,
+    *,
+    result_size: int = 0,
+    sleep: float = 0,
+) -> str | None:
+    """Task that takes data as IPFS CIDs and returns data via IPFS.
+
+    Args:
+        cid (str): content ID of input data.
+        ipfs_dir (str): directory to write output data to.
+        result_size (int): size of results byte array (default: 0).
+        sleep (float): seconds to sleep for to simulate work (default: 0).
+
+    Returns:
+        String content ID of return data or None.
+    """
+    import os
+    import time
+    import uuid
+
+    from psbench import ipfs
+    from psbench.utils import randbytes
+
+    data = ipfs.get_data(cid)
+    assert isinstance(data, bytes)
+    time.sleep(sleep)
+
+    if result_size > 0:
+        os.makedirs(ipfs_dir, exist_ok=True)
+        filepath = os.path.join(ipfs_dir, str(uuid.uuid4()))
+        return_data = randbytes(result_size)
+        return ipfs.add_data(return_data, filepath)
+    else:
+        return None
+
+
 def pong_proxy(
     data: bytes,
     *,

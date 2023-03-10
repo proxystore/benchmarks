@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pathlib
 import tempfile
 import uuid
 from unittest import mock
@@ -13,9 +14,11 @@ from proxystore.store.local import LocalStore
 from psbench.benchmarks.funcx_tasks.main import main
 from psbench.benchmarks.funcx_tasks.main import runner
 from psbench.benchmarks.funcx_tasks.main import time_task
+from psbench.benchmarks.funcx_tasks.main import time_task_ipfs
 from psbench.benchmarks.funcx_tasks.main import time_task_proxy
 from testing.funcx import mock_executor
 from testing.funcx import mock_funcx
+from testing.ipfs import mock_ipfs
 
 
 def test_time_task() -> None:
@@ -32,6 +35,39 @@ def test_time_task() -> None:
     assert stats.output_size_bytes == 50
     assert stats.task_sleep_seconds == 0.01
     assert stats.total_time_ms >= 10
+
+
+def test_time_task_ipfs(tmp_path: pathlib.Path) -> None:
+    with mock_ipfs():
+        fx = mock_executor()
+
+        stats = time_task_ipfs(
+            fx=fx,
+            ipfs_local_dir=str(tmp_path / 'local'),
+            ipfs_remote_dir=str(tmp_path / 'remote'),
+            input_size=100,
+            output_size=50,
+            task_sleep=0.01,
+        )
+
+        assert stats.input_size_bytes == 100
+        assert stats.output_size_bytes == 50
+        assert stats.task_sleep_seconds == 0.01
+        assert stats.total_time_ms >= 10
+
+        stats = time_task_ipfs(
+            fx=fx,
+            ipfs_local_dir=str(tmp_path / 'local'),
+            ipfs_remote_dir=str(tmp_path / 'remote'),
+            input_size=100,
+            output_size=0,
+            task_sleep=0.0,
+        )
+
+        assert stats.input_size_bytes == 100
+        assert stats.output_size_bytes == 0
+        assert stats.task_sleep_seconds == 0.0
+        assert stats.total_time_ms >= 0.0
 
 
 def test_time_task_proxy() -> None:
@@ -64,10 +100,16 @@ def test_time_task_proxy() -> None:
 
 
 @pytest.mark.parametrize(
-    'use_proxystore,log_to_csv',
-    ((True, False), (False, True)),
+    'use_ipfs,use_proxystore,log_to_csv',
+    ((False, True, False), (True, False, False), (False, False, True)),
 )
-def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
+def test_runner(
+    caplog,
+    use_ipfs: bool,
+    use_proxystore: bool,
+    log_to_csv: bool,
+    tmp_path: pathlib.Path,
+) -> None:
     caplog.set_level(logging.ERROR)
 
     if use_proxystore:
@@ -84,16 +126,25 @@ def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
     output_sizes = [0, 10, 100]
     task_repeat = 2
 
+    ipfs_local_dir = tmp_path / 'ipfs-local'
+    ipfs_remote_dir = tmp_path / 'ipfs-remote'
+    ipfs_local_dir.mkdir()
+    ipfs_remote_dir.mkdir()
+
     with mock_funcx():
-        runner(
-            funcx_endpoint=str(uuid.uuid4()),
-            store=store,
-            input_sizes=input_sizes,
-            output_sizes=output_sizes,
-            task_repeat=task_repeat,
-            task_sleep=0.001,
-            csv_file=csv_file,
-        )
+        with mock_ipfs():
+            runner(
+                funcx_endpoint=str(uuid.uuid4()),
+                store=store,
+                use_ipfs=use_ipfs,
+                ipfs_local_dir=str(ipfs_local_dir),
+                ipfs_remote_dir=str(ipfs_remote_dir),
+                input_sizes=input_sizes,
+                output_sizes=output_sizes,
+                task_repeat=task_repeat,
+                task_sleep=0.001,
+                csv_file=csv_file,
+            )
 
     if log_to_csv:
         assert len(temp_file.readlines()) == (
@@ -102,6 +153,23 @@ def test_runner(caplog, use_proxystore: bool, log_to_csv: bool) -> None:
         temp_file.close()
     if use_proxystore:
         unregister_store(store)
+
+
+def test_runner_error() -> None:
+    with LocalStore(name='test-runner-store') as store:
+        with pytest.raises(ValueError):
+            runner(
+                funcx_endpoint=str(uuid.uuid4()),
+                store=store,
+                use_ipfs=True,
+                ipfs_local_dir='/tmp/local/',
+                ipfs_remote_dir='/tmp/remote/',
+                input_sizes=[0],
+                output_sizes=[0],
+                task_repeat=1,
+                task_sleep=0,
+                csv_file=None,
+            )
 
 
 @mock.patch('psbench.benchmarks.funcx_tasks.main.runner')
