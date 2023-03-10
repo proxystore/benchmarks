@@ -173,11 +173,13 @@ def time_task_proxy(
     Returns:
         TaskStats
     """
-    data: Proxy[bytes] = store.proxy(randbytes(input_size), evict=True)
+    data = randbytes(input_size)
     start = time.perf_counter_ns()
+
+    proxy: Proxy[bytes] = store.proxy(data, evict=True)
     fut = fx.submit(
         pong_proxy,
-        data,
+        proxy,
         evict_result=False,
         result_size=output_size,
         sleep=task_sleep,
@@ -200,8 +202,8 @@ def time_task_proxy(
         task_sleep_seconds=task_sleep,
         total_time_ms=(end - start) / 1e6,
         input_get_ms=task_proxy_stats.input_get_ms,
-        input_set_ms=store.stats(data)['set'].avg_time_ms,
-        input_proxy_ms=store.stats(data)['proxy'].avg_time_ms,
+        input_set_ms=store.stats(proxy)['set'].avg_time_ms,
+        input_proxy_ms=store.stats(proxy)['proxy'].avg_time_ms,
         input_resolve_ms=task_proxy_stats.input_resolve_ms,
         output_get_ms=store.stats(result)['get'].avg_time_ms,
         output_set_ms=task_proxy_stats.output_set_ms,
