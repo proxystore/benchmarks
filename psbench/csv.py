@@ -33,14 +33,6 @@ class NewDataClassProtocol(Protocol):
     __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
-# for mypy <0.990
-@runtime_checkable
-class OldDataClassProtocol(Protocol):
-    """Dataclass Protocol Type."""
-
-    __dataclass_fields__: dict[str, Any]
-
-
 @runtime_checkable
 class NamedTupleProtocol(Protocol):
     """NamedTuple Protocol Type."""
@@ -51,10 +43,7 @@ class NamedTupleProtocol(Protocol):
         ...
 
 
-DTYPE = TypeVar(
-    'DTYPE',
-    bound=Union[OldDataClassProtocol, NewDataClassProtocol, NamedTuple],
-)
+DTYPE = TypeVar('DTYPE', bound=Union[NewDataClassProtocol, NamedTuple])
 
 
 class CSVLogger(Generic[DTYPE]):
@@ -97,7 +86,7 @@ class CSVLogger(Generic[DTYPE]):
 
     def log(self, data: DTYPE) -> None:
         """Log new row."""
-        if isinstance(data, (OldDataClassProtocol, NewDataClassProtocol)):
+        if dataclasses.is_dataclass(data) and not isinstance(data, type):
             self.writer.writerow(dataclasses.asdict(data))
         elif isinstance(data, NamedTupleProtocol):
             cast(NamedTupleProtocol, data)
@@ -122,7 +111,7 @@ def field_names(data_type: DTYPE) -> Sequence[str]:
 
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:
     """Extract field names from NamedTuple or Dataclass."""
-    if isinstance(data_type, (OldDataClassProtocol, NewDataClassProtocol)):
+    if dataclasses.is_dataclass(data_type):
         return [f.name for f in dataclasses.fields(data_type)]
     elif isinstance(data_type, NamedTupleProtocol):
         return data_type._fields
