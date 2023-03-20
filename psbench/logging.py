@@ -46,6 +46,7 @@ def init_logging(
         else:
             warnings.warn(
                 'The force argument is only available in Python 3.8 and later',
+                stacklevel=2,
             )
 
     logging.basicConfig(
