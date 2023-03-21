@@ -24,6 +24,7 @@ from proxystore.store.utils import get_key
 from psbench import ipfs
 from psbench.argparse import add_dspaces_options
 from psbench.argparse import add_globus_compute_options
+from psbench.argparse import add_dspaces_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
