@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import psbench
-import testing
+import testing  # noqa: F401
 
 
 def test_version() -> None:
-    testing
     assert isinstance(psbench.__version__, str)
