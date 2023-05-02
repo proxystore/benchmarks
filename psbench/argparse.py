@@ -106,7 +106,6 @@ def add_proxystore_options(
             'GLOBUS',
             'REDIS',
             'ENDPOINT',
-            'WEBSOCKET',
             'MARGO',
             'UCX',
             'ZMQ',
@@ -140,7 +139,7 @@ def add_proxystore_options(
         metavar='HOST',
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
                 args_str,
             ),
         ),
@@ -152,7 +151,7 @@ def add_proxystore_options(
         type=int,
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
                 args_str,
             ),
         ),

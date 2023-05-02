@@ -34,14 +34,14 @@ def test_run(
     route: Literal['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT'],
 ) -> None:
     with mock.patch(
-        'psbench.benchmarks.endpoint_qps.main.EndpointStore',
+        'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
     ), mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly):
         run('UUID', route, payload_size=1, queries=2, sleep=0, workers=2)
 
 
 def test_runner() -> None:
     with mock.patch(
-        'psbench.benchmarks.endpoint_qps.main.EndpointStore',
+        'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
     ), mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly):
         runner(
             'UUID',

@@ -4,10 +4,11 @@ import pathlib
 import time
 
 import pytest
+from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import register_store
+from proxystore.store import Store
 from proxystore.store import unregister_store
-from proxystore.store.local import LocalStore
 
 from psbench import ipfs
 from psbench.tasks.pong import pong
@@ -42,7 +43,7 @@ def test_pong_ipfs(tmp_path: pathlib.Path):
 
 
 def test_pong_proxy() -> None:
-    store = LocalStore(name='pong-proxy-store')
+    store = Store('pong-proxy-stats-store', LocalConnector())
     register_store(store)
     input_data: Proxy[bytes] = store.proxy(b'abcd')
 
@@ -58,14 +59,14 @@ def test_pong_proxy() -> None:
 
 
 def test_pong_proxy_stats() -> None:
-    store = LocalStore(name='pong-proxy-stats-store', stats=True)
+    store = Store('pong-proxy-stats-store', LocalConnector(), metrics=True)
     register_store(store)
     input_data: Proxy[bytes] = store.proxy(b'abcd')
     _, stats = pong_proxy(input_data, result_size=10)
     assert stats is not None
     assert stats.input_get_ms is not None and stats.input_get_ms > 0
     assert stats.input_resolve_ms is not None and stats.input_resolve_ms > 0
-    assert stats.output_set_ms is not None and stats.output_set_ms > 0
+    assert stats.output_put_ms is not None and stats.output_put_ms > 0
     assert stats.output_proxy_ms is not None and stats.output_proxy_ms > 0
     unregister_store(store)
 

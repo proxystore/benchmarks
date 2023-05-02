@@ -19,7 +19,7 @@ if sys.version_info >= (3, 8):  # pragma: >3.7 cover
 else:  # pragma: <3.8 cover
     from typing_extensions import Literal
 
-from proxystore.store.endpoint import EndpointStore
+from proxystore.connectors.endpoint import EndpointConnector
 
 from psbench.argparse import add_logging_options
 from psbench.benchmarks.endpoint_qps import routes
@@ -74,7 +74,7 @@ def run(
     Returns:
         RunStats with summary of test run.
     """
-    store = EndpointStore('store', endpoints=[endpoint], cache_size=0)
+    connector = EndpointConnector([endpoint])
 
     logger.log(
         TESTING_LOG_LEVEL,
@@ -83,15 +83,20 @@ def run(
 
     func: Callable[[float], routes.Stats]
     if route == 'ENDPOINT':
-        func = functools.partial(routes.endpoint_test, store, sleep, queries)
+        func = functools.partial(
+            routes.endpoint_test,
+            connector,
+            sleep,
+            queries,
+        )
     elif route == 'EVICT':
-        func = functools.partial(routes.evict_test, store, sleep, queries)
+        func = functools.partial(routes.evict_test, connector, sleep, queries)
     elif route == 'EXISTS':
-        func = functools.partial(routes.exists_test, store, sleep, queries)
+        func = functools.partial(routes.exists_test, connector, sleep, queries)
     elif route == 'GET':
         func = functools.partial(
             routes.get_test,
-            store,
+            connector,
             sleep,
             queries,
             payload_size,
@@ -99,7 +104,7 @@ def run(
     elif route == 'SET':
         func = functools.partial(
             routes.set_test,
-            store,
+            connector,
             sleep,
             queries,
             payload_size,
@@ -172,6 +177,8 @@ def run(
         f'total QPS: {run_stats.qps:.3f}',
     )
 
+    connector.close()
+
     return run_stats
 
 
@@ -243,21 +250,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         '--payload-sizes',
         type=int,
         nargs='+',
-        default=0,
+        default=[0],
         help='Payload sizes for GET/SET queries',
     )
     parser.add_argument(
         '--workers',
         type=int,
         nargs='+',
-        default=1,
+        default=[1],
         help='Number of workers (processes) making queries',
     )
     parser.add_argument(
         '--sleep',
         type=float,
         nargs='+',
-        default=0,
+        default=[0],
         help='Sleeps (seconds) between queries',
     )
     parser.add_argument(

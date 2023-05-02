@@ -49,11 +49,11 @@ class TaskStats:
     task_sleep_seconds: float
     total_time_ms: float
     input_get_ms: float | None = None
-    input_set_ms: float | None = None
+    input_put_ms: float | None = None
     input_proxy_ms: float | None = None
     input_resolve_ms: float | None = None
     output_get_ms: float | None = None
-    output_set_ms: float | None = None
+    output_put_ms: float | None = None
     output_proxy_ms: float | None = None
     output_resolve_ms: float | None = None
 
@@ -194,21 +194,24 @@ def time_task_proxy(
     assert isinstance(result, bytes)
     assert isinstance(result, Proxy)
 
+    input_metrics = store.metrics.get_metrics(proxy)
+    output_metrics = store.metrics.get_metrics(result)
+
     return TaskStats(
-        proxystore_backend=store.__class__.__name__,
+        proxystore_backend=store.connector.__class__.__name__,
         task_name='pong',
         input_size_bytes=input_size,
         output_size_bytes=output_size,
         task_sleep_seconds=task_sleep,
         total_time_ms=(end - start) / 1e6,
         input_get_ms=task_proxy_stats.input_get_ms,
-        input_set_ms=store.stats(proxy)['set'].avg_time_ms,
-        input_proxy_ms=store.stats(proxy)['proxy'].avg_time_ms,
+        input_put_ms=input_metrics.times['store.put'].avg_time_ms,
+        input_proxy_ms=input_metrics.times['store.proxy'].avg_time_ms,
         input_resolve_ms=task_proxy_stats.input_resolve_ms,
-        output_get_ms=store.stats(result)['get'].avg_time_ms,
-        output_set_ms=task_proxy_stats.output_set_ms,
+        output_get_ms=output_metrics.times['store.get'].avg_time_ms,
+        output_put_ms=task_proxy_stats.output_put_ms,
         output_proxy_ms=task_proxy_stats.output_proxy_ms,
-        output_resolve_ms=store.stats(result)['resolve'].avg_time_ms,
+        output_resolve_ms=output_metrics.times['factory.resolve'].avg_time_ms,
     )
 
 

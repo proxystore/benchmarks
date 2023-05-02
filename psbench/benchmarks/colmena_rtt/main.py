@@ -298,7 +298,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
-    store = init_store_from_args(args, stats=True)
+    store = init_store_from_args(args, metrics=True)
 
     output_dir = os.path.join(
         args.output_dir,

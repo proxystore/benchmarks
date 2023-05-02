@@ -22,7 +22,7 @@ dependencies = [
     "colmena[funcx]==0.4.2",
     "funcx==1.0.8",
     "funcx-endpoint==1.0.8",
-    "proxystore[endpoints]==0.4.1",
+    "proxystore[all]==0.5.0",
     "redis==3.4.1",
     "requests==2.28.2",
     "importlib-metadata; python_version<'3.8'",

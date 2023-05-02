@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import logging
 import socket
+import statistics
 import sys
 import uuid
 from typing import Any
@@ -47,6 +48,7 @@ class RunStats(NamedTuple):
     avg_time_ms: float
     min_time_ms: float
     max_time_ms: float
+    stdev_time_ms: float
     avg_bandwidth_mbps: float | None
 
 
@@ -121,6 +123,9 @@ async def run_endpoint(
         avg_time_ms=sum(times_ms) / len(times_ms),
         min_time_ms=min(times_ms),
         max_time_ms=max(times_ms),
+        stdev_time_ms=(
+            statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
+        ),
         avg_bandwidth_mbps=avg_bandwidth_mbps,
     )
 
@@ -176,6 +181,9 @@ def run_redis(
         avg_time_ms=sum(times_ms) / len(times_ms),
         min_time_ms=min(times_ms),
         max_time_ms=max(times_ms),
+        stdev_time_ms=(
+            statistics.stdev(times_ms) if len(times_ms) > 1 else 0.0
+        ),
         avg_bandwidth_mbps=avg_bandwidth_mbps,
     )
 
@@ -196,7 +204,7 @@ async def runner_endpoint(
         ops (str): endpoint operations to test.
         payload_sizes (int): bytes to send/receive for GET/SET operations.
         repeat (int): number of times to repeat operations.
-        server (str): signaling server address
+        server (str): relay server address
         csv_file (str): optional csv filepath to log results to.
     """
     if csv_file is not None:
@@ -205,7 +213,7 @@ async def runner_endpoint(
     async with Endpoint(
         name=socket.gethostname(),
         uuid=uuid.uuid4(),
-        signaling_server=server,
+        relay_server=server,
     ) as endpoint:
         for op in ops:
             for i, payload_size in enumerate(payload_sizes):
@@ -316,7 +324,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         '--server',
         required='ENDPOINT' in sys.argv,
-        help='Signaling server address for connecting to the remote endpoint',
+        help='Relay server address for connecting to the remote endpoint',
     )
     parser.add_argument(
         '--repeat',
