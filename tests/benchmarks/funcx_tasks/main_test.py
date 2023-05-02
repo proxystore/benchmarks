@@ -7,9 +7,10 @@ import uuid
 from unittest import mock
 
 import pytest
+from proxystore.connectors.local import LocalConnector
 from proxystore.store import register_store
+from proxystore.store import Store
 from proxystore.store import unregister_store
-from proxystore.store.local import LocalStore
 
 from psbench.benchmarks.funcx_tasks.main import main
 from psbench.benchmarks.funcx_tasks.main import runner
@@ -72,7 +73,7 @@ def test_time_task_ipfs(tmp_path: pathlib.Path) -> None:
 
 def test_time_task_proxy() -> None:
     fx = mock_executor()
-    store = LocalStore(name='test-time-task-store', stats=True)
+    store = Store('test-time-task-store', LocalConnector(), metrics=True)
     register_store(store)
 
     stats = time_task_proxy(
@@ -83,17 +84,17 @@ def test_time_task_proxy() -> None:
         task_sleep=0.01,
     )
 
-    assert stats.proxystore_backend == 'LocalStore'
+    assert stats.proxystore_backend == 'LocalConnector'
     assert stats.input_size_bytes == 100
     assert stats.output_size_bytes == 50
     assert stats.task_sleep_seconds == 0.01
     assert stats.total_time_ms >= 10
     assert stats.input_get_ms is not None and stats.input_get_ms > 0
-    assert stats.input_set_ms is not None and stats.input_set_ms > 0
+    assert stats.input_put_ms is not None and stats.input_put_ms > 0
     assert stats.input_proxy_ms is not None and stats.input_proxy_ms > 0
     assert stats.input_resolve_ms is not None and stats.input_resolve_ms > 0
     assert stats.output_get_ms is not None and stats.output_get_ms > 0
-    assert stats.output_set_ms is not None and stats.output_set_ms > 0
+    assert stats.output_put_ms is not None and stats.output_put_ms > 0
     assert stats.output_proxy_ms is not None and stats.output_proxy_ms > 0
     assert stats.output_resolve_ms is not None and stats.output_resolve_ms > 0
     unregister_store(store)
@@ -113,7 +114,7 @@ def test_runner(
     caplog.set_level(logging.ERROR)
 
     if use_proxystore:
-        store = LocalStore(name='test-runner-store', stats=True)
+        store = Store('test-runner-store', LocalConnector(), metrics=True)
         register_store(store)
     else:
         store = None
@@ -156,7 +157,7 @@ def test_runner(
 
 
 def test_runner_error() -> None:
-    with LocalStore(name='test-runner-store') as store:
+    with Store('test-runner-store', LocalConnector()) as store:
         with pytest.raises(ValueError):
             runner(
                 funcx_endpoint=str(uuid.uuid4()),
@@ -188,7 +189,7 @@ def test_main(mock_runner) -> None:
 
     with mock.patch(
         'psbench.benchmarks.funcx_tasks.main.init_store_from_args',
-        return_value=LocalStore('test-main-store'),
+        return_value=Store('test-main-store', LocalConnector()),
     ):
         main(
             [
