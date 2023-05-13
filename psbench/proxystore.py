@@ -51,14 +51,15 @@ def init_store_from_args(
         connector = RedisConnector(args.ps_host, args.ps_port)
     elif args.ps_backend == 'MARGO':
         connector = MargoConnector(
-            interface=args.ps_host,
             port=args.ps_port,
             protocol=args.ps_margo_protocol,
+            address=args.ps_address,
+            interface=args.ps_interface,
         )
     elif args.ps_backend == 'UCX':
-        connector = UCXConnector(interface=args.ps_host, port=args.ps_port)
+        connector = UCXConnector(port=args.ps_port, interface=args.ps_interface, address=args.ps_address)
     elif args.ps_backend == 'ZMQ':
-        connector = ZeroMQConnector(interface=args.ps_host, port=args.ps_port)
+        connector = ZeroMQConnector(port=args.ps_port, interface=args.ps_interface, address=args.ps_address)
     else:
         raise ValueError(f'Invalid backend: {args.ps_backend}')
 
