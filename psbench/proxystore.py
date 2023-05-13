@@ -57,9 +57,17 @@ def init_store_from_args(
             interface=args.ps_interface,
         )
     elif args.ps_backend == 'UCX':
-        connector = UCXConnector(port=args.ps_port, interface=args.ps_interface, address=args.ps_address)
+        connector = UCXConnector(
+            port=args.ps_port,
+            interface=args.ps_interface,
+            address=args.ps_address,
+        )
     elif args.ps_backend == 'ZMQ':
-        connector = ZeroMQConnector(port=args.ps_port, interface=args.ps_interface, address=args.ps_address)
+        connector = ZeroMQConnector(
+            port=args.ps_port,
+            interface=args.ps_interface,
+            address=args.ps_address,
+        )
     else:
         raise ValueError(f'Invalid backend: {args.ps_backend}')
 

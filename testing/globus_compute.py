@@ -8,16 +8,16 @@ from typing import Generator
 from typing import TypeVar
 from unittest import mock
 
-import funcx
+import globus_compute_sdk
 
 RT = TypeVar('RT')
 
 
-class MockFuncXExecutor(funcx.FuncXExecutor):
-    """Mock FuncXExecutor."""
+class MockExecutor(globus_compute_sdk.Executor):
+    """Mock Executor."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init MockFuncXExecutor."""
+        """Init MockExecutor."""
         pass
 
     def submit(
@@ -37,17 +37,13 @@ class MockFuncXExecutor(funcx.FuncXExecutor):
 
 
 @contextlib.contextmanager
-def mock_funcx() -> Generator[None, None, None]:
-    """Context manager that mocks FuncXClient and FuncXExecutor."""
-    with mock.patch('funcx.FuncXClient'):
-        with mock.patch(
-            'funcx.FuncXExecutor',
-            MockFuncXExecutor,
-        ):
-            yield
+def mock_globus_compute() -> Generator[None, None, None]:
+    """Context manager that mocks Globus Compute Executor."""
+    with mock.patch('globus_compute_sdk.Executor', MockExecutor):
+        yield
 
 
-def mock_executor() -> funcx.FuncXExecutor:
-    """Create a mock FuncXExectutor."""
-    with mock_funcx():
-        return funcx.FuncXExecutor(funcx.FuncXClient)
+def mock_executor() -> globus_compute_sdk.Executor:
+    """Create a mock Exectutor."""
+    with mock_globus_compute():
+        return globus_compute_sdk.Executor()

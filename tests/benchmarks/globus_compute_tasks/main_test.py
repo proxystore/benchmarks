@@ -12,21 +12,21 @@ from proxystore.store import register_store
 from proxystore.store import Store
 from proxystore.store import unregister_store
 
-from psbench.benchmarks.funcx_tasks.main import main
-from psbench.benchmarks.funcx_tasks.main import runner
-from psbench.benchmarks.funcx_tasks.main import time_task
-from psbench.benchmarks.funcx_tasks.main import time_task_ipfs
-from psbench.benchmarks.funcx_tasks.main import time_task_proxy
-from testing.funcx import mock_executor
-from testing.funcx import mock_funcx
+from psbench.benchmarks.globus_compute_tasks.main import main
+from psbench.benchmarks.globus_compute_tasks.main import runner
+from psbench.benchmarks.globus_compute_tasks.main import time_task
+from psbench.benchmarks.globus_compute_tasks.main import time_task_ipfs
+from psbench.benchmarks.globus_compute_tasks.main import time_task_proxy
+from testing.globus_compute import mock_executor
+from testing.globus_compute import mock_globus_compute
 from testing.ipfs import mock_ipfs
 
 
 def test_time_task() -> None:
-    fx = mock_executor()
+    gce = mock_executor()
 
     stats = time_task(
-        fx=fx,
+        gce=gce,
         input_size=100,
         output_size=50,
         task_sleep=0.01,
@@ -40,10 +40,10 @@ def test_time_task() -> None:
 
 def test_time_task_ipfs(tmp_path: pathlib.Path) -> None:
     with mock_ipfs():
-        fx = mock_executor()
+        gce = mock_executor()
 
         stats = time_task_ipfs(
-            fx=fx,
+            gce=gce,
             ipfs_local_dir=str(tmp_path / 'local'),
             ipfs_remote_dir=str(tmp_path / 'remote'),
             input_size=100,
@@ -57,7 +57,7 @@ def test_time_task_ipfs(tmp_path: pathlib.Path) -> None:
         assert stats.total_time_ms >= 10
 
         stats = time_task_ipfs(
-            fx=fx,
+            gce=gce,
             ipfs_local_dir=str(tmp_path / 'local'),
             ipfs_remote_dir=str(tmp_path / 'remote'),
             input_size=100,
@@ -72,12 +72,12 @@ def test_time_task_ipfs(tmp_path: pathlib.Path) -> None:
 
 
 def test_time_task_proxy() -> None:
-    fx = mock_executor()
+    gce = mock_executor()
     store = Store('test-time-task-store', LocalConnector(), metrics=True)
     register_store(store)
 
     stats = time_task_proxy(
-        fx=fx,
+        gce=gce,
         store=store,
         input_size=100,
         output_size=50,
@@ -132,10 +132,10 @@ def test_runner(
     ipfs_local_dir.mkdir()
     ipfs_remote_dir.mkdir()
 
-    with mock_funcx():
+    with mock_globus_compute():
         with mock_ipfs():
             runner(
-                funcx_endpoint=str(uuid.uuid4()),
+                globus_compute_endpoint=str(uuid.uuid4()),
                 store=store,
                 use_ipfs=use_ipfs,
                 ipfs_local_dir=str(ipfs_local_dir),
@@ -160,7 +160,7 @@ def test_runner_error() -> None:
     with Store('test-runner-store', LocalConnector()) as store:
         with pytest.raises(ValueError):
             runner(
-                funcx_endpoint=str(uuid.uuid4()),
+                globus_compute_endpoint=str(uuid.uuid4()),
                 store=store,
                 use_ipfs=True,
                 ipfs_local_dir='/tmp/local/',
@@ -173,11 +173,11 @@ def test_runner_error() -> None:
             )
 
 
-@mock.patch('psbench.benchmarks.funcx_tasks.main.runner')
+@mock.patch('psbench.benchmarks.globus_compute_tasks.main.runner')
 def test_main(mock_runner) -> None:
     main(
         [
-            '--funcx-endpoint',
+            '--globus-compute-endpoint',
             'ABCD',
             '--input-sizes',
             '0',
@@ -188,12 +188,12 @@ def test_main(mock_runner) -> None:
     )
 
     with mock.patch(
-        'psbench.benchmarks.funcx_tasks.main.init_store_from_args',
+        'psbench.benchmarks.globus_compute_tasks.main.init_store_from_args',
         return_value=Store('test-main-store', LocalConnector()),
     ):
         main(
             [
-                '--funcx-endpoint',
+                '--globus-compute-endpoint',
                 'ABCD',
                 '--input-sizes',
                 '0',
