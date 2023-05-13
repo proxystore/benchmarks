@@ -363,7 +363,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     init_logging(args.log_file, args.log_level, force=True)
 
-    store = init_store_from_args(args, stats=True)
+    store = init_store_from_args(args, metrics=True)
 
     runner(
         funcx_endpoint=args.funcx_endpoint,

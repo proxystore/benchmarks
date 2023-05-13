@@ -139,7 +139,7 @@ def add_proxystore_options(
         metavar='HOST',
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(REDIS)',
                 args_str,
             ),
         ),
@@ -162,4 +162,16 @@ def add_proxystore_options(
         metavar='PROTOCOL',
         help='Optionally specify the Margo protocol to use with ProxyStore',
         default='tcp',
+    )
+    group.add_argument(
+        '--ps-address',
+        metavar='ADDRESS',
+        default=None,
+        help='Optional specify host IP address that can be used by the DIMs'
+    )
+    group.add_argument(
+        '--ps-interface',
+        metavar='INTERFACE',
+        default=None,
+        help='Optionally provide interface name to be used by the DIMs'
     )
