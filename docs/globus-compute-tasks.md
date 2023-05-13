@@ -1,6 +1,9 @@
-# Simple FuncX + ProxyStore Test
+# Simple Globus Compute + ProxyStore Test
 
-This benchmark executes and times a series of simple FuncX tasks
+**Note:** Globus Compute was formerly called funcX. Read about the change
+[here](https://globus-compute.readthedocs.io/en/latest/funcx_upgrade.html).
+
+This benchmark executes and times a series of simple Globus Compute tasks
 that take arbitrarily sized byte array inputs and return arbitrarily sized
 byte arrays. The input/output sizes and ProxyStore backend can be
 specified.
@@ -16,10 +19,10 @@ specified.
    ```
    $ pip install .
    ```
-3. Create a FuncX endpoint.
+3. Create a Globus Compute endpoint.
    ```
-   $ funcx-endpoint configure psbench
-   $ funcx-endpoint start psbench
+   $ globus-compute-endpoint configure psbench
+   $ globus-compute-endpoint start psbench
    ```
    The returned endpoint UUID will be needed in the next step.
 
@@ -30,16 +33,16 @@ Here's an example of a minimal working example that uses the ProxyStore
 file backend.
 
 ```
-$ python -m psbench.benchmarks.funcx_tasks \
-    --funcx-endpoint {UUID} \  # UUID returned by funcx-endpoint start
+$ python -m psbench.benchmarks.globus_compute_tasks \
+    --globus-compute-endpoint {ENDPOINT_UUID} \
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
     --ps-backend FILE --ps-file-dir /tmp/proxystore-dump
 ```
 
 Omitting `--ps-backend` will result in data being passed directly via
-FuncX. `--input-sizes` and `--output-sizes` take a list of options and will
-result in a matrix of tasks being run. Individual task configurations can
+Globus Compute. `--input-sizes` and `--output-sizes` take a list of options and
+will result in a matrix of tasks being run. Individual task configurations can
 be repeated *n* times with the `--task-repeat` parameter. A sleep can be added
 to tasks with `--task-sleep`. Task timing stats can be saved to a CSV file
 with `--csv-file PATH` (this will append to existing files as well).

@@ -5,15 +5,16 @@ import re
 import sys
 
 
-def add_funcx_options(
+def add_globus_compute_options(
     parser: argparse.ArgumentParser,
     required: bool = False,
 ) -> None:
-    """Add CLI arguments for FuncX.
+    """Add CLI arguments for Globus Compute.
 
     Args:
-        parser (ArgumentParser): parser object to add FuncX arguments to.
-        required (bool): require the FuncX endpoint to be specified
+        parser (ArgumentParser): parser object to add Globus Compute arguments
+            to.
+        required (bool): require the Globus Compute endpoint to be specified
             (default: False).
     """
     group = parser.add_argument_group(
@@ -21,7 +22,7 @@ def add_funcx_options(
         description='FuncX Endpoint configuration',
     )
     group.add_argument(
-        '--funcx-endpoint',
+        '--globus-compute-endpoint',
         metavar='UUID',
         required=required,
         help='FuncX endpoint for task execution',
@@ -182,11 +183,11 @@ def add_proxystore_options(
         '--ps-address',
         metavar='ADDRESS',
         default=None,
-        help='Optional specify host IP address that can be used by the DIMs'
+        help='Optional specify host IP address that can be used by the DIMs',
     )
     group.add_argument(
         '--ps-interface',
         metavar='INTERFACE',
         default=None,
-        help='Optionally provide interface name to be used by the DIMs'
+        help='Optionally provide interface name to be used by the DIMs',
     )
