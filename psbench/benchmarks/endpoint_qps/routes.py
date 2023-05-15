@@ -6,7 +6,8 @@ from statistics import stdev
 from typing import NamedTuple
 
 import requests
-from proxystore.store.endpoint import EndpointStore
+from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.connectors.endpoint import EndpointKey
 
 from psbench.utils import randbytes
 from psbench.utils import wait_until
@@ -24,7 +25,7 @@ class Stats(NamedTuple):
 
 
 def endpoint_test(
-    store: EndpointStore,
+    connector: EndpointConnector,
     sleep: float,
     queries: int,
     start_time: float | None = None,
@@ -32,11 +33,11 @@ def endpoint_test(
     """Endpoint /endpoint route test.
 
     Note:
-        EndpointStore does not have an interface for querying /endpoint
+        EndpointConnector does not have an interface for querying /endpoint
         so we do so manually with the request library.
 
     Args:
-        store (EndpointStore): Store interface to use for querying endpoint.
+        connector (EndpointConnector): Connector to use for querying endpoint.
         sleep (float): sleep (seconds) between queries.
         queries (int): number of queries to make.
         start_time (float): UNIX timestamp to sleep until for starting test.
@@ -53,7 +54,7 @@ def endpoint_test(
     for _ in range(queries):
         start = time.perf_counter_ns()
         response = requests.get(
-            f'http://{store.endpoint_host}:{store.endpoint_port}/endpoint',
+            f'http://{connector.endpoint_host}:{connector.endpoint_port}/endpoint',  # noqa: E501
         )
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
@@ -71,7 +72,7 @@ def endpoint_test(
 
 
 def evict_test(
-    store: EndpointStore,
+    connector: EndpointConnector,
     sleep: float,
     queries: int,
     start_time: float | None = None,
@@ -79,7 +80,7 @@ def evict_test(
     """Endpoint /evict route test.
 
     Args:
-        store (EndpointStore): Store interface to use for querying endpoint.
+        connector (EndpointConnector): Connector to use for querying endpoint.
         sleep (float): sleep (seconds) between queries.
         queries (int): number of queries to make.
         start_time (float): UNIX timestamp to sleep until for starting test.
@@ -93,10 +94,10 @@ def evict_test(
 
     latencies: list[float] = []
 
-    fake_key = str(uuid.uuid4())
+    fake_key = EndpointKey(str(uuid.uuid4()), None)
     for _ in range(queries):
         start = time.perf_counter_ns()
-        store.evict(fake_key)
+        connector.evict(fake_key)
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
         time.sleep(sleep)
@@ -112,7 +113,7 @@ def evict_test(
 
 
 def exists_test(
-    store: EndpointStore,
+    connector: EndpointConnector,
     sleep: float,
     queries: int,
     start_time: float | None = None,
@@ -120,7 +121,7 @@ def exists_test(
     """Endpoint /exists route test.
 
     Args:
-        store (EndpointStore): Store interface to use for querying endpoint.
+        connector (EndpointConnector): Connector to use for querying endpoint.
         sleep (float): sleep (seconds) between queries.
         queries (int): number of queries to make.
         start_time (float): UNIX timestamp to sleep until for starting test.
@@ -134,10 +135,10 @@ def exists_test(
 
     latencies: list[float] = []
 
-    fake_key = str(uuid.uuid4())
+    fake_key = EndpointKey(str(uuid.uuid4()), None)
     for _ in range(queries):
         start = time.perf_counter_ns()
-        store.exists(fake_key)
+        connector.exists(fake_key)
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
         time.sleep(sleep)
@@ -153,7 +154,7 @@ def exists_test(
 
 
 def get_test(
-    store: EndpointStore,
+    connector: EndpointConnector,
     sleep: float,
     queries: int,
     payload_size: int,
@@ -162,7 +163,7 @@ def get_test(
     """Endpoint /get route test.
 
     Args:
-        store (EndpointStore): Store interface to use for querying endpoint.
+        connector (EndpointConnector): Connector to use for querying endpoint.
         sleep (float): sleep (seconds) between queries.
         queries (int): number of queries to make.
         payload_size (int): payload size in bytes.
@@ -177,17 +178,17 @@ def get_test(
 
     latencies: list[float] = []
 
-    key = store.set(randbytes(payload_size))
+    key = connector.put(randbytes(payload_size))
 
     for _ in range(queries):
         start = time.perf_counter_ns()
-        res = store.get(key)
+        res = connector.get(key)
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
         assert res is not None
         time.sleep(sleep)
 
-    store.evict(key)
+    connector.evict(key)
 
     return Stats(
         queries=queries,
@@ -200,7 +201,7 @@ def get_test(
 
 
 def set_test(
-    store: EndpointStore,
+    connector: EndpointConnector,
     sleep: float,
     queries: int,
     payload_size: int,
@@ -214,7 +215,7 @@ def set_test(
         are included in the timing.
 
     Args:
-        store (EndpointStore): Store interface to use for querying endpoint.
+        connector (EndpointConnector): Connector to use for querying endpoint.
         sleep (float): sleep (seconds) between queries.
         queries (int): number of queries to make.
         payload_size (int): payload size in bytes.
@@ -232,12 +233,12 @@ def set_test(
     data = randbytes(payload_size)
 
     for _ in range(queries):
-        # Note we do set/evict here to keep store memory in check
+        # Note we do put/evict here to keep connector memory in check
         start = time.perf_counter_ns()
-        key = store.set(data)
+        key = connector.put(data)
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
-        store.evict(key)
+        connector.evict(key)
         time.sleep(sleep)
 
     return Stats(

@@ -8,7 +8,7 @@ class ProxyStats(NamedTuple):
 
     input_get_ms: float | None = None
     input_resolve_ms: float | None = None
-    output_set_ms: float | None = None
+    output_put_ms: float | None = None
     output_proxy_ms: float | None = None
 
 
@@ -123,12 +123,16 @@ def pong_proxy(
     result: Proxy[bytes] = store.proxy(result_data, evict=evict_result)
 
     stats: ProxyStats | None = None
-    if store.has_stats:
+    if store.metrics is not None:
+        input_metrics = store.metrics.get_metrics(data)
+        output_metrics = store.metrics.get_metrics(result)
         stats = ProxyStats(
-            input_get_ms=store.stats(data)['get'].avg_time_ms,
-            input_resolve_ms=store.stats(data)['resolve'].avg_time_ms,
-            output_set_ms=store.stats(result)['set'].avg_time_ms,
-            output_proxy_ms=store.stats(result)['proxy'].avg_time_ms,
+            input_get_ms=input_metrics.times['store.get'].avg_time_ms,
+            input_resolve_ms=input_metrics.times[
+                'factory.resolve'
+            ].avg_time_ms,
+            output_put_ms=output_metrics.times['store.put'].avg_time_ms,
+            output_proxy_ms=output_metrics.times['store.proxy'].avg_time_ms,
         )
 
     return (result, stats)

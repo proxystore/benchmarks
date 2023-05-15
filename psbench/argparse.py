@@ -5,26 +5,27 @@ import re
 import sys
 
 
-def add_funcx_options(
+def add_globus_compute_options(
     parser: argparse.ArgumentParser,
     required: bool = False,
 ) -> None:
-    """Add CLI arguments for FuncX.
+    """Add CLI arguments for Globus Compute.
 
     Args:
-        parser (ArgumentParser): parser object to add FuncX arguments to.
-        required (bool): require the FuncX endpoint to be specified
+        parser (ArgumentParser): parser object to add Globus Compute arguments
+            to.
+        required (bool): require the Globus Compute endpoint to be specified
             (default: False).
     """
     group = parser.add_argument_group(
-        title='FuncX',
-        description='FuncX Endpoint configuration',
+        title='Globus Compute',
+        description='Globus Compute Endpoint configuration',
     )
     group.add_argument(
-        '--funcx-endpoint',
+        '--globus-compute-endpoint',
         metavar='UUID',
         required=required,
-        help='FuncX endpoint for task execution',
+        help='Globus Compute endpoint for task execution',
     )
 
 
@@ -106,7 +107,6 @@ def add_proxystore_options(
             'GLOBUS',
             'REDIS',
             'ENDPOINT',
-            'WEBSOCKET',
             'MARGO',
             'UCX',
             'ZMQ',
@@ -140,7 +140,7 @@ def add_proxystore_options(
         metavar='HOST',
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(REDIS)',
                 args_str,
             ),
         ),
@@ -152,7 +152,7 @@ def add_proxystore_options(
         type=int,
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|WEBSOCKET|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
                 args_str,
             ),
         ),
@@ -163,4 +163,16 @@ def add_proxystore_options(
         metavar='PROTOCOL',
         help='Optionally specify the Margo protocol to use with ProxyStore',
         default='tcp',
+    )
+    group.add_argument(
+        '--ps-address',
+        metavar='ADDRESS',
+        default=None,
+        help='Optionally specify host IP address that can be used by the DIMs',
+    )
+    group.add_argument(
+        '--ps-interface',
+        metavar='INTERFACE',
+        default=None,
+        help='Optionally provide interface name to be used by the DIMs',
     )

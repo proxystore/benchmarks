@@ -21,13 +21,13 @@ from threading import Event
 from typing import NamedTuple
 from typing import Sequence
 
-import funcx
+import globus_compute_sdk
 from colmena.models import Result
 from colmena.queue.base import ColmenaQueues
 from colmena.queue.python import PipeQueues
 from colmena.queue.redis import RedisQueues
 from colmena.task_server.base import BaseTaskServer
-from colmena.task_server.funcx import FuncXTaskServer
+from colmena.task_server.globus import GlobusComputeTaskServer
 from colmena.task_server.parsl import ParslTaskServer
 from colmena.thinker import agent
 from colmena.thinker import BaseThinker
@@ -139,7 +139,7 @@ class Thinker(BaseThinker):
                 result,
                 result.task_info['input_size'],
                 result.task_info['output_size'],
-                self.store.__class__.__name__
+                self.store.connector.__class__.__name__
                 if self.store is not None
                 else '',
             )
@@ -226,9 +226,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     backend_group = parser.add_mutually_exclusive_group(required=True)
     backend_group.add_argument(
-        '--funcx',
+        '--globus-compute',
         action='store_true',
-        help='Use the FuncX Colmena Task Server',
+        help='Use the Globus Compute Colmena Task Server',
     )
     backend_group.add_argument(
         '--parsl',
@@ -236,11 +236,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='Use the Parsl Colmena Task Server',
     )
 
-    funcx_group = parser.add_argument_group()
-    funcx_group.add_argument(
+    globus_compute_group = parser.add_argument_group()
+    globus_compute_group.add_argument(
         '--endpoint',
-        required='--funcx' in sys.argv,
-        help='FuncX endpoint for task execution',
+        required='--globus-compute' in sys.argv,
+        help='Globus Compute endpoint for task execution',
     )
 
     task_group = parser.add_argument_group()
@@ -298,7 +298,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
-    store = init_store_from_args(args, stats=True)
+    store = init_store_from_args(args, metrics=True)
 
     output_dir = os.path.join(
         args.output_dir,
@@ -329,15 +329,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     doer: BaseTaskServer
-    if args.funcx:
-        fcx = funcx.FuncXClient()
-        doer = FuncXTaskServer({target_function: args.endpoint}, fcx, queues)
+    if args.globus_compute:
+        doer = GlobusComputeTaskServer(
+            {target_function: args.endpoint},
+            globus_compute_sdk.Client(),
+            queues,
+        )
     elif args.parsl:
         config = get_config(output_dir)
         doer = ParslTaskServer([target_function], queues, config)
     else:
         raise AssertionError(
-            '--funcx and --parsl are part of a required mutex group.',
+            '--globus-compute and --parsl are part of a required mutex group.',
         )
 
     thinker = Thinker(

@@ -5,20 +5,20 @@ from unittest import mock
 
 import pytest
 
-from psbench.argparse import add_funcx_options
+from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 
 
-def test_add_funcx_options(capsys) -> None:
+def test_add_globus_compute_options(capsys) -> None:
     parser = argparse.ArgumentParser()
-    add_funcx_options(parser)
+    add_globus_compute_options(parser)
     parser.parse_args([])
-    args = parser.parse_args(['--funcx-endpoint', 'ABCD'])
-    assert args.funcx_endpoint == 'ABCD'
+    args = parser.parse_args(['--globus-compute-endpoint', 'ABCD'])
+    assert args.globus_compute_endpoint == 'ABCD'
 
     parser = argparse.ArgumentParser()
-    add_funcx_options(parser, required=True)
+    add_globus_compute_options(parser, required=True)
     # Suppress argparse error message
     with mock.patch('argparse.ArgumentParser._print_message'):
         with pytest.raises(SystemExit):
@@ -53,16 +53,6 @@ def test_add_proxystore_options() -> None:
         [
             '--ps-backend',
             'REDIS',
-            '--ps-host',
-            'localhost',
-            '--ps-port',
-            '1234',
-        ],
-    )
-    parser.parse_args(
-        [
-            '--ps-backend',
-            'WEBSOCKET',
             '--ps-host',
             'localhost',
             '--ps-port',

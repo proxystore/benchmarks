@@ -3,23 +3,23 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
+from proxystore.connectors.connector import Connector
+from proxystore.connectors.dim.margo import MargoConnector
+from proxystore.connectors.dim.ucx import UCXConnector
+from proxystore.connectors.dim.zmq import ZeroMQConnector
+from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.connectors.file import FileConnector
+from proxystore.connectors.globus import GlobusConnector
+from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.redis import RedisConnector
 from proxystore.store import register_store
-from proxystore.store.base import Store
-from proxystore.store.dim.margo import MargoStore
-from proxystore.store.dim.ucx import UCXStore
-from proxystore.store.dim.websockets import WebsocketStore
-from proxystore.store.dim.zmq import ZeroMQStore
-from proxystore.store.endpoint import EndpointStore
-from proxystore.store.file import FileStore
-from proxystore.store.globus import GlobusEndpoints
-from proxystore.store.globus import GlobusStore
-from proxystore.store.redis import RedisStore
+from proxystore.store import Store
 
 
 def init_store_from_args(
     args: argparse.Namespace,
     **kwargs: Any,
-) -> Store | None:
+) -> Store[Any] | None:
     """Initialize a ProxyStore Store from CLI arguments.
 
     Usage:
@@ -30,71 +30,48 @@ def init_store_from_args(
 
     Args:
         args (Namespace): namespace returned by argument parser.
-        kwargs: additional keyword arguments to pass to store constructor.
+        kwargs: additional keyword arguments to pass to the Store.
 
     Returns:
         Store or None if no store was specified.
     """
-    store: Store | None = None
+    if not args.ps_backend:
+        return None
 
-    if args.ps_backend:
-        if args.ps_backend == 'ENDPOINT':
-            store = EndpointStore(
-                name='endpoint-store',
-                endpoints=args.ps_endpoints,
-                **kwargs,
-            )
-        elif args.ps_backend == 'FILE':
-            store = FileStore(
-                name='file-store',
-                store_dir=args.ps_file_dir,
-                **kwargs,
-            )
-        elif args.ps_backend == 'GLOBUS':
-            endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-            store = GlobusStore(
-                name='globus-store',
-                endpoints=endpoints,
-                **kwargs,
-            )
-        elif args.ps_backend == 'REDIS':
-            store = RedisStore(
-                name='redis-store',
-                hostname=args.ps_host,
-                port=args.ps_port,
-                **kwargs,
-            )
-        elif args.ps_backend == 'WEBSOCKET':
-            store = WebsocketStore(
-                name='websocket-store',
-                interface=args.ps_host,
-                port=args.ps_port,
-                **kwargs,
-            )
-        elif args.ps_backend == 'MARGO':
-            store = MargoStore(
-                name='margo-store',
-                interface=args.ps_host,
-                port=args.ps_port,
-                protocol=args.ps_margo_protocol,
-                **kwargs,
-            )
-        elif args.ps_backend == 'UCX':
-            store = UCXStore(
-                name='ucx-store',
-                interface=args.ps_host,
-                port=args.ps_port,
-                **kwargs,
-            )
-        elif args.ps_backend == 'ZMQ':
-            store = ZeroMQStore(
-                name='zmq-store',
-                interface=args.ps_host,
-                port=args.ps_port,
-                **kwargs,
-            )
-        else:
-            raise ValueError(f'Invalid backend: {args.ps_backend}')
-        register_store(store)
+    connector: Connector
+
+    if args.ps_backend == 'ENDPOINT':
+        connector = EndpointConnector(args.ps_endpoints)
+    elif args.ps_backend == 'FILE':
+        connector = FileConnector(args.ps_file_dir)
+    elif args.ps_backend == 'GLOBUS':
+        endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
+        connector = GlobusConnector(endpoints)
+    elif args.ps_backend == 'REDIS':
+        connector = RedisConnector(args.ps_host, args.ps_port)
+    elif args.ps_backend == 'MARGO':
+        connector = MargoConnector(
+            port=args.ps_port,
+            protocol=args.ps_margo_protocol,
+            address=args.ps_address,
+            interface=args.ps_interface,
+        )
+    elif args.ps_backend == 'UCX':
+        connector = UCXConnector(
+            port=args.ps_port,
+            interface=args.ps_interface,
+            address=args.ps_address,
+        )
+    elif args.ps_backend == 'ZMQ':
+        connector = ZeroMQConnector(
+            port=args.ps_port,
+            interface=args.ps_interface,
+            address=args.ps_address,
+        )
+    else:
+        raise ValueError(f'Invalid backend: {args.ps_backend}')
+
+    store = Store(f'{args.ps_backend}-STORE', connector, **kwargs)
+    register_store(store)
 
     return store
