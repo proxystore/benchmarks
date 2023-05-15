@@ -18,7 +18,7 @@ from psbench.proxystore import init_store_from_args
 
 
 @pytest.mark.parametrize(
-    'backend,backend_type,kwargs',
+    ('backend', 'backend_type', 'kwargs'),
     (
         ('ENDPOINT', EndpointConnector, {'ps_endpoints': ['abcd']}),
         ('FILE', FileConnector, {'ps_file_dir': '/tmp/file'}),
