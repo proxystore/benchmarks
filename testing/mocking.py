@@ -25,7 +25,7 @@ class MockStrictRedis:
             return self.data[key]
         return None  # pragma: no cover
 
-    def set(  # noqa: A003
+    def set(
         self,
         key: str,
         value: str | bytes | int | float,

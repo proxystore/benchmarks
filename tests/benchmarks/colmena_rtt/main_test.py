@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Generator
 from unittest import mock
 
 import pytest
@@ -25,9 +24,9 @@ except redis.exceptions.ConnectionError:  # pragma: no cover
     redis_available = False
 
 
-@pytest.fixture
-def default_args(tmp_path) -> Generator[list[str], None, None]:
-    yield [
+@pytest.fixture()
+def default_args(tmp_path) -> list[str]:
+    return [
         '--input-sizes',
         '100',
         '1000',
@@ -40,7 +39,7 @@ def default_args(tmp_path) -> Generator[list[str], None, None]:
 
 
 @pytest.mark.parametrize(
-    'use_proxystore,use_csv,args',
+    ('use_proxystore', 'use_csv', 'args'),
     (
         (True, True, []),
         (False, False, ['--reuse-inputs']),
@@ -56,7 +55,7 @@ def test_parsl_e2e(
     run_dir = tmp_path / 'runs'
     run_dir.mkdir()
 
-    args = ['--parsl', '--output-dir', str(run_dir)] + args + default_args
+    args = ['--parsl', '--output-dir', str(run_dir), *args, *default_args]
     if use_proxystore:
         args += ['--ps-backend', 'FILE', '--ps-file-dir', str(run_dir / 'ps')]
     if use_csv:

@@ -17,7 +17,7 @@ PAYLOAD = 100
 QUERIES = 10
 
 
-@pytest.fixture
+@pytest.fixture()
 def endpoint_store() -> Generator[EndpointStore, None, None]:
     with mock.patch('proxystore.store.endpoint.EndpointStore'):
         from proxystore.store import endpoint
