@@ -6,6 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "psbench"
 version = "0.1.0"
 authors = [
+    {name = "Globus Labs"},
+    {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+]
+maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
 ]
 description = "ProxyStore benchmark suite."
@@ -29,8 +33,9 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/proxystore/proxystore-benchmarks"
+homepage = "https://proxystore.dev"
 documentation = "https://proxystore.readthedocs.io"
+repository = "https://github.com/proxystore/proxystore-benchmarks"
 
 [project.optional-dependencies]
 dev = [
