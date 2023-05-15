@@ -8,8 +8,8 @@ import pytest
 import redis
 
 from psbench.benchmarks.colmena_rtt.main import main
-from testing.colmena import MockFuncXTaskServer
-from testing.funcx import mock_funcx
+from testing.colmena import MockGlobusComputeTaskServer
+from testing.globus_compute import mock_globus_compute
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
@@ -65,18 +65,27 @@ def test_parsl_e2e(
     assert main(args) == 0
 
 
-def test_funcx_e2e(tmp_path: pathlib.Path, default_args: list[str]) -> None:
+def test_globus_compute_e2e(
+    tmp_path: pathlib.Path,
+    default_args: list[str],
+) -> None:
     run_dir = tmp_path / 'runs'
     run_dir.mkdir()
 
-    args = ['--funcx', '--endpoint', 'ENDPOINT', '--output-dir', str(run_dir)]
+    args = [
+        '--globus-compute',
+        '--endpoint',
+        'ENDPOINT',
+        '--output-dir',
+        str(run_dir),
+    ]
     args += default_args
 
     with mock.patch(
-        'psbench.benchmarks.colmena_rtt.main.FuncXTaskServer',
-        MockFuncXTaskServer,
+        'psbench.benchmarks.colmena_rtt.main.GlobusComputeTaskServer',
+        MockGlobusComputeTaskServer,
     ):
-        with mock_funcx():
+        with mock_globus_compute():
             assert main(args) == 0
 
 

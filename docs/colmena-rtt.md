@@ -13,10 +13,11 @@ This benchmark measures roundtrip time with Colmena.
    ```bash
    $ pip install .
    ```
-3. Colmena can be used with Parsl or FuncX. With FuncX, an endpoint needs to be created.
+3. Colmena can be used with Parsl or Globus Compute.
+   With Globus Compute, an endpoint needs to be created.
    ```bash
-   $ funcx-endpoint configure psbench
-   $ funcx-endpoint start psbench
+   $ globus-compute-endpoint configure psbench
+   $ globus-compute-endpoint start psbench
    ```
    The returned endpoint UUID will be needed in the next step.
 
@@ -25,10 +26,10 @@ This benchmark measures roundtrip time with Colmena.
 The benchmark can be configured using CLI parameters.
 The full list of options can be found using `--help`.
 
-**FuncX**
+**Globus Compute**
 ```bash
 $ python -m psbench.benchmarks.colmena_rtt \
-    --funcx --endpoint b8aba48a-386d-4977-b5c9-9bcbbaebd0bf \
+    --globus-compute --endpoint b8aba48a-386d-4977-b5c9-9bcbbaebd0bf \
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
     --task-repeat 5
