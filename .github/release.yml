@@ -1,0 +1,35 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - pre-commit-ci
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking
+    - title: Enhancements
+      labels:
+        - enhancement
+    - title: Bug Fixes
+      labels:
+        - bug
+    - title: Internal Changes
+      labels:
+        - internal
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Package Changes
+      labels:
+        - package
+    - title: Development Workflows
+      labels:
+        - development
+    - title: Security
+      labels:
+        - security
+    # All PRs not tagged as the above
+    - title: Other Changes
+      labels:
+        - "*"
