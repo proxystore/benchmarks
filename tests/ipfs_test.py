@@ -11,7 +11,7 @@ from psbench.ipfs import get_data
 def test_add_data(tmp_path: pathlib.Path) -> None:
     cid = str(uuid.uuid4())
     filepath = str(tmp_path / str(uuid.uuid4()))
-    output = f'add {cid} {filepath}'.encode('utf-8')
+    output = f'add {cid} {filepath}'.encode()
 
     with mock.patch('subprocess.check_output', return_value=output):
         found_cid = add_data(b'data', filepath)

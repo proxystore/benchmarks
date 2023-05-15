@@ -18,7 +18,7 @@ from psbench.benchmarks.remote_ops.main import runner_redis
 from testing.mocking import MockStrictRedis
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_runner_endpoint() -> None:
     await runner_endpoint(
         None,
@@ -40,7 +40,7 @@ def test_runner_redis() -> None:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_csv_logging_endpoint() -> None:
     with tempfile.NamedTemporaryFile() as f:
         assert len(f.readlines()) == 0

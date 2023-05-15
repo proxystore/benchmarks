@@ -113,7 +113,8 @@ def pong_proxy(
         resolve_async(data)
         time.sleep(sleep)
 
-    assert isinstance(data, bytes) and isinstance(data, Proxy)
+    assert isinstance(data, bytes)
+    assert isinstance(data, Proxy)
 
     result_data = randbytes(result_size)
     store = get_store(data)

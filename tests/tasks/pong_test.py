@@ -52,7 +52,8 @@ def test_pong_proxy() -> None:
     end = time.perf_counter_ns()
 
     assert stats is None
-    assert isinstance(result_data, Proxy) and isinstance(result_data, bytes)
+    assert isinstance(result_data, Proxy)
+    assert isinstance(result_data, bytes)
     assert len(result_data) == 10
     assert (end - start) / 1e9 >= 0.01
     unregister_store(store)
@@ -64,10 +65,14 @@ def test_pong_proxy_stats() -> None:
     input_data: Proxy[bytes] = store.proxy(b'abcd')
     _, stats = pong_proxy(input_data, result_size=10)
     assert stats is not None
-    assert stats.input_get_ms is not None and stats.input_get_ms > 0
-    assert stats.input_resolve_ms is not None and stats.input_resolve_ms > 0
-    assert stats.output_put_ms is not None and stats.output_put_ms > 0
-    assert stats.output_proxy_ms is not None and stats.output_proxy_ms > 0
+    assert stats.input_get_ms is not None
+    assert stats.input_get_ms > 0
+    assert stats.input_resolve_ms is not None
+    assert stats.input_resolve_ms > 0
+    assert stats.output_put_ms is not None
+    assert stats.output_put_ms > 0
+    assert stats.output_proxy_ms is not None
+    assert stats.output_proxy_ms > 0
     unregister_store(store)
 
 

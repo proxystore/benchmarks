@@ -89,19 +89,27 @@ def test_time_task_proxy() -> None:
     assert stats.output_size_bytes == 50
     assert stats.task_sleep_seconds == 0.01
     assert stats.total_time_ms >= 10
-    assert stats.input_get_ms is not None and stats.input_get_ms > 0
-    assert stats.input_put_ms is not None and stats.input_put_ms > 0
-    assert stats.input_proxy_ms is not None and stats.input_proxy_ms > 0
-    assert stats.input_resolve_ms is not None and stats.input_resolve_ms > 0
-    assert stats.output_get_ms is not None and stats.output_get_ms > 0
-    assert stats.output_put_ms is not None and stats.output_put_ms > 0
-    assert stats.output_proxy_ms is not None and stats.output_proxy_ms > 0
-    assert stats.output_resolve_ms is not None and stats.output_resolve_ms > 0
+    assert stats.input_get_ms is not None
+    assert stats.input_get_ms > 0
+    assert stats.input_put_ms is not None
+    assert stats.input_put_ms > 0
+    assert stats.input_proxy_ms is not None
+    assert stats.input_proxy_ms > 0
+    assert stats.input_resolve_ms is not None
+    assert stats.input_resolve_ms > 0
+    assert stats.output_get_ms is not None
+    assert stats.output_get_ms > 0
+    assert stats.output_put_ms is not None
+    assert stats.output_put_ms > 0
+    assert stats.output_proxy_ms is not None
+    assert stats.output_proxy_ms > 0
+    assert stats.output_resolve_ms is not None
+    assert stats.output_resolve_ms > 0
     unregister_store(store)
 
 
 @pytest.mark.parametrize(
-    'use_ipfs,use_proxystore,log_to_csv',
+    ('use_ipfs', 'use_proxystore', 'log_to_csv'),
     ((False, True, False), (True, False, False), (False, False, True)),
 )
 def test_runner(
