@@ -19,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "colmena[funcx]==0.4.2",
+    "colmena[globus]==0.5.0",
     "globus-compute-endpoint==2.0.3",
     "globus-compute-sdk==2.0.3",
     "proxystore[all]==0.5.0",

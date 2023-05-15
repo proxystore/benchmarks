@@ -4,29 +4,29 @@ from concurrent.futures import Future
 from typing import Any
 from typing import Callable
 
-import funcx
+import globus_compute_sdk
 from colmena.models import Result
 from colmena.queue.base import ColmenaQueues
 from colmena.task_server.base import FutureBasedTaskServer
 from colmena.task_server.base import run_and_record_timing
 
-from testing.funcx import MockFuncXExecutor
+from testing.globus_compute import MockExecutor
 
 
-class MockFuncXTaskServer(FutureBasedTaskServer):
-    """Mock FuncXTaskServer."""
+class MockGlobusComputeTaskServer(FutureBasedTaskServer):
+    """Mock GlobusComputeTaskServer."""
 
     def __init__(
         self,
         methods: dict[Callable[[Any], Any], str],
-        funcx_client: funcx.FuncXClient,
+        client: globus_compute_sdk.Client,
         queues: ColmenaQueues,
         timeout: int | None = None,
         batch_size: int = 128,
     ) -> None:
-        """Init MockFuncXTaskServer."""
-        super().__init__(queues, timeout)
+        """Init MockGlobusComputeTaskServer."""
         self._methods = {f.__name__: f for f in methods}
+        super().__init__(queues, self._methods.keys(), timeout)
 
     def _submit(self, task: Result, topic: str) -> Future[Any]:
         func = self._methods[task.method]
@@ -38,7 +38,7 @@ class MockFuncXTaskServer(FutureBasedTaskServer):
         return fut
 
     def _setup(self) -> None:
-        self.fx_exec = MockFuncXExecutor()
+        self.fx_exec = MockExecutor()
 
     def _cleanup(self) -> None:
         pass

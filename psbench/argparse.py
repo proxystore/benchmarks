@@ -18,14 +18,14 @@ def add_globus_compute_options(
             (default: False).
     """
     group = parser.add_argument_group(
-        title='FuncX',
-        description='FuncX Endpoint configuration',
+        title='Globus Compute',
+        description='Globus Compute Endpoint configuration',
     )
     group.add_argument(
         '--globus-compute-endpoint',
         metavar='UUID',
         required=required,
-        help='FuncX endpoint for task execution',
+        help='Globus Compute endpoint for task execution',
     )
 
 
@@ -183,7 +183,7 @@ def add_proxystore_options(
         '--ps-address',
         metavar='ADDRESS',
         default=None,
-        help='Optional specify host IP address that can be used by the DIMs',
+        help='Optionally specify host IP address that can be used by the DIMs',
     )
     group.add_argument(
         '--ps-interface',
