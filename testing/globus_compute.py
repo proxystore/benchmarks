@@ -39,7 +39,9 @@ class MockExecutor(globus_compute_sdk.Executor):
 @contextlib.contextmanager
 def mock_globus_compute() -> Generator[None, None, None]:
     """Context manager that mocks Globus Compute Executor."""
-    with mock.patch('globus_compute_sdk.Executor', MockExecutor):
+    with mock.patch(
+        'globus_compute_sdk.Client',
+    ), mock.patch('globus_compute_sdk.Executor', MockExecutor):
         yield
 
 
