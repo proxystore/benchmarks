@@ -1,7 +1,8 @@
 # ProxyStore Benchmark Suite
 
+[![DOI](https://zenodo.org/badge/517741889.svg)](https://zenodo.org/badge/latestdoi/517741889)
+[![tests](https://github.com/proxystore/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/proxystore/proxystore-benchmarks/actions)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore-benchmarks/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore-benchmarks/main)
-[![Tests](https://github.com/proxystore/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/proxystore/proxystore-benchmarks/actions)
 
 [ProxyStore](https://github.com/proxystore/proxystore) benchmark repository.
 Check out the [benchmark instructions](docs/) to get started.
