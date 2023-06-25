@@ -158,15 +158,15 @@ def time_task_ipfs(
 
 def time_task_dspaces(
     *,
-    fx: funcx.FuncXExecutor,
+    gce: globus_compute_sdk.Executor,
     input_size: int,
     output_size: int,
     task_sleep: float,
 ) -> TaskStats:
-    """Execute and time a single FuncX task with DataSpaces for data transfer.
+    """Execute and time a single Globus Compute task with DataSpaces for data transfer.
 
     Args:
-        fx (FuncXExecutor): FuncX Executor to submit task through.
+        gce (Executor): Globus Compute Executor to submit task through.
         input_size (int): number of bytes to send as input to task.
         output_size (int): number of bytes task should return.
         task_sleep (int): number of seconds to sleep inside task.
@@ -191,7 +191,7 @@ def time_task_dspaces(
     start = time.perf_counter_ns()
 
     client.Put(np.array(bytearray(data)), path, version=version, offset=((input_size * rank),))
-    fut = fx.submit(
+    fut = gce.submit(
         pong_dspaces,
         path,
         input_size,
@@ -361,7 +361,7 @@ def runner(
                     )
                 elif use_dspaces:
                     stats = time_task_dspaces(
-                        fx=fx,
+                        gce=gce,
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
