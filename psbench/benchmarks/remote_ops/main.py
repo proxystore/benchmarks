@@ -13,13 +13,9 @@ import statistics
 import sys
 import uuid
 from typing import Any
+from typing import Literal
 from typing import NamedTuple
 from typing import Sequence
-
-if sys.version_info >= (3, 8):  # pragma: >3.7 cover
-    from typing import Literal
-else:  # pragma: <3.8 cover
-    from typing_extensions import Literal
 
 import redis
 from proxystore.endpoint.endpoint import Endpoint
