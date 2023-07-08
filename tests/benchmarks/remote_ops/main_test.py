@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-import sys
 import tempfile
 import uuid
 from unittest import mock
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
-else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 
