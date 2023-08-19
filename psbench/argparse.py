@@ -60,7 +60,7 @@ def add_dspaces_options(parser: argparse.ArgumentParser) -> None:
     Args:
         parser (ArgumentParser): parser object to add DataSpaces arguments to.
     """
-    args_str = ' '.join(sys.argv)
+    ' '.join(sys.argv)
     parser.add_argument(
         '--dspaces',
         action='store_true',

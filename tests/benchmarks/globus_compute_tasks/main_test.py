@@ -109,13 +109,18 @@ def test_time_task_proxy() -> None:
 
 
 @pytest.mark.parametrize(
-    ('use_ipfs', 'use_proxystore', 'log_to_csv'),
-    ((False, True, False), (True, False, False), (False, False, True)),
+    ('use_ipfs', 'use_proxystore', 'use_dspaces', 'log_to_csv'),
+    (
+        (False, True, False, False),
+        (True, False, False, False),
+        (False, False, False, True),
+    ),
 )
 def test_runner(
     caplog,
     use_ipfs: bool,
     use_proxystore: bool,
+    use_dspaces: bool,
     log_to_csv: bool,
     tmp_path: pathlib.Path,
 ) -> None:
@@ -145,6 +150,7 @@ def test_runner(
             runner(
                 globus_compute_endpoint=str(uuid.uuid4()),
                 store=store,
+                use_dspaces=use_dspaces,
                 use_ipfs=use_ipfs,
                 ipfs_local_dir=str(ipfs_local_dir),
                 ipfs_remote_dir=str(ipfs_remote_dir),
@@ -171,6 +177,7 @@ def test_runner_error() -> None:
                 globus_compute_endpoint=str(uuid.uuid4()),
                 store=store,
                 use_ipfs=True,
+                use_dspaces=False,
                 ipfs_local_dir='/tmp/local/',
                 ipfs_remote_dir='/tmp/remote/',
                 input_sizes=[0],

@@ -150,12 +150,6 @@ parametrize-values-type = "tuple"
 [tool.ruff.flake8-quotes]
 inline-quotes = "single"
 
-[tool.ruff.flake8-pytest-style]
-parametrize-values-type = "tuple"
-
-[tool.ruff.flake8-quotes]
-inline-quotes = "single"
-
 [tool.ruff.isort]
 force-single-line = true
 known-first-party = ["psbench", "test", "testing"]

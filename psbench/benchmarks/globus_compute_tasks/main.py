@@ -24,7 +24,6 @@ from proxystore.store.utils import get_key
 from psbench import ipfs
 from psbench.argparse import add_dspaces_options
 from psbench.argparse import add_globus_compute_options
-from psbench.argparse import add_dspaces_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
@@ -187,10 +186,15 @@ def time_task_dspaces(
     path = str(uuid.uuid4())
 
     data = randbytes(input_size)
-    local_size = input_size / size
+    input_size / size
     start = time.perf_counter_ns()
 
-    client.Put(np.array(bytearray(data)), path, version=version, offset=((input_size * rank),))
+    client.Put(
+        np.array(bytearray(data)),
+        path,
+        version=version,
+        offset=((input_size * rank),),
+    )
     fut = gce.submit(
         pong_dspaces,
         path,
@@ -201,9 +205,9 @@ def time_task_dspaces(
         result_size=output_size,
         sleep=task_sleep,
     )
-	
+
     result = fut.result()
-    
+
     if result is not None:
         out_path = result[0]
         out_size = result[1]
@@ -325,7 +329,8 @@ def runner(
 
     if store is not None and (use_ipfs or use_dspaces):
         raise ValueError(
-            f'{"IPFS" if use_ipfs else "DataSpaces"} and ProxyStore cannot be used at the same time.',
+            f"""{"IPFS" if use_ipfs else "DataSpaces"} and ProxyStore
+            cannot be used at the same time.""",
         )
 
     runner_start = time.perf_counter_ns()
