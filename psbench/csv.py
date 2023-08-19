@@ -6,13 +6,15 @@ import os
 import sys
 from typing import Any
 from typing import cast
+from typing import ClassVar
 from typing import Generic
 from typing import NamedTuple
+from typing import overload
 from typing import Sequence
 from typing import TypeVar
 from typing import Union
 
-if sys.version_info >= (3, 8):  # pragma: >3.8 cover
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from typing import Protocol
     from typing import runtime_checkable
 else:  # pragma: <3.8 cover
@@ -22,11 +24,13 @@ else:  # pragma: <3.8 cover
 from psbench.utils import make_parent_dirs
 
 
+# https://github.com/python/mypy/issues/14029
+# for mypy >=0.990
 @runtime_checkable
-class DataClassProtocol(Protocol):
+class NewDataClassProtocol(Protocol):
     """Dataclass Protocol Type."""
 
-    __dataclass_fields__: dict[str, Any]
+    __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
 @runtime_checkable
@@ -39,7 +43,7 @@ class NamedTupleProtocol(Protocol):
         ...
 
 
-DTYPE = TypeVar('DTYPE', bound=Union[DataClassProtocol, NamedTuple])
+DTYPE = TypeVar('DTYPE', bound=Union[NewDataClassProtocol, NamedTuple])
 
 
 class CSVLogger(Generic[DTYPE]):
@@ -67,9 +71,22 @@ class CSVLogger(Generic[DTYPE]):
         if not has_headers:
             self.writer.writeheader()
 
+    def __enter__(self) -> CSVLogger[DTYPE]:
+        """Enter context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exception_type: Any,
+        exception_value: Any,
+        traceback: Any,
+    ) -> None:
+        """Exit context manager."""
+        self.close()
+
     def log(self, data: DTYPE) -> None:
         """Log new row."""
-        if isinstance(data, DataClassProtocol):
+        if dataclasses.is_dataclass(data) and not isinstance(data, type):
             self.writer.writerow(dataclasses.asdict(data))
         elif isinstance(data, NamedTupleProtocol):
             cast(NamedTupleProtocol, data)
@@ -82,9 +99,19 @@ class CSVLogger(Generic[DTYPE]):
         self.f.close()
 
 
+@overload
+def field_names(data_type: type[DTYPE]) -> Sequence[str]:
+    ...
+
+
+@overload
+def field_names(data_type: DTYPE) -> Sequence[str]:
+    ...
+
+
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:
     """Extract field names from NamedTuple or Dataclass."""
-    if isinstance(data_type, DataClassProtocol):
+    if dataclasses.is_dataclass(data_type):
         return [f.name for f in dataclasses.fields(data_type)]
     elif isinstance(data_type, NamedTupleProtocol):
         return data_type._fields

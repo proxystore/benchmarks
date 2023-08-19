@@ -4,29 +4,68 @@ import argparse
 import re
 import sys
 
-from proxystore.store import STORES
 
-
-def add_funcx_options(
+def add_globus_compute_options(
     parser: argparse.ArgumentParser,
     required: bool = False,
 ) -> None:
-    """Add CLI arguments for FuncX.
+    """Add CLI arguments for Globus Compute.
 
     Args:
-        parser (ArgumentParser): parser object to FuncX endpoint argument to.
-        required (bool): require the FuncX endpoint to be specified
+        parser (ArgumentParser): parser object to add Globus Compute arguments
+            to.
+        required (bool): require the Globus Compute endpoint to be specified
             (default: False).
     """
     group = parser.add_argument_group(
-        title='FuncX',
-        description='FuncX Endpoint configuration',
+        title='Globus Compute',
+        description='Globus Compute Endpoint configuration',
     )
     group.add_argument(
-        '--funcx-endpoint',
+        '--globus-compute-endpoint',
         metavar='UUID',
         required=required,
-        help='FuncX endpoint for task execution',
+        help='Globus Compute endpoint for task execution',
+    )
+
+
+def add_ipfs_options(parser: argparse.ArgumentParser) -> None:
+    """Add CLI arguments for IPFS.
+
+    Args:
+        parser (ArgumentParser): parser object to add IPFS arguments to.
+    """
+    args_str = ' '.join(sys.argv)
+    parser.add_argument(
+        '--ipfs',
+        action='store_true',
+        default=False,
+        help='Use IPFS for data transfer.',
+    )
+    parser.add_argument(
+        '--ipfs-local-dir',
+        required=bool(re.search(r'--ipfs($|\s)', args_str)),
+        help='Local directory to write IPFS files to.',
+    )
+    parser.add_argument(
+        '--ipfs-remote-dir',
+        required=bool(re.search(r'--ipfs($|\s)', args_str)),
+        help='Local directory to write IPFS files to.',
+    )
+
+
+def add_dspaces_options(parser: argparse.ArgumentParser) -> None:
+    """Add CLI arguments for DataSpaces.
+
+    Args:
+        parser (ArgumentParser): parser object to add DataSpaces arguments to.
+    """
+    args_str = ' '.join(sys.argv)
+    parser.add_argument(
+        '--dspaces',
+        action='store_true',
+        default=False,
+        help='Use DataSpaces for data transfer.',
     )
 
 
@@ -78,7 +117,15 @@ def add_proxystore_options(
     )
     group.add_argument(
         '--ps-backend',
-        choices=[name for name, _ in STORES.__members__.items()],
+        choices=[
+            'FILE',
+            'GLOBUS',
+            'REDIS',
+            'ENDPOINT',
+            'MARGO',
+            'UCX',
+            'ZMQ',
+        ],
         required=required,
         help='ProxyStore backend to use',
     )
@@ -104,17 +151,45 @@ def add_proxystore_options(
         help='Globus Endpoint config for ProxyStore',
     )
     group.add_argument(
-        '--ps-redis-host',
+        '--ps-host',
         metavar='HOST',
-        required=bool(re.search('--ps-backend( |=)REDIS', args_str)),
-        help='Hostname of Redis server to use with ProxyStore',
+        required=bool(
+            re.search(
+                '--ps-backend( |=)(REDIS)',
+                args_str,
+            ),
+        ),
+        help='Hostname of server or network interface to use with ProxyStore',
     )
     group.add_argument(
-        '--ps-redis-port',
+        '--ps-port',
         metavar='PORT',
         type=int,
-        required=bool(re.search('--ps-backend( |=)REDIS', args_str)),
-        help='Port of Redis server to use with ProxyStore',
+        required=bool(
+            re.search(
+                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
+                args_str,
+            ),
+        ),
+        help='Port of server to use with ProxyStore',
+    )
+    group.add_argument(
+        '--ps-margo-protocol',
+        metavar='PROTOCOL',
+        help='Optionally specify the Margo protocol to use with ProxyStore',
+        default='tcp',
+    )
+    group.add_argument(
+        '--ps-address',
+        metavar='ADDRESS',
+        default=None,
+        help='Optionally specify host IP address that can be used by the DIMs',
+    )
+    group.add_argument(
+        '--ps-interface',
+        metavar='INTERFACE',
+        default=None,
+        help='Optionally provide interface name to be used by the DIMs',
     )
     group.add_argument(
         '--ps-intrasite-interface',

@@ -37,12 +37,9 @@ def test_field_names_namedtuple() -> None:
 
 def test_csv_logger_basic(tmp_path: pathlib.Path) -> None:
     filepath = str(tmp_path / 'log.csv')
-    logger = CSVLogger(filepath, DataNT)
-
-    logger.log(DataNT(1.0, 2, '3'))
-    logger.log(DataNT(4.0, 5, '6'))
-
-    logger.close()
+    with CSVLogger(filepath, DataNT) as logger:
+        logger.log(DataNT(1.0, 2, '3'))
+        logger.log(DataNT(4.0, 5, '6'))
 
     with open(filepath) as f:
         data = f.readlines()

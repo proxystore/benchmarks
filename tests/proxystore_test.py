@@ -5,32 +5,56 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from proxystore.store.base import Store
-from proxystore.store.endpoint import EndpointStore
-from proxystore.store.file import FileStore
-from proxystore.store.globus import GlobusStore
-from proxystore.store.redis import RedisStore
+from proxystore.connectors.connector import Connector
+from proxystore.connectors.dim.margo import MargoConnector
+from proxystore.connectors.dim.ucx import UCXConnector
+from proxystore.connectors.dim.zmq import ZeroMQConnector
+from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.connectors.file import FileConnector
+from proxystore.connectors.globus import GlobusConnector
+from proxystore.connectors.redis import RedisConnector
 
 from psbench.proxystore import init_store_from_args
 
 
 @pytest.mark.parametrize(
-    'backend,backend_type,kwargs',
+    ('backend', 'backend_type', 'kwargs'),
     (
-        ('ENDPOINT', EndpointStore, {'ps_endpoints': ['abcd']}),
-        ('FILE', FileStore, {'ps_file_dir': '/tmp/file'}),
-        ('GLOBUS', GlobusStore, {'ps_globus_config': '/tmp/file'}),
+        ('ENDPOINT', EndpointConnector, {'ps_endpoints': ['abcd']}),
+        ('FILE', FileConnector, {'ps_file_dir': '/tmp/file'}),
+        ('GLOBUS', GlobusConnector, {'ps_globus_config': '/tmp/file'}),
         (
             'REDIS',
-            RedisStore,
-            {'ps_redis_host': 'localhost', 'ps_redis_port': 1234},
+            RedisConnector,
+            {'ps_host': 'localhost', 'ps_port': 1234},
+        ),
+        (
+            'MARGO',
+            MargoConnector,
+            {
+                'ps_port': 1234,
+                'ps_address': None,
+                'ps_interface': 'lo',
+                'ps_margo_protocol': 'tcp',
+            },
+        ),
+        (
+            'UCX',
+            UCXConnector,
+            {'ps_port': 1234, 'ps_address': None, 'ps_interface': 'lo'},
+        ),
+        (
+            'ZMQ',
+            ZeroMQConnector,
+            {'ps_port': 1234, 'ps_address': None, 'ps_interface': 'lo'},
         ),
         (None, None, {}),
+        ('INVALID_BACKEND', None, {}),
     ),
 )
 def test_store_from_args(
     backend: str | None,
-    backend_type: type[Store] | None,
+    backend_type: type[Connector] | None,
     kwargs: dict[str, Any],
 ) -> None:
     args = argparse.Namespace()
@@ -38,11 +62,36 @@ def test_store_from_args(
     for key, value in kwargs.items():
         setattr(args, key, value)
 
-    with mock.patch('psbench.proxystore.init_store'), mock.patch(
+    with mock.patch('psbench.proxystore.register_store'), mock.patch(
+        'psbench.proxystore.FileConnector',
+    ), mock.patch('psbench.proxystore.RedisConnector'), mock.patch(
+        'psbench.proxystore.EndpointConnector',
+    ), mock.patch(
+        'psbench.proxystore.GlobusConnector',
+    ), mock.patch(
         'psbench.proxystore.GlobusEndpoints.from_json',
+    ), mock.patch(
+        'psbench.proxystore.MargoConnector',
+    ), mock.patch(
+        'psbench.proxystore.UCXConnector',
+    ), mock.patch(
+        'psbench.proxystore.ZeroMQConnector',
     ):
-        store = init_store_from_args(args)
-        if backend is None:
-            assert store is None
+        if backend in [
+            'ENDPOINT',
+            'FILE',
+            'GLOBUS',
+            'REDIS',
+            'MARGO',
+            'UCX',
+            'ZMQ',
+            None,
+        ]:
+            store = init_store_from_args(args)
+            if backend is None:
+                assert store is None
+            else:
+                assert store is not None
         else:
-            assert store is not None
+            with pytest.raises(ValueError):
+                init_store_from_args(args)
