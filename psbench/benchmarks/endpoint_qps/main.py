@@ -11,13 +11,9 @@ import sys
 import time
 from statistics import stdev
 from typing import Callable
+from typing import Literal
 from typing import NamedTuple
 from typing import Sequence
-
-if sys.version_info >= (3, 8):  # pragma: >3.7 cover
-    from typing import Literal
-else:  # pragma: <3.8 cover
-    from typing_extensions import Literal
 
 from proxystore.connectors.endpoint import EndpointConnector
 

@@ -191,16 +191,3 @@ def add_proxystore_options(
         default=None,
         help='Optionally provide interface name to be used by the DIMs',
     )
-    group.add_argument(
-        '--ps-intrasite-interface',
-        metavar='IFACE',
-        required=bool(re.search('--ps-backend( |=)INTRASITE', args_str)),
-        help='Network interface to use with ProxyStore'
-    )
-    group.add_argument(
-        '--ps-intrasite-port',
-        metavar='PORT',
-        type=int,
-        required=bool(re.search('--ps-backend( |=)INTRASITE', args_str)),
-        help='Port to use with ProxyStore',
-    )
