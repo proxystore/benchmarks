@@ -43,6 +43,6 @@ def get_data(cid: str) -> bytes:
     """
     with tempfile.TemporaryDirectory() as tempdir:
         filepath = os.path.join(tempdir, 'data')
-        subprocess.run(['ipfs', 'get', cid, '-o', filepath])
+        subprocess.run(['ipfs', 'get', cid, '-o', filepath], check=True)
         with open(filepath, 'rb') as f:
             return f.read()

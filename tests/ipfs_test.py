@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import uuid
+from typing import Any
 from unittest import mock
 
 from psbench.ipfs import add_data
@@ -22,7 +23,7 @@ def test_add_data(tmp_path: pathlib.Path) -> None:
 
 
 def test_get_data(tmp_path: pathlib.Path) -> None:
-    def _mock_run(*args: str) -> None:
+    def _mock_run(*args: str, **kwargs: Any) -> None:
         # Filepath is last in args
         filepath = args[0][-1]
         with open(filepath, 'wb') as f:
