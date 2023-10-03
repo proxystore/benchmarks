@@ -54,7 +54,7 @@ def endpoint_test(
     for _ in range(queries):
         start = time.perf_counter_ns()
         response = requests.get(
-            f'http://{connector.endpoint_host}:{connector.endpoint_port}/endpoint',  # noqa: E501
+            f'http://{connector.endpoint_host}:{connector.endpoint_port}/endpoint',
         )
         end = time.perf_counter_ns()
         latencies.append((end - start) / 1e6)
