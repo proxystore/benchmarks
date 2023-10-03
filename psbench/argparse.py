@@ -85,7 +85,7 @@ def add_proxystore_options(
 
     Warning:
         Backend specific config options will be dynamically set as required
-        dependending on which backend is specified as is found in sys.argv.
+        depending on which backend is specified as is found in sys.argv.
         As a side effect, if parse_args() is called with a custom list of
         arguments, sys.argv may be empty and therefore required flags will
         not be correctly set.
