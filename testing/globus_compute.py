@@ -46,6 +46,6 @@ def mock_globus_compute() -> Generator[None, None, None]:
 
 
 def mock_executor() -> globus_compute_sdk.Executor:
-    """Create a mock Exectutor."""
+    """Create a mock Executor."""
     with mock_globus_compute():
         return globus_compute_sdk.Executor()
