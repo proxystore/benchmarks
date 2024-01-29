@@ -3,6 +3,7 @@
 Provides comparisons between remote operations with endpoints
 and Redis servers.
 """
+
 from __future__ import annotations
 
 import argparse

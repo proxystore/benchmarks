@@ -10,6 +10,7 @@ The Parsl executor config can be modified in
 Note: this is a fork of
     https://github.com/exalearn/colmena/tree/master/demo_apps/synthetic-data
 """
+
 from __future__ import annotations
 
 import argparse
@@ -139,9 +140,11 @@ class Thinker(BaseThinker):
                 result,
                 result.task_info['input_size'],
                 result.task_info['output_size'],
-                self.store.connector.__class__.__name__
-                if self.store is not None
-                else '',
+                (
+                    self.store.connector.__class__.__name__
+                    if self.store is not None
+                    else ''
+                ),
             )
             logger.log(
                 TESTING_LOG_LEVEL,

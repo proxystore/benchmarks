@@ -1,4 +1,5 @@
 """Parsl configurations for Colmena."""
+
 from __future__ import annotations
 
 from parsl import HighThroughputExecutor
