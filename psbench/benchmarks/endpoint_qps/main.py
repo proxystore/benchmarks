@@ -1,4 +1,5 @@
 """Endpoint Queries-per-Second Test."""
+
 from __future__ import annotations
 
 import argparse

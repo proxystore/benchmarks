@@ -3,6 +3,7 @@
 Tests round trip function execution times to a Globus Compute endpoint with
 configurable function payload transfer methods, sizes, etc.
 """
+
 from __future__ import annotations
 
 import argparse
