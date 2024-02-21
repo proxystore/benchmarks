@@ -56,6 +56,7 @@ class TaskStats(NamedTuple):
     input_size_bytes: int
     output_size_bytes: int
     proxystore_backend: str
+    # Defined in colmena.models.Timestamps
     time_created: float
     time_input_received: float
     time_compute_started: float
@@ -64,6 +65,7 @@ class TaskStats(NamedTuple):
     time_result_received: float
     time_start_task_submission: float
     time_task_received: float
+    # Defined in colmena.models.TimeSpans
     time_running: float
     time_serialize_inputs: float
     time_deserialize_inputs: float
@@ -81,14 +83,20 @@ class TaskStats(NamedTuple):
     ) -> TaskStats:
         """Construct a TaskStats instance from a Colmena result."""
         kwargs = {
+            'task_id': result.task_id,
+            'method': result.method,
+            'success': result.success,
             'input_size_bytes': input_size_bytes,
             'output_size_bytes': output_size_bytes,
             'proxystore_backend': proxystore_backend,
         }
-        for field in result.__fields_set__:
-            if field in cls._fields:
-                kwargs[field] = getattr(result, field)
-        return cls(**kwargs)  # type: ignore[arg-type]
+        for field in result.timestamp.__fields_set__:
+            if f'time_{field}' in cls._fields:  # pragma: no branch
+                kwargs[f'time_{field}'] = getattr(result.timestamp, field)
+        for field in result.time.__fields_set__:
+            if f'time_{field}' in cls._fields:  # pragma: no branch
+                kwargs[f'time_{field}'] = getattr(result.time, field)
+        return cls(**kwargs)
 
 
 class Thinker(BaseThinker):

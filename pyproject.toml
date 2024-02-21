@@ -23,12 +23,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "colmena[globus]==0.5.0",
-    "globus-compute-endpoint==2.0.3",
-    "globus-compute-sdk==2.0.3",
-    "proxystore[all]==0.5.1",
-    "redis==4.5.5",
-    "requests==2.28.2",
+    "colmena[globus]@git+https://github.com/exalearn/colmena#egg=3f9508fc56be3f87b6137a30c66e10f1866cd9ca",
+    "globus-compute-endpoint==2.13.0",
+    "globus-compute-sdk==2.13.0",
+    "proxystore[all]==0.6.*",
+    "redis==5.0.1",
+    "requests==2.31.0",
 ]
 
 [project.urls]

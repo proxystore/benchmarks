@@ -20,6 +20,8 @@ from typing import Sequence
 
 import redis
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay.client import RelayClient
 
 import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
 import psbench.benchmarks.remote_ops.redis_ops as redis_ops
@@ -207,10 +209,11 @@ async def runner_endpoint(
     if csv_file is not None:
         csv_logger = CSVLogger(csv_file, RunStats)
 
+    manager = PeerManager(RelayClient(server)) if server is not None else None
     async with Endpoint(
         name=socket.gethostname(),
         uuid=uuid.uuid4(),
-        relay_server=server,
+        peer_manager=manager,
     ) as endpoint:
         for op in ops:
             for i, payload_size in enumerate(payload_sizes):
