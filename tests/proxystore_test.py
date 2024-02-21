@@ -5,14 +5,14 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from proxystore.connectors.connector import Connector
-from proxystore.connectors.dim.margo import MargoConnector
-from proxystore.connectors.dim.ucx import UCXConnector
-from proxystore.connectors.dim.zmq import ZeroMQConnector
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
+from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
+from proxystore.ex.connectors.dim.margo import MargoConnector
+from proxystore.ex.connectors.dim.ucx import UCXConnector
+from proxystore.ex.connectors.dim.zmq import ZeroMQConnector
 
 from psbench.proxystore import init_store_from_args
 

@@ -33,7 +33,8 @@ class NamedTupleProtocol(Protocol):
 
     _fields: tuple[str, Any]
 
-    def _asdict(self) -> dict[str, Any]: ...
+    def _asdict(self) -> dict[str, Any]:
+        ...
 
 
 DTYPE = TypeVar('DTYPE', bound=Union[NewDataClassProtocol, NamedTuple])
@@ -59,7 +60,7 @@ class CSVLogger(Generic[DTYPE]):
                     has_headers = True
 
         make_parent_dirs(filepath)
-        self.f = open(filepath, 'a', newline='')
+        self.f = open(filepath, 'a', newline='')  # noqa: SIM115
         self.writer = csv.DictWriter(self.f, fieldnames=fields)
         if not has_headers:
             self.writer.writeheader()
@@ -93,11 +94,13 @@ class CSVLogger(Generic[DTYPE]):
 
 
 @overload
-def field_names(data_type: type[DTYPE]) -> Sequence[str]: ...
+def field_names(data_type: type[DTYPE]) -> Sequence[str]:
+    ...
 
 
 @overload
-def field_names(data_type: DTYPE) -> Sequence[str]: ...
+def field_names(data_type: DTYPE) -> Sequence[str]:
+    ...
 
 
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:

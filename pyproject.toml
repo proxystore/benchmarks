@@ -23,12 +23,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "colmena[globus]==0.5.0",
-    "globus-compute-endpoint==2.0.3",
-    "globus-compute-sdk==2.0.3",
-    "proxystore[all]==0.5.1",
-    "redis==4.5.5",
-    "requests==2.28.2",
+    "colmena[globus]@git+https://github.com/exalearn/colmena#egg=3f9508fc56be3f87b6137a30c66e10f1866cd9ca",
+    "globus-compute-endpoint==2.13.0",
+    "globus-compute-sdk==2.13.0",
+    "proxystore[all]==0.6.*",
+    "redis==5.0.1",
+    "requests==2.31.0",
 ]
 
 [project.urls]
@@ -38,7 +38,6 @@ repository = "https://github.com/proxystore/proxystore-benchmarks"
 
 [project.optional-dependencies]
 dev = [
-    "black",
     "covdefaults>=2.2",
     "coverage",
     "mypy",
@@ -46,17 +45,12 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
-    "ruff",
+    "ruff>=0.2.0",
     "tox",
     "types-redis",
     "types-requests",
     "virtualenv",
 ]
-
-[tool.black]
-line-length = 79
-target-version = ["py38"]
-skip-string-normalization = true
 
 [tool.codespell]
 skip = """
@@ -95,6 +89,14 @@ allow_incomplete_defs = true
 allow_untyped_defs = true
 
 [tool.ruff]
+line-length = 79
+target-version = "py38"
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "single"
+
+[tool.ruff.lint]
 # See all rules here: https://beta.ruff.rs/docs/rules
 select = [
     # pyflakes
@@ -109,6 +111,8 @@ select = [
     "D",
     # pyupgrade
     "UP",
+    # flake8-2020
+    "YTT",
     # flake8-bugbear
     "B",
     # flake8-builtins
@@ -125,6 +129,8 @@ select = [
     "Q",
     # flake8-debugger
     "T10",
+    # flake8-simplify
+    "SIM",
     # PyLint
     "PLE", "PLW",
     # ruff-specific
@@ -141,27 +147,28 @@ extend-ignore = [
     "C419",
     # Allow pytest.raises() without match
     "PT011",
+    # Allow nested contexts
+    "SIM117",
 ]
-target-version = "py38"
 
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 parametrize-values-type = "tuple"
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 force-single-line = true
 known-first-party = ["psbench", "test", "testing"]
 order-by-type = false
 required-imports = ["from __future__ import annotations"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ["F401", "D104"]
 "*/*_test.py" = ["D10"]
 "benchmarks/*" = ["D10"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.setuptools.packages.find]

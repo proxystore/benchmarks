@@ -3,15 +3,15 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-from proxystore.connectors.connector import Connector
-from proxystore.connectors.dim.margo import MargoConnector
-from proxystore.connectors.dim.ucx import UCXConnector
-from proxystore.connectors.dim.zmq import ZeroMQConnector
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
+from proxystore.ex.connectors.dim.margo import MargoConnector
+from proxystore.ex.connectors.dim.ucx import UCXConnector
+from proxystore.ex.connectors.dim.zmq import ZeroMQConnector
 from proxystore.store import register_store
 from proxystore.store import Store
 
