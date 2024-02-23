@@ -11,7 +11,6 @@ import psbench.benchmarks.remote_ops.endpoint_ops as ops
 
 
 @pytest_asyncio.fixture
-@pytest.mark.asyncio()
 async def endpoint() -> AsyncGenerator[Endpoint, None]:
     async with Endpoint('test-ep', uuid.uuid4()) as ep:
         yield ep
