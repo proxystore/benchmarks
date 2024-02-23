@@ -24,6 +24,10 @@ classifiers = [
 ]
 dependencies = [
     "colmena[globus]@git+https://github.com/exalearn/colmena#egg=3f9508fc56be3f87b6137a30c66e10f1866cd9ca",
+    "dask==2023.5.0; python_version < '3.9'",
+    "dask==2024.2.0; python_version >= '3.9'",
+    "distributed==2023.5.0; python_version < '3.9'",
+    "distributed==2024.2.0; python_version >= '3.9'",
     "globus-compute-endpoint==2.13.0",
     "globus-compute-sdk==2.13.0",
     "proxystore[all]==0.6.*",
