@@ -5,9 +5,17 @@ from unittest import mock
 
 import pytest
 
+from psbench.argparse import add_dask_options
 from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_logging_options
+from psbench.argparse import add_parsl_options
 from psbench.argparse import add_proxystore_options
+
+
+def test_add_dask_options() -> None:
+    parser = argparse.ArgumentParser()
+    add_dask_options(parser)
+    parser.parse_args(['--dask-scheduler', 'localhost'])
 
 
 def test_add_globus_compute_options(capsys) -> None:
@@ -19,6 +27,22 @@ def test_add_globus_compute_options(capsys) -> None:
 
     parser = argparse.ArgumentParser()
     add_globus_compute_options(parser, required=True)
+    # Suppress argparse error message
+    with mock.patch('argparse.ArgumentParser._print_message'):
+        with pytest.raises(SystemExit):
+            parser.parse_args([])
+
+
+def test_add_parsl_options(capsys) -> None:
+    parser = argparse.ArgumentParser()
+    add_parsl_options(parser)
+    parser.parse_args([])
+    args = parser.parse_args(['--parsl-local-htex'])
+    assert not args.parsl_thread_executor
+    assert args.parsl_local_htex
+
+    parser = argparse.ArgumentParser()
+    add_parsl_options(parser, required=True)
     # Suppress argparse error message
     with mock.patch('argparse.ArgumentParser._print_message'):
         with pytest.raises(SystemExit):

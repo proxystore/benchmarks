@@ -5,6 +5,47 @@ import re
 import sys
 
 
+def add_dask_options(
+    parser: argparse.ArgumentParser,
+    required: bool = False,
+) -> None:
+    """Add CLI arguments for Dask Distributed.
+
+    Args:
+        parser (ArgumentParser): parser object to add Dask arguments to.
+        required (bool): require the non-default Dask options to be specified
+            (default: False).
+    """
+    group = parser.add_argument_group(
+        title='Dask Distributed',
+        description='Dask Distributed configuration',
+    )
+    group.add_argument(
+        '--dask-scheduler',
+        default=None,
+        metavar='ADDR',
+        help='Dask scheduler address (default uses LocalCluster)',
+    )
+    group.add_argument(
+        '--dask-workers',
+        default=None,
+        metavar='WORKERS',
+        type=int,
+        help='Number of workers to start if using LocalCluster',
+    )
+    group.add_argument(
+        '--dask-use-threads',
+        action='store_true',
+        help='Use threads instead of processes for LocalCluster workers',
+    )
+    group.add_argument(
+        '--dask-dashboard-address',
+        default=None,
+        metavar='ADDR',
+        help='Optional Dask dashboard address for LocalCluster',
+    )
+
+
 def add_globus_compute_options(
     parser: argparse.ArgumentParser,
     required: bool = False,
@@ -26,6 +67,76 @@ def add_globus_compute_options(
         metavar='UUID',
         required=required,
         help='Globus Compute endpoint for task execution',
+    )
+
+
+def add_parsl_options(
+    parser: argparse.ArgumentParser,
+    required: bool = False,
+) -> None:
+    """Add CLI arguments for Parsl.
+
+    Args:
+        parser (ArgumentParser): parser object to add Parsl arguments to.
+        required (bool): require the non-default Parsl options to be specified
+            (default: False).
+    """
+    group = parser.add_argument_group(
+        title='Parsl Configuration',
+        description='Parsl configuration',
+    )
+    mutex_group = group.add_mutually_exclusive_group(required=required)
+    mutex_group.add_argument(
+        '--parsl-thread-executor',
+        action='store_true',
+        help='Use a Parsl ThreadPoolExecutor',
+    )
+    mutex_group.add_argument(
+        '--parsl-local-htex',
+        action='store_true',
+        help='Use a Parsl HighThroughputExecutor with a LocalProvider',
+    )
+    group.add_argument(
+        '--parsl-run-dir',
+        default='runinfo',
+        metavar='DIR',
+        help='Parsl run directory',
+    )
+    group.add_argument(
+        '--parsl-workers',
+        default=None,
+        metavar='WORKERS',
+        type=int,
+        help='Number of Parsl workers to configure',
+    )
+
+
+def add_executor_options(parser: argparse.ArgumentParser) -> None:
+    """Add task executor arguments.
+
+    Args:
+        parser (ArgumentParser): parser object to add IPFS arguments to.
+    """
+    args_str = ' '.join(sys.argv)
+    parser.add_argument(
+        '--executor',
+        choices=['dask', 'globus', 'parsl'],
+        help=(
+            'Task executor to use. Each executor type may have additional '
+            'required options'
+        ),
+    )
+    add_dask_options(
+        parser,
+        required=bool(re.search('--executor([ \t]+|=)dask', args_str)),
+    )
+    add_globus_compute_options(
+        parser,
+        required=bool(re.search('--executor([ \t]+|=)globus', args_str)),
+    )
+    add_parsl_options(
+        parser,
+        required=bool(re.search('--executor([ \t]+|=)parsl', args_str)),
     )
 
 
