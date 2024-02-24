@@ -93,6 +93,11 @@ module = "tests.*"
 allow_incomplete_defs = true
 allow_untyped_defs = true
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::proxystore.warnings.ExperimentalWarning",
+]
+
 [tool.ruff]
 line-length = 79
 target-version = "py38"
