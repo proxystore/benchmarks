@@ -165,6 +165,21 @@ def add_ipfs_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_dspaces_options(parser: argparse.ArgumentParser) -> None:
+    """Add CLI arguments for DataSpaces.
+
+    Args:
+        parser (ArgumentParser): parser object to add DataSpaces arguments to.
+    """
+    ' '.join(sys.argv)
+    parser.add_argument(
+        '--dspaces',
+        action='store_true',
+        default=False,
+        help='Use DataSpaces for data transfer.',
+    )
+
+
 def add_logging_options(parser: argparse.ArgumentParser) -> None:
     """Add CLI arguments for logging options."""
     group = parser.add_argument_group(

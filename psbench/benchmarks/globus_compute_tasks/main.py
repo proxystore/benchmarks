@@ -23,6 +23,7 @@ from proxystore.store.base import Store
 from proxystore.store.utils import get_key
 
 from psbench import ipfs
+from psbench.argparse import add_dspaces_options
 from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
@@ -32,6 +33,7 @@ from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.tasks.pong import pong
+from psbench.tasks.pong import pong_dspaces
 from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
@@ -154,6 +156,84 @@ def time_task_ipfs(
     )
 
 
+def time_task_dspaces(
+    *,
+    gce: globus_compute_sdk.Executor,
+    input_size: int,
+    output_size: int,
+    task_sleep: float,
+) -> TaskStats:
+    """Execute and time a single Globus Compute task with DataSpaces for data transfer.
+
+    Args:
+        gce (Executor): Globus Compute Executor to submit task through.
+        input_size (int): number of bytes to send as input to task.
+        output_size (int): number of bytes task should return.
+        task_sleep (int): number of seconds to sleep inside task.
+
+    Returns:
+        TaskStats
+    """
+    import dspaces as ds
+    import numpy as np
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    version = 1
+
+    client = ds.dspaces.DSClient()
+    path = str(uuid.uuid4())
+
+    data = randbytes(input_size)
+    input_size / size
+    start = time.perf_counter_ns()
+
+    client.Put(
+        np.array(bytearray(data)),
+        path,
+        version=version,
+        offset=((input_size * rank),),
+    )
+    fut = gce.submit(
+        pong_dspaces,
+        path,
+        input_size,
+        rank,
+        size,
+        version=version,
+        result_size=output_size,
+        sleep=task_sleep,
+    )
+
+    result = fut.result()
+
+    if result is not None:
+        out_path = result[0]
+        out_size = result[1]
+        data = client.Get(
+            out_path,
+            version,
+            lb=((out_size * rank),),
+            ub=((out_size * rank + out_size - 1),),
+            dtype=bytes,
+            timeout=-1,
+        ).tobytes()
+
+    end = time.perf_counter_ns()
+    assert isinstance(data, bytes)
+
+    return TaskStats(
+        proxystore_backend='DataSpaces',
+        task_name='pong',
+        input_size_bytes=input_size,
+        output_size_bytes=output_size,
+        task_sleep_seconds=task_sleep,
+        total_time_ms=(end - start) / 1e6,
+    )
+
+
 def time_task_proxy(
     *,
     gce: globus_compute_sdk.Executor,
@@ -220,6 +300,7 @@ def runner(
     *,
     globus_compute_endpoint: str,
     store: Store | None,
+    use_dspaces: bool,
     use_ipfs: bool,
     ipfs_local_dir: str | None,
     ipfs_remote_dir: str | None,
@@ -238,6 +319,7 @@ def runner(
         'Starting test runner\n'
         f' - Globus Compute Endpoint: {globus_compute_endpoint}\n'
         f' - ProxyStore backend: {store_connector_name}\n'
+        f' - DataSpaces enabled: {use_dspaces}\n'
         f' - IPFS enabled: {use_ipfs}\n'
         f' - Task type: ping-pong\n'
         f' - Task repeat: {task_repeat}\n'
@@ -246,9 +328,10 @@ def runner(
         f' - Task sleep time: {task_sleep} s',
     )
 
-    if store is not None and use_ipfs:
+    if store is not None and (use_ipfs or use_dspaces):
         raise ValueError(
-            'IPFS and ProxyStore cannot be used at the same time.',
+            f"""{"IPFS" if use_ipfs else "DataSpaces"} and ProxyStore
+            cannot be used at the same time.""",
         )
 
     runner_start = time.perf_counter_ns()
@@ -278,6 +361,13 @@ def runner(
                         gce=gce,
                         ipfs_local_dir=ipfs_local_dir,
                         ipfs_remote_dir=ipfs_remote_dir,
+                        input_size=input_size,
+                        output_size=output_size,
+                        task_sleep=task_sleep,
+                    )
+                elif use_dspaces:
+                    stats = time_task_dspaces(
+                        gce=gce,
                         input_size=input_size,
                         output_size=output_size,
                         task_sleep=task_sleep,
@@ -361,6 +451,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_logging_options(parser)
     add_proxystore_options(parser, required=False)
     add_ipfs_options(parser)
+    add_dspaces_options(parser)
     args = parser.parse_args(argv)
 
     init_logging(args.log_file, args.log_level, force=True)
@@ -370,6 +461,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     runner(
         globus_compute_endpoint=args.globus_compute_endpoint,
         store=store,
+        use_dspaces=args.dspaces,
         use_ipfs=args.ipfs,
         ipfs_local_dir=args.ipfs_local_dir,
         ipfs_remote_dir=args.ipfs_remote_dir,

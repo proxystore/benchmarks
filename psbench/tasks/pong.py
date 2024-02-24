@@ -71,6 +71,66 @@ def pong_ipfs(
         return None
 
 
+def pong_dspaces(
+    path: str,
+    data_size: int,
+    rank: int,
+    size: int,
+    *,
+    version: int = 1,
+    result_size: int = 0,
+    sleep: float = 0,
+) -> tuple[str, int] | None:
+    """Task that takes a DataSpace path and returns data via DataSpaces.
+
+    Args:
+        client (ds.DSpaces):DataSpaces client
+        path (str): filename of the DataSpaces stored data.
+        data_size (int) : the size of the DataSpaces object.
+        rank (int) : MPI rank.
+        size (int): MPI communication size.
+        version (int): The version of the data to access (default: 1).
+        result_size (int): size of results byte array (default: 0).
+        sleep (float): seconds to sleep for to simulate work (default: 0).
+
+    Returns:
+        Filename of return data or None.
+    """
+    import time
+    import uuid
+
+    import dspaces as ds
+    import numpy as np
+
+    from psbench.utils import randbytes
+
+    client = ds.dspaces.DSClient()
+    data = client.Get(
+        path,
+        version=version,
+        lb=((data_size * rank),),
+        ub=((data_size * rank + data_size - 1),),
+        dtype=bytes,
+        timeout=-1,
+    ).tobytes()
+
+    assert isinstance(data, bytes)
+    time.sleep(sleep)
+
+    if result_size > 0:
+        filepath = str(uuid.uuid4())
+        return_data = bytearray(randbytes(result_size))
+        client.Put(
+            np.array(return_data),
+            filepath,
+            version=version,
+            offset=((result_size * rank),),
+        )
+        return (filepath, result_size)
+    else:
+        return None
+
+
 def pong_proxy(
     data: bytes,
     *,
@@ -101,7 +161,6 @@ def pong_proxy(
     from proxystore.proxy import is_resolved
     from proxystore.proxy import Proxy
     from proxystore.store import get_store
-    from proxystore.store.utils import resolve_async
 
     from psbench.tasks.pong import ProxyStats
     from psbench.utils import randbytes
@@ -110,7 +169,7 @@ def pong_proxy(
     assert not is_resolved(data)
 
     if sleep > 0.0:
-        resolve_async(data)
+        data.resolve_async()
         time.sleep(sleep)
 
     assert isinstance(data, bytes)
