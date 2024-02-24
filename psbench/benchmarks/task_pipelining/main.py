@@ -64,7 +64,11 @@ def sequential_task(
 
     store = get_store(data)
     data = randbytes(len(data))
-    return store.proxy(data, evict=True)
+    proxy = store.proxy(data, evict=True)
+    # Pre-populate proxy target to prevent a double resolve after eviction.
+    # This is a quick hack but is fixed in later ProxyStore versions.
+    proxy.__wrapped__ = data
+    return proxy
 
 
 def pipelined_task(
@@ -103,6 +107,9 @@ def run_sequential_workflow(
     # Create the initial data for the first task
     data = randbytes(task_data_bytes)
     proxy = store.proxy(data, evict=True)
+    # Pre-populate proxy target to prevent a double resolve after eviction.
+    # This is a quick hack but is fixed in later ProxyStore versions.
+    proxy.__wrapped__ = data
 
     for _ in range(task_chain_length):
         future = executor.submit(
@@ -147,6 +154,9 @@ def run_pipelined_workflow(
     # Create the initial data for the first task
     data = randbytes(task_data_bytes)
     proxy = store.proxy(data, evict=True)
+    # Pre-populate proxy target to prevent a double resolve after eviction.
+    # This is a quick hack but is fixed in later ProxyStore versions.
+    proxy.__wrapped__ = data
 
     for i in range(task_chain_length):
         if i > 1:
@@ -212,6 +222,13 @@ def runner(
     csv_logger = (
         CSVLogger(csv_file, WorkflowStats) if csv_file is not None else None
     )
+
+    logger.log(
+        TESTING_LOG_LEVEL,
+        'Submitted pre-task to alleviate cold-start penalty',
+    )
+    future = executor.submit(sum, [1, 2, 3])
+    assert future.result() == 6
 
     for submission_method, data_size in itertools.product(
         ('sequential', 'pipelined'),
