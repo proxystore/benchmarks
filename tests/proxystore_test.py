@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from typing import Any
 from unittest import mock
 
@@ -17,9 +18,23 @@ from proxystore.ex.connectors.dim.zmq import ZeroMQConnector
 from psbench.proxystore import init_store_from_args
 
 
+class _MockDAOSConnector:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # pragma: no cover
+        pass
+
+
 @pytest.mark.parametrize(
     ('backend', 'backend_type', 'kwargs'),
     (
+        (
+            'daos',
+            _MockDAOSConnector,
+            {
+                'ps_daos_pool': 'mypool',
+                'ps_daos_container': 'mycontainer',
+                'ps_daos_namespace': 'mystore',
+            },
+        ),
         ('endpoint', EndpointConnector, {'ps_endpoints': ['abcd']}),
         ('file', FileConnector, {'ps_file_dir': '/tmp/file'}),
         ('globus', GlobusConnector, {'ps_globus_config': '/tmp/file'}),
@@ -63,7 +78,13 @@ def test_store_from_args(
 
     with mock.patch('psbench.proxystore.register_store'), mock.patch(
         'psbench.proxystore.FileConnector',
-    ), mock.patch('psbench.proxystore.RedisConnector'), mock.patch(
+    ), mock.patch('psbench.proxystore.RedisConnector'), mock.patch.dict(
+        sys.modules,
+        {
+            'proxystore.ex.connectors.daos': mock.MagicMock(),
+            'DAOSConnector': _MockDAOSConnector,
+        },
+    ), mock.patch(
         'psbench.proxystore.EndpointConnector',
     ), mock.patch(
         'psbench.proxystore.GlobusConnector',

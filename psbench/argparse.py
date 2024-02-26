@@ -214,6 +214,7 @@ def add_proxystore_options(
     group.add_argument(
         '--ps-backend',
         choices=[
+            'daos',
             'file',
             'globus',
             'redis',
@@ -228,6 +229,24 @@ def add_proxystore_options(
     )
 
     args_str = ' '.join(sys.argv).lower()
+    group.add_argument(
+        '--ps-daos-pool',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS pool name.',
+    )
+    group.add_argument(
+        '--ps-daos-container',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS container name.',
+    )
+    group.add_argument(
+        '--ps-daos-namespace',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS dictionary name within container.',
+    )
     group.add_argument(
         '--ps-endpoints',
         metavar='UUID',

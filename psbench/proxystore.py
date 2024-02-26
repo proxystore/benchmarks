@@ -40,7 +40,17 @@ def init_store_from_args(
 
     connector: Connector
 
-    if args.ps_backend == 'endpoint':
+    if args.ps_backend == 'daos':
+        # This import will fail is pydaos is not installed so we defer the
+        # import to here.
+        from proxystore.ex.connectors.daos import DAOSConnector
+
+        connector = DAOSConnector(
+            pool=args.ps_daos_pool,
+            container=args.ps_daos_container,
+            namespace=args.ps_daos_namespace,
+        )
+    elif args.ps_backend == 'endpoint':
         connector = EndpointConnector(args.ps_endpoints)
     elif args.ps_backend == 'file':
         connector = FileConnector(args.ps_file_dir)
