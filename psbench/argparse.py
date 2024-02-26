@@ -214,36 +214,56 @@ def add_proxystore_options(
     group.add_argument(
         '--ps-backend',
         choices=[
-            'FILE',
-            'GLOBUS',
-            'REDIS',
-            'ENDPOINT',
-            'MARGO',
-            'UCX',
-            'ZMQ',
+            'daos',
+            'file',
+            'globus',
+            'redis',
+            'endpoint',
+            'margo',
+            'ucx',
+            'zmq',
         ],
+        type=str.lower,
         required=required,
         help='ProxyStore backend to use',
     )
 
-    args_str = ' '.join(sys.argv)
+    args_str = ' '.join(sys.argv).lower()
+    group.add_argument(
+        '--ps-daos-pool',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS pool name.',
+    )
+    group.add_argument(
+        '--ps-daos-container',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS container name.',
+    )
+    group.add_argument(
+        '--ps-daos-namespace',
+        metavar='NAME',
+        required=bool(re.search('--ps-backend( |=)daos', args_str)),
+        help='DAOS dictionary name within container.',
+    )
     group.add_argument(
         '--ps-endpoints',
         metavar='UUID',
         nargs='+',
-        required=bool(re.search('--ps-backend( |=)ENDPOINT', args_str)),
+        required=bool(re.search('--ps-backend( |=)endpoint', args_str)),
         help='ProxyStore Endpoint UUIDs accessible by the program',
     )
     group.add_argument(
         '--ps-file-dir',
         metavar='DIR',
-        required=bool(re.search('--ps-backend( |=)FILE', args_str)),
+        required=bool(re.search('--ps-backend( |=)file', args_str)),
         help='Temp directory to store ProxyStore objects in',
     )
     group.add_argument(
         '--ps-globus-config',
         metavar='CFG',
-        required=bool(re.search('--ps-backend( |=)GLOBUS', args_str)),
+        required=bool(re.search('--ps-backend( |=)globus', args_str)),
         help='Globus Endpoint config for ProxyStore',
     )
     group.add_argument(
@@ -251,7 +271,7 @@ def add_proxystore_options(
         metavar='HOST',
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS)',
+                '--ps-backend( |=)(redis)',
                 args_str,
             ),
         ),
@@ -263,7 +283,7 @@ def add_proxystore_options(
         type=int,
         required=bool(
             re.search(
-                '--ps-backend( |=)(REDIS|MARGO|UCX|ZMQ)',
+                '--ps-backend( |=)(redis|margo|ucx|zmq)',
                 args_str,
             ),
         ),

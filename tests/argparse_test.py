@@ -70,13 +70,25 @@ def test_add_proxystore_options() -> None:
     parser = argparse.ArgumentParser()
     add_proxystore_options(parser)
 
+    parser.parse_args(
+        [
+            '--ps-backend',
+            'daos',
+            '--ps-daos-pool',
+            'mypool',
+            '--ps-daos-container',
+            'mycontainer',
+            '--ps-daos-namespace',
+            'teststore',
+        ],
+    )
     parser.parse_args(['--ps-backend', 'ENDPOINT', '--ps-endpoints', 'ABCD'])
-    parser.parse_args(['--ps-backend', 'FILE', '--ps-file-dir', '/tmp/x'])
+    parser.parse_args(['--ps-backend', 'file', '--ps-file-dir', '/tmp/x'])
     parser.parse_args(['--ps-backend', 'GLOBUS', '--ps-globus-config', 'cfg'])
     parser.parse_args(
         [
             '--ps-backend',
-            'REDIS',
+            'redis',
             '--ps-host',
             'localhost',
             '--ps-port',
@@ -98,7 +110,7 @@ def test_add_proxystore_options() -> None:
     parser.parse_args(
         [
             '--ps-backend',
-            'UCX',
+            'ucx',
             '--ps-host',
             'localhost',
             '--ps-port',

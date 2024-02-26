@@ -40,29 +40,39 @@ def init_store_from_args(
 
     connector: Connector
 
-    if args.ps_backend == 'ENDPOINT':
+    if args.ps_backend == 'daos':
+        # This import will fail is pydaos is not installed so we defer the
+        # import to here.
+        from proxystore.ex.connectors.daos import DAOSConnector
+
+        connector = DAOSConnector(
+            pool=args.ps_daos_pool,
+            container=args.ps_daos_container,
+            namespace=args.ps_daos_namespace,
+        )
+    elif args.ps_backend == 'endpoint':
         connector = EndpointConnector(args.ps_endpoints)
-    elif args.ps_backend == 'FILE':
+    elif args.ps_backend == 'file':
         connector = FileConnector(args.ps_file_dir)
-    elif args.ps_backend == 'GLOBUS':
+    elif args.ps_backend == 'globus':
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
         connector = GlobusConnector(endpoints)
-    elif args.ps_backend == 'REDIS':
+    elif args.ps_backend == 'redis':
         connector = RedisConnector(args.ps_host, args.ps_port)
-    elif args.ps_backend == 'MARGO':
+    elif args.ps_backend == 'margo':
         connector = MargoConnector(
             port=args.ps_port,
             protocol=args.ps_margo_protocol,
             address=args.ps_address,
             interface=args.ps_interface,
         )
-    elif args.ps_backend == 'UCX':
+    elif args.ps_backend == 'ucx':
         connector = UCXConnector(
             port=args.ps_port,
             interface=args.ps_interface,
             address=args.ps_address,
         )
-    elif args.ps_backend == 'ZMQ':
+    elif args.ps_backend == 'zmq':
         connector = ZeroMQConnector(
             port=args.ps_port,
             interface=args.ps_interface,
@@ -71,7 +81,7 @@ def init_store_from_args(
     else:
         raise ValueError(f'Invalid backend: {args.ps_backend}')
 
-    store = Store(f'{args.ps_backend}-STORE', connector, **kwargs)
+    store = Store(f'{args.ps_backend}-store', connector, **kwargs)
     register_store(store)
 
     return store
