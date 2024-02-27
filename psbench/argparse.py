@@ -165,7 +165,10 @@ def add_ipfs_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_logging_options(parser: argparse.ArgumentParser) -> None:
+def add_logging_options(
+    parser: argparse.ArgumentParser,
+    require_csv: bool = False,
+) -> None:
     """Add CLI arguments for logging options."""
     group = parser.add_argument_group(
         title='Logging',
@@ -184,6 +187,7 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
     )
     group.add_argument(
         '--csv-file',
+        required=require_csv,
         help='Optionally log data to CSV file',
     )
 
