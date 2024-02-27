@@ -32,6 +32,7 @@ dependencies = [
     "globus-compute-sdk==2.13.0",
     "proxystore[all]==0.6.*",
     "proxystore-ex>=0.1.2",
+    "psutil==5.9.8",
     "redis==5.0.1",
     "requests==2.31.0",
 ]
