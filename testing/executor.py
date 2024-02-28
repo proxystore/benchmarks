@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from concurrent.futures import Future
+from concurrent.futures import ProcessPoolExecutor as _ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor as _ThreadPoolExecutor
 from types import TracebackType
 from typing import Callable
@@ -19,6 +20,38 @@ else:  # pragma: <3.11 cover
 
 P = ParamSpec('P')
 T = TypeVar('T')
+
+
+class ProcessPoolExecutor:
+    def __init__(self, max_workers: int | None = None) -> None:
+        self._executor = _ProcessPoolExecutor(max_workers)
+
+    def __enter__(self) -> Self:
+        self.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def start(self) -> None:
+        pass
+
+    def close(self) -> None:
+        self._executor.shutdown()
+
+    def submit(
+        self,
+        function: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> Future[T]:
+        future = self._executor.submit(function, *args, **kwargs)
+        return future
 
 
 class ThreadPoolExecutor:

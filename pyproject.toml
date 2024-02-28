@@ -30,8 +30,9 @@ dependencies = [
     "distributed==2024.2.0; python_version >= '3.9'",
     "globus-compute-endpoint==2.13.0",
     "globus-compute-sdk==2.13.0",
-    "proxystore[all]==0.6.*",
+    "proxystore[all]@git+https://github.com/proxystore/proxystore#egg=main",
     "proxystore-ex>=0.1.2",
+    "psutil==5.9.8",
     "redis==5.0.1",
     "requests==2.31.0",
 ]
@@ -96,6 +97,7 @@ allow_untyped_defs = true
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore::proxystore.warnings.ExperimentalWarning",
+    "ignore::DeprecationWarning:proxystore.*",
 ]
 
 [tool.ruff]
