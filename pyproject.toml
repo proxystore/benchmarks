@@ -97,6 +97,7 @@ allow_untyped_defs = true
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore::proxystore.warnings.ExperimentalWarning",
+    "ignore::DeprecationWarning:proxystore.*",
 ]
 
 [tool.ruff]
