@@ -311,3 +311,55 @@ def add_proxystore_options(
         default=None,
         help='Optionally provide interface name to be used by the DIMs',
     )
+
+
+def add_stream_options(
+    parser: argparse.ArgumentParser,
+    required: bool = False,
+) -> None:
+    """Add CLI arguments for message stream brokers to a parser.
+
+    Args:
+        parser (ArgumentParser): parser object to add stream broker
+            argument group to.
+        required (bool): require a stream broker to be specified
+            (default: False).
+    """
+    group = parser.add_argument_group(
+        title='Message Stream Broker',
+        description='Message stream broker backend options',
+    )
+    group.add_argument(
+        '--stream',
+        choices=['kafka', 'redis'],
+        type=str.lower,
+        required=required,
+        help='Message stream broker to use',
+    )
+
+    args_str = ' '.join(sys.argv).lower()
+    group.add_argument(
+        '--stream-topic',
+        default='stream-benchmark-data',
+        help='Message stream topic name',
+    )
+    group.add_argument(
+        '--kafka-servers',
+        metavar='HOST',
+        nargs='+',
+        required=bool(re.search('--stream([ \t]+|=)(kafka)', args_str)),
+        help='List of Kafka bootstrap servers',
+    )
+    group.add_argument(
+        '--redis-pubsub-host',
+        metavar='HOST',
+        required=bool(re.search('--stream([ \t]+|=)(redis)', args_str)),
+        help='Hostname of Redis Pub/Sub server',
+    )
+    group.add_argument(
+        '--redis-pubsub-port',
+        metavar='PORT',
+        type=int,
+        required=bool(re.search('--stream([ \t]+|=)(redis)', args_str)),
+        help='Port of Redis Pub/Sub server',
+    )
