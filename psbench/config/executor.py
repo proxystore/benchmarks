@@ -62,7 +62,7 @@ class DaskConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         options: dict[str, int | str] = {}
 
         if 'dask_scheduler' in kwargs:
@@ -104,7 +104,7 @@ class GlobusComputeConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, **kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         return cls(endpoint=kwargs['globus_compute_endpoint'])
 
     def get_executor(self) -> GlobusComputeExecutor:
@@ -139,7 +139,7 @@ class ParslConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, **kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         options = {
             'executor': kwargs['parsl_executor'],
             'run_dir': kwargs['parsl_run_dir'],
@@ -207,16 +207,16 @@ class ExecutorConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, **kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         kind = kwargs['executor']
 
         config: DaskConfig | GlobusComputeConfig | ParslConfig
         if kind == 'dask':
-            config = DaskConfig.from_dict(**kwargs)
+            config = DaskConfig.from_args(**kwargs)
         elif kind == 'globus':
-            config = GlobusComputeConfig.from_dict(**kwargs)
+            config = GlobusComputeConfig.from_args(**kwargs)
         elif kind == 'parsl':
-            config = ParslConfig.from_dict(**kwargs)
+            config = ParslConfig.from_args(**kwargs)
         else:
             raise ValueError(f'Unknown executor type "{kind}".')
 

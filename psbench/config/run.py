@@ -56,7 +56,7 @@ class RunConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, **kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         options: dict[str, int | str] = {}
 
         if 'csv_file' in kwargs:

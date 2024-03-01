@@ -127,7 +127,7 @@ class StoreConfig(BaseModel):
         )
 
     @classmethod
-    def from_dict(cls, **kwargs: Any) -> Self:
+    def from_args(cls, **kwargs: Any) -> Self:
         connector = kwargs.get('ps-connector', None)
         options = {k: v for k, v in kwargs.items() if k.startswith('ps_')}
         return cls(connector=connector, options=options)
