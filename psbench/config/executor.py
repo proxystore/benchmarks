@@ -63,7 +63,7 @@ class DaskConfig(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
-        options: dict[str, int | str] = {}
+        options: dict[str, Any] = {}
 
         if 'dask_scheduler' in kwargs:
             options['scheduler_address'] = kwargs['dask_scheduler']
@@ -114,7 +114,7 @@ class GlobusComputeConfig(BaseModel):
 
 
 class ParslConfig(BaseModel):
-    executor: Literal['thread', 'htex']
+    executor: Literal['thread', 'htex-local']
     run_dir: str
     workers: int | None = None
 
@@ -128,6 +128,7 @@ class ParslConfig(BaseModel):
         group.add_argument(
             '--parsl-executor',
             choices=['thread', 'htex-local'],
+            required=required,
             help='Parsl executor type',
         )
         group.add_argument(
@@ -144,8 +145,7 @@ class ParslConfig(BaseModel):
             'executor': kwargs['parsl_executor'],
             'run_dir': kwargs['parsl_run_dir'],
         }
-        if 'parsl_workers' in kwargs:
-            options['workers'] = kwargs['parsl_workers']
+        options['workers'] = kwargs.get('parsl_workers', None)
         return cls(**options)
 
     def get_executor(self) -> ParslExecutor:
@@ -178,7 +178,11 @@ class ParslConfig(BaseModel):
 
 class ExecutorConfig(BaseModel):
     kind: Literal['dask', 'globus', 'parsl']
-    config: DaskConfig | GlobusComputeConfig | ParslConfig
+    # It would be preferred to type this as:
+    #     config: DaskConfig | GlobusComputeConfig | ParslConfig
+    # but Pydantic v1 handles union types in unexpected ways so type attempt
+    # to be coerced incorrectly.
+    config: Any
 
     @staticmethod
     def add_parser_group(
@@ -189,6 +193,7 @@ class ExecutorConfig(BaseModel):
         parser.add_argument(
             '--executor',
             choices=['dask', 'globus', 'parsl'],
+            required=required,
             help='Task executor/workflow engine',
         )
 
@@ -218,7 +223,8 @@ class ExecutorConfig(BaseModel):
         elif kind == 'parsl':
             config = ParslConfig.from_args(**kwargs)
         else:
-            raise ValueError(f'Unknown executor type "{kind}".')
+            # Unreachable because of Pydantic type validation
+            raise AssertionError(f'Unknown executor type "{kind}".')
 
         return cls(kind=kind, config=config)
 

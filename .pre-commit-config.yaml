@@ -29,5 +29,6 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
+          - pydantic
           - types-redis
           - types-requests

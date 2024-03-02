@@ -129,7 +129,8 @@ class StoreConfig(BaseModel):
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
         connector = kwargs.get('ps_connector', None)
-        options = {k: v for k, v in kwargs.items() if k.startswith('ps_')}
+        # Note we drop the "ps_" prefix from the keys here
+        options = {k[3:]: v for k, v in kwargs.items() if k.startswith('ps_')}
         return cls(connector=connector, options=options)
 
     def get_store(
@@ -148,42 +149,42 @@ class StoreConfig(BaseModel):
             from proxystore.ex.connectors.daos import DAOSConnector
 
             connector = DAOSConnector(
-                pool=self.options['ps_daos_pool'],
-                container=self.options['ps_daos_container'],
-                namespace=self.options['ps_daos_namespace'],
+                pool=self.options['daos_pool'],
+                container=self.options['daos_container'],
+                namespace=self.options['daos_namespace'],
             )
         elif self.connector == 'endpoint':
-            connector = EndpointConnector(self.options['ps_endpoints'])
+            connector = EndpointConnector(self.options['endpoints'])
         elif self.connector == 'file':
-            connector = FileConnector(self.options['ps_file_dir'])
+            connector = FileConnector(self.options['file_dir'])
         elif self.connector == 'globus':
             endpoints = GlobusEndpoints.from_json(
-                self.options['ps_globus_config'],
+                self.options['globus_config'],
             )
             connector = GlobusConnector(endpoints)
         elif self.connector == 'redis':
             connector = RedisConnector(
-                self.options['ps_host'],
-                self.options['ps_port'],
+                self.options['host'],
+                self.options['port'],
             )
         elif self.connector == 'margo':
             connector = MargoConnector(
-                port=self.options['ps_port'],
-                protocol=self.options['ps_margo_protocol'],
-                address=self.options['ps_address'],
-                interface=self.options['ps_interface'],
+                port=self.options['port'],
+                protocol=self.options['margo_protocol'],
+                address=self.options['address'],
+                interface=self.options['interface'],
             )
         elif self.connector == 'ucx':
             connector = UCXConnector(
-                port=self.options['ps_port'],
-                interface=self.options['ps_interface'],
-                address=self.options['ps_address'],
+                port=self.options['port'],
+                interface=self.options['interface'],
+                address=self.options['address'],
             )
         elif self.connector == 'zmq':
             connector = ZeroMQConnector(
-                port=self.options['ps_port'],
-                interface=self.options['ps_interface'],
-                address=self.options['ps_address'],
+                port=self.options['port'],
+                interface=self.options['interface'],
+                address=self.options['address'],
             )
         else:
             raise ValueError(f'Invalid backend: {self.connector}')

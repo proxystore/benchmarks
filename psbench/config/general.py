@@ -61,7 +61,7 @@ class GeneralConfig(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
-        options: dict[str, int | str] = {}
+        options: dict[str, Any] = {}
 
         if 'csv_file' in kwargs:
             options['csv_file'] = kwargs['csv_file']

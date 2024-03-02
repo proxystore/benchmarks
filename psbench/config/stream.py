@@ -58,43 +58,43 @@ class StreamConfig(BaseModel):
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
             kind=kwargs.get('stream', None),
-            topic=kwargs.get('stream_topic'),
+            topic=kwargs['stream_topic'],
             servers=kwargs.get('stream_servers', ()),
         )
 
     def get_publisher(self) -> Publisher | None:
-        if self.stream is None:
+        if self.kind is None:
             return None
 
         publisher: Publisher
-        if self.stream == 'kafka':
+        if self.kind == 'kafka':
             producer = kafka.KafkaProducer(
                 bootstrap_servers=self.servers,
             )
             publisher = KafkaPublisher(producer)
-        elif self.redis == 'redis':
+        elif self.kind == 'redis':
             host, port = self.servers[0].split(':')
             publisher = RedisPublisher(host, port)
         else:
-            raise ValueError(f'Unknown stream broker type: {self.stream}')
+            raise ValueError(f'Unknown stream broker type: {self.kind}')
 
         return publisher
 
     def get_subscriber(self) -> Subscriber | None:
-        if self.stream is None:
+        if self.kind is None:
             return None
 
         subscriber: Subscriber
-        if self.redis == 'kafka':
+        if self.kind == 'kafka':
             consumer = kafka.KafkaConsumer(
                 self.topic,
                 bootstrap_servers=self.servers,
             )
             subscriber = KafkaSubscriber(consumer)
-        elif self.redis == 'redis':
+        elif self.kind == 'redis':
             host, port = self.servers[0].split(':')
             subscriber = RedisSubscriber(host, port, topic=self.topic)
         else:
-            raise ValueError(f'Unknown stream broker type: {self.stream}')
+            raise ValueError(f'Unknown stream broker type: {self.kind}')
 
         return subscriber
