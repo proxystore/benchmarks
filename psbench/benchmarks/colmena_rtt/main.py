@@ -33,6 +33,7 @@ from colmena.task_server.parsl import ParslTaskServer
 from colmena.thinker import agent
 from colmena.thinker import BaseThinker
 from proxystore.proxy import Proxy
+from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.utils import get_key
 
@@ -387,6 +388,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if store is not None:
         store.close()
+        unregister_store(store)
         logger.log(TESTING_LOG_LEVEL, f'cleaned up {store.name}')
 
     return 0

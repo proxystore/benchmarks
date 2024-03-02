@@ -10,6 +10,7 @@ from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_parsl_options
 from psbench.argparse import add_proxystore_options
+from psbench.argparse import add_stream_options
 
 
 def test_add_dask_options() -> None:
@@ -124,6 +125,34 @@ def test_add_proxystore_options() -> None:
             '--ps-host',
             'localhost',
             '--ps-port',
+            '1234',
+        ],
+    )
+
+
+def test_add_stream_options() -> None:
+    parser = argparse.ArgumentParser()
+    add_stream_options(parser)
+    parser.parse_args([])
+
+    parser = argparse.ArgumentParser()
+    add_stream_options(parser, required=True)
+    # Suppress argparse error message
+    with mock.patch('argparse.ArgumentParser._print_message'):
+        with pytest.raises(SystemExit):
+            parser.parse_args([])
+
+    parser = argparse.ArgumentParser()
+    add_stream_options(parser)
+
+    parser.parse_args(['--stream', 'kafka', '--kafka-servers', 'a:b', 'c:d'])
+    parser.parse_args(
+        [
+            '--stream',
+            'redis',
+            '--redis-pubsub-host',
+            'localhost',
+            '--redis-pubsub-port',
             '1234',
         ],
     )

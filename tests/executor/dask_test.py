@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import Generator
-
 import pytest
 from dask.distributed import Client
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
-from proxystore.store import store_registration
 from proxystore.store.base import Store
 
 from psbench.executor.dask import DaskExecutor
@@ -21,13 +18,6 @@ def local_client() -> Client:
         dashboard_address=None,
     )
     return client
-
-
-@pytest.fixture()
-def store() -> Generator[Store[LocalConnector], None, None]:
-    with Store('dask-executor-fixture', LocalConnector()) as store:
-        with store_registration(store):
-            yield store
 
 
 def test_is_executor_protocol(local_client: Client) -> None:
@@ -51,9 +41,9 @@ def proxy_function(proxy: Proxy[int]) -> Proxy[int]:
 
 def test_submit_proxies(
     local_client: Client,
-    store: Store[LocalConnector],
+    local_store: Store[LocalConnector],
 ) -> None:
-    value = store.proxy(1)
+    value = local_store.proxy(1)
 
     with DaskExecutor(local_client) as executor:
         future = executor.submit(proxy_function, value)

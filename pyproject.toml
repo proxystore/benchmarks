@@ -32,6 +32,7 @@ dependencies = [
     "globus-compute-sdk==2.13.0",
     "proxystore[all]@git+https://github.com/proxystore/proxystore#egg=main",
     "proxystore-ex>=0.1.2",
+    "pydantic==1.10.14",
     "psutil==5.9.8",
     "redis==5.0.1",
     "requests==2.31.0",
@@ -179,6 +180,7 @@ required-imports = ["from __future__ import annotations"]
 "*/__init__.py" = ["F401", "D104"]
 "*/*_test.py" = ["D10"]
 "benchmarks/*" = ["D10"]
+"tests/conftest.py" = ["F401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
