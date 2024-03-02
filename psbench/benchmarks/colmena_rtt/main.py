@@ -19,6 +19,7 @@ import os
 import sys
 from datetime import datetime
 from threading import Event
+from typing import Any
 from typing import NamedTuple
 from typing import Sequence
 
@@ -110,7 +111,7 @@ class Thinker(BaseThinker):
     def __init__(
         self,
         queues: ColmenaQueues,
-        store: Store | None,
+        store: Store[Any] | None,
         input_sizes_bytes: list[int],
         output_sizes_bytes: list[int],
         task_repeat: int,

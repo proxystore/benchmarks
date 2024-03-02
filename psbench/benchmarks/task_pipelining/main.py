@@ -16,6 +16,7 @@ from typing import Sequence
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.future import Future as ProxyFuture
 
 from psbench.argparse import add_executor_options
 from psbench.argparse import add_logging_options
@@ -63,17 +64,18 @@ def sequential_task(
     time.sleep(compute_sleep)
 
     store = get_store(data)
-    data = randbytes(len(data))
-    proxy = store.proxy(data, evict=True)
+    assert store is not None
+    result = randbytes(len(data))
+    proxy = store.proxy(result, evict=True)
     # Pre-populate proxy target to prevent a double resolve after eviction.
     # This is a quick hack but is fixed in later ProxyStore versions.
-    proxy.__wrapped__ = data
+    proxy.__wrapped__ = result
     return proxy
 
 
 def pipelined_task(
     data: Proxy[bytes],
-    future: Future[bytes],
+    future: ProxyFuture[bytes],
     overhead_sleep: float,
     compute_sleep: float,
 ) -> None:
@@ -90,8 +92,8 @@ def pipelined_task(
 
     time.sleep(compute_sleep)
 
-    data = randbytes(len(data))
-    future.set_result(data)
+    result = randbytes(len(data))
+    future.set_result(result)
 
 
 def run_sequential_workflow(
@@ -162,7 +164,10 @@ def run_pipelined_workflow(
         if i > 1:
             task_futures[i - 1].result()
             time.sleep(task_submit_sleep)
-        data_future = store.future(evict=True, polling_interval=0.001)
+        data_future: ProxyFuture[bytes] = store.future(
+            evict=True,
+            polling_interval=0.001,
+        )
         task_future = executor.submit(
             pipelined_task,
             proxy,

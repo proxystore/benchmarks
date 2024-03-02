@@ -57,7 +57,7 @@ def test_store_config_daos() -> None:
     with mock.patch.dict(
         sys.modules,
         {
-            'proxystore.ex.connectors.daos': mock.MagicMock(),
+            'proxystore_ex.connectors.daos': mock.MagicMock(),
             'DAOSConnector': _MockDAOSConnector,
         },
     ):

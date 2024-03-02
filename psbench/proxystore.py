@@ -38,7 +38,7 @@ def init_store_from_args(
     if not args.ps_backend:
         return None
 
-    connector: Connector
+    connector: Connector[Any]
 
     if args.ps_backend == 'daos':
         # This import will fail is pydaos is not installed so we defer the

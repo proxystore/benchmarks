@@ -10,6 +10,7 @@ import sys
 import time
 from concurrent.futures import Future
 from typing import Any
+from typing import Callable
 from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
@@ -88,6 +89,7 @@ def task_proxy(
 
     output = randbytes(output_size_bytes)
     store = get_store(data[0])
+    assert store is not None
 
     return store.proxy(output, evict=False, populate_target=True)
 
@@ -153,6 +155,7 @@ def _run_workflow_stage(
     sleep: float,
 ) -> tuple[Any, ...]:
     # Returns list of output data of tasks. This could be proxies or bytes.
+    task: Callable[..., bytes]
     if data_management is DataManagement.NONE:
         task = task_no_proxy
     elif (
@@ -186,14 +189,14 @@ def _run_workflow_stage(
         )
 
     for task_input in stage_task_inputs:
-        future = submit(
+        future: Future[bytes] = submit(
             executor.submit,
             args=(task, *task_input),
             kwargs={'output_size_bytes': data_size_bytes, 'sleep': sleep},
         )
         futures.append(future)
 
-    return_data = tuple(future.result() for future in futures)
+    return_data: tuple[Any, ...] = tuple(future.result() for future in futures)
     # Resolve data if necessary
     for data in return_data:
         assert isinstance(data, bytes)
