@@ -7,8 +7,8 @@ from typing import NamedTuple
 import pytest
 from pydantic import BaseModel
 
-from psbench.csv import CSVLogger
-from psbench.csv import field_names
+from psbench.results import CSVLogger
+from psbench.results import field_names
 
 
 class DataBM(BaseModel):

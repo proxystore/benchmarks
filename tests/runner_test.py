@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from psbench.csv import CSVLogger
+from psbench.results import CSVLogger
 from psbench.runner import runner
 from testing.benchmark import MockBenchmark
 from testing.benchmark import MockRunConfig

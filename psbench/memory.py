@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 import psutil
 
-from psbench.csv import CSVLogger
+from psbench.results import CSVLogger
 
 
 class MemoryUsage(NamedTuple):

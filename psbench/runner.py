@@ -9,8 +9,8 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from psbench.benchmarks.protocol import Benchmark
-from psbench.csv import CSVLogger
 from psbench.logging import TESTING_LOG_LEVEL
+from psbench.results import CSVLogger
 
 RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
 RunResultT = TypeVar('RunResultT', bound=NamedTuple)

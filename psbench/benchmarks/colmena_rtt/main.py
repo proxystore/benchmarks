@@ -40,10 +40,10 @@ from proxystore.store.utils import get_key
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 from psbench.benchmarks.colmena_rtt.config import get_config
-from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.results import CSVLogger
 
 logger = logging.getLogger('colmena-rtt')
 

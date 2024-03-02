@@ -13,9 +13,9 @@ from psbench.config import ExecutorConfig
 from psbench.config import GeneralConfig
 from psbench.config import StoreConfig
 from psbench.config import StreamConfig
-from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
+from psbench.results import CSVLogger
 from psbench.runner import runner
 
 benchmark_name = Benchmark.name.lower().replace(' ', '-')

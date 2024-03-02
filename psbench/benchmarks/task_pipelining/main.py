@@ -20,12 +20,12 @@ from proxystore.store.base import Store
 from psbench.argparse import add_executor_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.csv import CSVLogger
 from psbench.executor.factory import init_executor_from_args
 from psbench.executor.protocol import Executor
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.results import CSVLogger
 from psbench.utils import randbytes
 
 logger = logging.getLogger('task-pipelining')

@@ -27,10 +27,10 @@ from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.results import CSVLogger
 from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
