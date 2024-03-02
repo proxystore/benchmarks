@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
 
@@ -13,7 +12,7 @@ from psbench.logging import TESTING_LOG_LEVEL
 from psbench.results import ResultLogger
 
 RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
-RunResultT = TypeVar('RunResultT', bound=NamedTuple)
+RunResultT = TypeVar('RunResultT', bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 

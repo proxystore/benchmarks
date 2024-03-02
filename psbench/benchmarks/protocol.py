@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
@@ -16,7 +15,7 @@ else:  # pragma: <3.11 cover
 from pydantic import BaseModel
 
 RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
-RunResultT = TypeVar('RunResultT', bound=NamedTuple)
+RunResultT = TypeVar('RunResultT', bound=BaseModel)
 
 
 @runtime_checkable

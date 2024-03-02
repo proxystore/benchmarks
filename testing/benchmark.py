@@ -4,7 +4,6 @@ import random
 import sys
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -18,7 +17,7 @@ class MockRunConfig(BaseModel):
     param: int
 
 
-class MockRunResult(NamedTuple):
+class MockRunResult(BaseModel):
     value: int
     time: float
 
