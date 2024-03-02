@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from typing import Any
+from typing import Optional
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -21,7 +22,7 @@ from pydantic import BaseModel
 
 
 class StreamConfig(BaseModel):
-    kind: str | None
+    kind: Optional[str]  # noqa: UP007
     topic: str
     servers: Sequence[str]
 

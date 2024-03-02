@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from typing import Any
+from typing import List
 from typing import NamedTuple
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -35,7 +36,7 @@ class RunResult(NamedTuple):
 
 
 class BenchmarkMatrix(BaseModel):
-    data_size_bytes: list[int]
+    data_size_bytes: List[int]  # noqa: UP006
     producer_sleep: float
     task_count: int
     task_sleep: int

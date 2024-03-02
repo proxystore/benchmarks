@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from typing import Any
+from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -17,7 +18,7 @@ from psbench.logging import TESTING_LOG_LEVEL
 class GeneralConfig(BaseModel):
     csv_file: str = 'results.csv'
     log_file: str = 'log.txt'
-    log_level: int | str = TESTING_LOG_LEVEL
+    log_level: Union[int, str] = TESTING_LOG_LEVEL  # noqa: UP007
     repeat: int = 1
     run_dir: str = 'runs/'
 

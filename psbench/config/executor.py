@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import multiprocessing
 import sys
-import uuid
 from typing import Any
 from typing import Literal
+from typing import Optional
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -31,9 +31,9 @@ from psbench.executor.protocol import Executor
 
 
 class DaskConfig(BaseModel):
-    scheduler_address: str | None = None
+    scheduler_address: Optional[str] = None  # noqa: UP007
     threaded_workers: bool = False
-    workers: int | None = None
+    workers: Optional[int] = None  # noqa: UP007
 
     @staticmethod
     def add_parser_group(
@@ -87,7 +87,7 @@ class DaskConfig(BaseModel):
 
 
 class GlobusComputeConfig(BaseModel):
-    endpoint: uuid.UUID | str
+    endpoint: str
 
     @staticmethod
     def add_parser_group(
@@ -116,7 +116,7 @@ class GlobusComputeConfig(BaseModel):
 class ParslConfig(BaseModel):
     executor: Literal['thread', 'htex-local']
     run_dir: str
-    workers: int | None = None
+    workers: Optional[int] = None  # noqa: UP007
 
     @staticmethod
     def add_parser_group(

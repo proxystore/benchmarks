@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import sys
 from typing import Any
+from typing import Dict
+from typing import Optional
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -26,8 +28,8 @@ from pydantic import Field
 
 
 class StoreConfig(BaseModel):
-    connector: str | None = None
-    options: dict[str, Any] = Field(default_factory=dict)
+    connector: Optional[str] = None  # noqa: UP007
+    options: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
 
     @staticmethod
     def add_parser_group(
