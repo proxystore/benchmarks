@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 import dataclasses
 import os
+import sys
+from types import TracebackType
 from typing import Any
 from typing import cast
 from typing import ClassVar
@@ -14,6 +16,11 @@ from typing import runtime_checkable
 from typing import Sequence
 from typing import TypeVar
 from typing import Union
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 from pydantic import BaseModel
 
@@ -42,14 +49,56 @@ class NamedTupleProtocol(Protocol):
 DTYPE = TypeVar(
     'DTYPE',
     bound=Union[BaseModel, NewDataClassProtocol, NamedTuple],
+    contravariant=True,
 )
 
 
-class CSVLogger(Generic[DTYPE]):
+class ResultLogger(Protocol[DTYPE]):
+    def __enter__(self) -> Self:
+        ...
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        ...
+
+    def log(self, data: DTYPE) -> None:
+        ...
+
+    def close(self) -> None:
+        ...
+
+
+class BasicResultLogger:
+    def __init__(self, _data_type: type[DTYPE]) -> None:
+        self.results: list[DTYPE] = []
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def log(self, data: DTYPE) -> None:
+        self.results.append(data)
+
+    def close(self) -> None:
+        pass
+
+
+class CSVResultLogger(Generic[DTYPE]):
     """CSV logger where rows are represented as a NamedTuple."""
 
     def __init__(self, filepath: str, data_type: type[DTYPE]) -> None:
-        """Init CSVLogger."""
+        """Init CSVResultLogger."""
         has_headers = False
         fields = field_names(data_type)
         if os.path.isfile(filepath):
@@ -70,7 +119,7 @@ class CSVLogger(Generic[DTYPE]):
         if not has_headers:
             self.writer.writeheader()
 
-    def __enter__(self) -> CSVLogger[DTYPE]:
+    def __enter__(self) -> CSVResultLogger[DTYPE]:
         """Enter context manager."""
         return self
 

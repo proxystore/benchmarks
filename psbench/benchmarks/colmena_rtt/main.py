@@ -43,7 +43,7 @@ from psbench.benchmarks.colmena_rtt.config import get_config
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 
 logger = logging.getLogger('colmena-rtt')
 
@@ -382,7 +382,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.info(TESTING_LOG_LEVEL, 'task server completed')
 
     if args.csv_file is not None and len(thinker.results) > 0:
-        with CSVLogger(args.csv_file, TaskStats) as csv_logger:
+        with CSVResultLogger(args.csv_file, TaskStats) as csv_logger:
             for result in thinker.results:
                 csv_logger.log(result)
 

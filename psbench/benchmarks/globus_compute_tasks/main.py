@@ -30,7 +30,7 @@ from psbench.argparse import add_proxystore_options
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
@@ -258,7 +258,7 @@ def runner(
     )
 
     if csv_file is not None:
-        csv_logger = CSVLogger(csv_file, TaskStats)
+        csv_logger = CSVResultLogger(csv_file, TaskStats)
 
     for input_size in input_sizes:
         for output_size in output_sizes:

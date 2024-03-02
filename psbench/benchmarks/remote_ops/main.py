@@ -28,7 +28,7 @@ import psbench.benchmarks.remote_ops.redis_ops as redis_ops
 from psbench.argparse import add_logging_options
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 
 BACKEND_TYPE = Literal['ENDPOINT', 'REDIS']
 OP_TYPE = Literal['EVICT', 'EXISTS', 'GET', 'SET']
@@ -207,7 +207,7 @@ async def runner_endpoint(
         csv_file (str): optional csv filepath to log results to.
     """
     if csv_file is not None:
-        csv_logger = CSVLogger(csv_file, RunStats)
+        csv_logger = CSVResultLogger(csv_file, RunStats)
 
     manager = PeerManager(RelayClient(server)) if server is not None else None
     async with Endpoint(
@@ -256,7 +256,7 @@ def runner_redis(
         csv_file (str): optional csv filepath to log results to.
     """
     if csv_file is not None:
-        csv_logger = CSVLogger(csv_file, RunStats)
+        csv_logger = CSVResultLogger(csv_file, RunStats)
 
     client = redis.StrictRedis(host=host, port=port)
     for op in ops:

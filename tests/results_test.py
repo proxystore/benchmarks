@@ -7,7 +7,8 @@ from typing import NamedTuple
 import pytest
 from pydantic import BaseModel
 
-from psbench.results import CSVLogger
+from psbench.results import BasicResultLogger
+from psbench.results import CSVResultLogger
 from psbench.results import field_names
 
 
@@ -48,9 +49,17 @@ def test_field_names_namedtuple() -> None:
     assert list(field_names(DataNT)) == ['time', 'value', 'result']
 
 
+def test_basic_logger() -> None:
+    with BasicResultLogger(DataNT) as logger:
+        logger.log(DataNT(1.0, 2, '3'))
+        logger.log(DataNT(4.0, 5, '6'))
+
+        assert len(logger.results) == 2
+
+
 def test_csv_logger_basic(tmp_path: pathlib.Path) -> None:
     filepath = str(tmp_path / 'log.csv')
-    with CSVLogger(filepath, DataNT) as logger:
+    with CSVResultLogger(filepath, DataNT) as logger:
         logger.log(DataNT(1.0, 2, '3'))
         logger.log(DataNT(4.0, 5, '6'))
 
@@ -66,16 +75,16 @@ def test_csv_logger_basic(tmp_path: pathlib.Path) -> None:
 
 def test_csv_logger_append(tmp_path: pathlib.Path) -> None:
     filepath = str(tmp_path / 'log.csv')
-    logger1 = CSVLogger(filepath, DataNT)
+    logger1 = CSVResultLogger(filepath, DataNT)
     logger1.log(DataNT(1.0, 2, '3'))
     logger1.close()
 
-    logger2 = CSVLogger(filepath, DataDC)
+    logger2 = CSVResultLogger(filepath, DataDC)
     logger2.log(DataDC(4.0, 5, '6'))
     logger2.log(DataDC(7.0, 8, '9'))
     logger2.close()
 
-    logger3 = CSVLogger(filepath, DataBM)
+    logger3 = CSVResultLogger(filepath, DataBM)
     logger3.log(DataBM(time=4.0, value=5, result='6'))
     logger3.log(DataBM(time=7.0, value=8, result='9'))
     logger3.close()
@@ -86,7 +95,7 @@ def test_csv_logger_append(tmp_path: pathlib.Path) -> None:
 
 def test_csv_logger_mismatch_headers(tmp_path: pathlib.Path) -> None:
     filepath = str(tmp_path / 'log.csv')
-    logger = CSVLogger(filepath, DataNT)
+    logger = CSVResultLogger(filepath, DataNT)
     logger.log(DataNT(1.0, 2, '3'))
     logger.close()
 
@@ -94,4 +103,4 @@ def test_csv_logger_mismatch_headers(tmp_path: pathlib.Path) -> None:
         x: int
 
     with pytest.raises(ValueError):
-        CSVLogger(filepath, _OtherData)
+        CSVResultLogger(filepath, _OtherData)

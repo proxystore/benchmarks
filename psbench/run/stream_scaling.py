@@ -15,7 +15,7 @@ from psbench.config import StoreConfig
 from psbench.config import StreamConfig
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 from psbench.runner import runner
 
 benchmark_name = Benchmark.name.lower().replace(' ', '-')
@@ -64,7 +64,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     logger.log(TESTING_LOG_LEVEL, 'Benchmark initialized')
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
-    with CSVLogger(csv_file, benchmark.result_type) as csv_logger:
+    with CSVResultLogger(csv_file, benchmark.result_type) as csv_logger:
         runner(
             benchmark,
             matrix.configs(),

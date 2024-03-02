@@ -29,7 +29,7 @@ from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.memory import SystemMemoryProfiler
 from psbench.proxystore import init_store_from_args
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 from psbench.utils import randbytes
 
 logger = logging.getLogger('workflow')
@@ -280,7 +280,7 @@ def runner(
     if not csv_file.endswith('.csv'):
         raise ValueError('CSV log file should end with ".csv"')
 
-    workflow_logger = CSVLogger(csv_file, WorkflowStats)
+    workflow_logger = CSVResultLogger(csv_file, WorkflowStats)
     memory_file = csv_file.replace('.csv', '-memory.csv')
     memory_profiler = SystemMemoryProfiler(
         memory_profile_interval,

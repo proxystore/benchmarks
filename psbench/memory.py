@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 import psutil
 
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 
 
 class MemoryUsage(NamedTuple):
@@ -40,7 +40,7 @@ class SystemMemoryProfiler(threading.Thread):
         self._memory_log: list[MemoryUsage] = []
         self._stop_event = threading.Event()
         self._csv_logger = (
-            CSVLogger(str(csv_file), MemoryUsage)
+            CSVResultLogger(str(csv_file), MemoryUsage)
             if csv_file is not None
             else None
         )

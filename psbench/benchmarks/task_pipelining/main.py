@@ -25,7 +25,7 @@ from psbench.executor.protocol import Executor
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
-from psbench.results import CSVLogger
+from psbench.results import CSVResultLogger
 from psbench.utils import randbytes
 
 logger = logging.getLogger('task-pipelining')
@@ -220,7 +220,9 @@ def runner(
     )
 
     csv_logger = (
-        CSVLogger(csv_file, WorkflowStats) if csv_file is not None else None
+        CSVResultLogger(csv_file, WorkflowStats)
+        if csv_file is not None
+        else None
     )
 
     logger.log(
