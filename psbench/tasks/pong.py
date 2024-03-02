@@ -127,6 +127,9 @@ def pong_proxy(
     if store.metrics is not None:
         input_metrics = store.metrics.get_metrics(data)
         output_metrics = store.metrics.get_metrics(result)
+        assert input_metrics is not None
+        assert output_metrics is not None
+
         stats = ProxyStats(
             input_get_ms=input_metrics.times['store.get'].avg_time_ms,
             input_resolve_ms=input_metrics.times[

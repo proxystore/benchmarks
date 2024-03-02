@@ -18,11 +18,11 @@ from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoints
 from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
-from proxystore.ex.connectors.dim.margo import MargoConnector
-from proxystore.ex.connectors.dim.ucx import UCXConnector
-from proxystore.ex.connectors.dim.zmq import ZeroMQConnector
 from proxystore.store import register_store
 from proxystore.store import Store
+from proxystore_ex.connectors.dim.margo import MargoConnector
+from proxystore_ex.connectors.dim.ucx import UCXConnector
+from proxystore_ex.connectors.dim.zmq import ZeroMQConnector
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -145,12 +145,12 @@ class StoreConfig(BaseModel):
         if self.connector is None:
             return None
 
-        connector: Connector
+        connector: Connector[Any]
 
         if self.connector == 'daos':
             # This import will fail is pydaos is not installed so we defer the
             # import to here.
-            from proxystore.ex.connectors.daos import DAOSConnector
+            from proxystore_ex.connectors.daos import DAOSConnector
 
             connector = DAOSConnector(
                 pool=self.options['daos_pool'],

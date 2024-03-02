@@ -5,6 +5,7 @@ import sys
 from concurrent.futures import Future
 from types import TracebackType
 from typing import Callable
+from typing import cast
 from typing import TypeVar
 
 if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
@@ -18,10 +19,10 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from dask.distributed import Client
-from proxystore.ex.plugins.distributed import Future as _CustomDaskFuture
 from proxystore.proxy import _proxy_trampoline
 from proxystore.proxy import Proxy
 from proxystore.store.factory import StoreFactory
+from proxystore_ex.plugins.distributed import Future as _CustomDaskFuture
 
 P = ParamSpec('P')
 T = TypeVar('T')
@@ -41,6 +42,9 @@ def proxy_task_wrapper(function: Callable[P, T]) -> Callable[P, T]:
             for k, v in kwargs.items()
         }
 
+        new_args = cast(P.args, new_args)
+        new_kwargs = cast(P.kwargs, new_kwargs)
+
         result = function(*new_args, **new_kwargs)
 
         # This import is required so cloudpickle doesn't try to capture
@@ -59,6 +63,9 @@ class DaskExecutor:
 
     def __init__(self, client: Client) -> None:
         self._client = client
+        # The number of workers in Dask can change over time, so this assumes
+        # they are all active at the start.
+        self.max_workers: int | None = len(client.scheduler_info()['workers'])
 
     def __enter__(self) -> Self:
         self.start()
@@ -99,10 +106,9 @@ class DaskExecutor:
         base_future = self._client.submit(function, *new_args, **new_kwargs)
 
         # This custom future will cast any factory results back to proxies.
-        future = _CustomDaskFuture(
+        return _CustomDaskFuture(
             key=base_future.key,
             client=base_future.client,
             inform=base_future._inform,
             state=base_future._state,
         )
-        return future

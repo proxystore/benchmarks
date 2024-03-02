@@ -14,6 +14,7 @@ import shutil
 import sys
 import time
 import uuid
+from typing import Any
 from typing import Sequence
 
 import globus_compute_sdk
@@ -27,10 +28,10 @@ from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.results import CSVResultLogger
 from psbench.tasks.pong import pong
 from psbench.tasks.pong import pong_ipfs
 from psbench.tasks.pong import pong_proxy
@@ -157,7 +158,7 @@ def time_task_ipfs(
 def time_task_proxy(
     *,
     gce: globus_compute_sdk.Executor,
-    store: Store,
+    store: Store[Any],
     input_size: int,
     output_size: int,
     task_sleep: float,
@@ -195,8 +196,11 @@ def time_task_proxy(
     assert isinstance(result, bytes)
     assert isinstance(result, Proxy)
 
+    assert store.metrics is not None
     input_metrics = store.metrics.get_metrics(proxy)
     output_metrics = store.metrics.get_metrics(result)
+    assert input_metrics is not None
+    assert output_metrics is not None
 
     return TaskStats(
         proxystore_backend=store.connector.__class__.__name__,
@@ -219,7 +223,7 @@ def time_task_proxy(
 def runner(
     *,
     globus_compute_endpoint: str,
-    store: Store | None,
+    store: Store[Any] | None,
     use_ipfs: bool,
     ipfs_local_dir: str | None,
     ipfs_remote_dir: str | None,
@@ -258,7 +262,7 @@ def runner(
     )
 
     if csv_file is not None:
-        csv_logger = CSVLogger(csv_file, TaskStats)
+        csv_logger = CSVResultLogger(csv_file, TaskStats)
 
     for input_size in input_sizes:
         for output_size in output_sizes:

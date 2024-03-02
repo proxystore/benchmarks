@@ -20,9 +20,9 @@ from proxystore.connectors.endpoint import EndpointConnector
 
 from psbench.argparse import add_logging_options
 from psbench.benchmarks.endpoint_qps import routes
-from psbench.csv import CSVLogger
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
+from psbench.results import CSVResultLogger
 
 PROCESS_STARTUP_BUFFER_SECONDS = 5
 ROUTE_TYPE = Literal['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT']
@@ -201,7 +201,7 @@ def runner(
         csv_file (str): optional csv filepath to log results to.
     """
     if csv_file is not None:
-        csv_logger = CSVLogger(csv_file, RunStats)
+        csv_logger = CSVResultLogger(csv_file, RunStats)
 
     for route in routes:
         for payload_size in payload_sizes:

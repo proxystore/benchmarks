@@ -30,5 +30,6 @@ repos:
       - id: mypy
         additional_dependencies:
           - pydantic
+          - types-psutil
           - types-redis
           - types-requests

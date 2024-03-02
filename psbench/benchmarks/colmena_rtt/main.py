@@ -4,9 +4,6 @@ Tests round trip task times in Colmena with configurable backends,
 ProxyStore methods, payload sizes, etc. Colmena additionally requires
 Redis which is not installed when installing the psbench package.
 
-The Parsl executor config can be modified in
-    psbench/benchmarks/colmena_rtt/config.py
-
 Note: this is a fork of
     https://github.com/exalearn/colmena/tree/master/demo_apps/synthetic-data
 """
@@ -19,6 +16,7 @@ import os
 import sys
 from datetime import datetime
 from threading import Event
+from typing import Any
 from typing import NamedTuple
 from typing import Sequence
 
@@ -39,11 +37,11 @@ from proxystore.store.utils import get_key
 
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.benchmarks.colmena_rtt.config import get_config
-from psbench.csv import CSVLogger
+from psbench.config.parsl import get_htex_local_config
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
+from psbench.results import CSVResultLogger
 
 logger = logging.getLogger('colmena-rtt')
 
@@ -110,7 +108,7 @@ class Thinker(BaseThinker):
     def __init__(
         self,
         queues: ColmenaQueues,
-        store: Store | None,
+        store: Store[Any] | None,
         input_sizes_bytes: list[int],
         output_sizes_bytes: list[int],
         task_repeat: int,
@@ -348,7 +346,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             queues,
         )
     elif args.parsl:
-        config = get_config(output_dir)
+        config = get_htex_local_config(output_dir, workers=1)
         doer = ParslTaskServer([target_function], queues, config)
     else:
         raise AssertionError(
@@ -382,7 +380,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.info(TESTING_LOG_LEVEL, 'task server completed')
 
     if args.csv_file is not None and len(thinker.results) > 0:
-        with CSVLogger(args.csv_file, TaskStats) as csv_logger:
+        with CSVResultLogger(args.csv_file, TaskStats) as csv_logger:
             for result in thinker.results:
                 csv_logger.log(result)
 

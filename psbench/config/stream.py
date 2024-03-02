@@ -73,7 +73,7 @@ class StreamConfig(BaseModel):
             publisher = KafkaPublisher(producer)
         elif self.kind == 'redis':
             host, port = self.servers[0].split(':')
-            publisher = RedisPublisher(host, port)
+            publisher = RedisPublisher(host, int(port))
         else:
             raise ValueError(f'Unknown stream broker type: {self.kind}')
 
@@ -92,7 +92,7 @@ class StreamConfig(BaseModel):
             subscriber = KafkaSubscriber(consumer)
         elif self.kind == 'redis':
             host, port = self.servers[0].split(':')
-            subscriber = RedisSubscriber(host, port, topic=self.topic)
+            subscriber = RedisSubscriber(host, int(port), topic=self.topic)
         else:
             raise ValueError(f'Unknown stream broker type: {self.kind}')
 

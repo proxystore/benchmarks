@@ -18,8 +18,6 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
         '5',
         '--task-sleep',
         '6',
-        '--workers',
-        '7',
         '--executor',
         'dask',
         '--ps-connector',

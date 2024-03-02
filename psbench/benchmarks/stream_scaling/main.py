@@ -33,6 +33,13 @@ class Benchmark:
         self.store = store
         self.stream_config = stream_config
 
+        if self.executor.max_workers is None:  # pragma: no cover
+            raise ValueError(
+                'Executor max_workers is None but this benchmark requires '
+                'the executor to define the maximum number of workers.',
+            )
+        self.max_workers = self.executor.max_workers
+
     def __enter__(self) -> Self:
         # https://stackoverflow.com/a/39172487
         with contextlib.ExitStack() as stack:
@@ -66,7 +73,7 @@ class Benchmark:
             producer_sleep=config.producer_sleep,
             task_count=config.task_count,
             task_sleep=config.task_sleep,
-            workers=config.task_sleep,
+            workers=self.max_workers,
             task_submitted_timestamp=0,
             task_received_timestamp=1,
         )

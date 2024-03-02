@@ -23,7 +23,6 @@ def test_benchmark(
         producer_sleep=1,
         task_count=1,
         task_sleep=1,
-        workers=1,
     )
 
     with Benchmark(thread_executor, local_store, stream_config) as benchmark:

@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
 
 from pydantic import BaseModel
 
 from psbench.benchmarks.protocol import Benchmark
-from psbench.csv import CSVLogger
 from psbench.logging import TESTING_LOG_LEVEL
+from psbench.results import ResultLogger
 
 RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
-RunResultT = TypeVar('RunResultT', bound=NamedTuple)
+RunResultT = TypeVar('RunResultT', bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 def runner(
     benchmark: Benchmark[RunConfigT, RunResultT],
     configs: Sequence[RunConfigT],
-    result_logger: CSVLogger[RunResultT],
+    result_logger: ResultLogger[RunResultT],
     repeat: int = 1,
 ) -> None:
     logger.log(TESTING_LOG_LEVEL, f'Starting benchmark: {benchmark.name}')

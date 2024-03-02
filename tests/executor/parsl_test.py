@@ -24,8 +24,22 @@ def test_is_executor_protocol(config: Config) -> None:
         assert isinstance(executor, Executor)
 
 
+def test_too_many_executors(tmp_path: pathlib.Path) -> None:
+    config = Config(
+        executors=[
+            ThreadPoolExecutor(label='a'),
+            ThreadPoolExecutor(label='b'),
+        ],
+        run_dir=str(tmp_path / 'runs'),
+    )
+    with pytest.raises(ValueError, match='Multiple Parsl executors'):
+        ParslExecutor(config)
+
+
 def test_submit_function(config: Config) -> None:
     with ParslExecutor(config) as executor:
+        assert executor.max_workers == 1
+
         future = executor.submit(round, 1.75, ndigits=1)
         assert future.result() == 1.8
 
