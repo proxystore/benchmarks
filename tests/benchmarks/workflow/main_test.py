@@ -3,13 +3,11 @@ from __future__ import annotations
 import os
 import pathlib
 import time
-from typing import Generator
 from unittest import mock
 
 import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import Proxy
-from proxystore.store import store_registration
 from proxystore.store.base import Store
 
 from psbench.benchmarks.workflow.main import DataManagement
@@ -23,24 +21,6 @@ from psbench.benchmarks.workflow.main import WorkflowStats
 from psbench.utils import randbytes
 from testing.executor import ProcessPoolExecutor
 from testing.globus_compute import mock_globus_compute
-
-
-@pytest.fixture()
-def executor() -> Generator[ProcessPoolExecutor, None, None]:
-    with ProcessPoolExecutor(2) as executor:
-        yield executor
-
-
-@pytest.fixture()
-def store(
-    tmp_path: pathlib.Path,
-) -> Generator[Store[FileConnector], None, None]:
-    with Store(
-        'workflow-fixture',
-        FileConnector(str(tmp_path / 'store')),
-    ) as store:
-        with store_registration(store):
-            yield store
 
 
 @pytest.mark.parametrize(
@@ -77,10 +57,10 @@ def test_task_no_proxy() -> None:
     assert (end - start) >= sleep
 
 
-def test_task_proxy(store: Store[FileConnector]) -> None:
+def test_task_proxy(file_store: Store[FileConnector]) -> None:
     sleep = 0.001
     size = 100
-    data = store.proxy(randbytes(size), evict=True)
+    data = file_store.proxy(randbytes(size), evict=True)
 
     start = time.perf_counter()
     result = task_proxy(data, output_size_bytes=size, sleep=sleep)
@@ -91,8 +71,8 @@ def test_task_proxy(store: Store[FileConnector]) -> None:
     assert (end - start) >= sleep
 
     key = result.__factory__.key
-    assert store.exists(key)
-    store.evict(key)
+    assert file_store.exists(key)
+    file_store.evict(key)
 
 
 @pytest.mark.parametrize(
@@ -105,16 +85,16 @@ def test_task_proxy(store: Store[FileConnector]) -> None:
 )
 def test_run_workflow(
     data_management: DataManagement,
-    executor: ProcessPoolExecutor,
-    store: Store[FileConnector],
+    process_executor: ProcessPoolExecutor,
+    file_store: Store[FileConnector],
 ) -> None:
     stage_sizes = [1, 1, 3, 3, 1]
     data_size_bytes = 100
     sleep = 0.001
 
     stats = run_workflow(
-        executor,
-        store,
+        process_executor,
+        file_store,
         data_management,
         stage_sizes=stage_sizes,
         data_size_bytes=data_size_bytes,
@@ -125,8 +105,8 @@ def test_run_workflow(
 
 
 def test_runner(
-    executor: ProcessPoolExecutor,
-    store: Store[FileConnector],
+    process_executor: ProcessPoolExecutor,
+    file_store: Store[FileConnector],
     tmp_path: pathlib.Path,
 ) -> None:
     data_management = [
@@ -155,8 +135,8 @@ def test_runner(
         return_value=stats,
     ) as mock_run_workflow:
         runner(
-            executor,
-            store,
+            process_executor,
+            file_store,
             data_management=data_management,
             stage_sizes=[1, 1, 3, 1],
             data_sizes=data_sizes,
@@ -172,14 +152,14 @@ def test_runner(
 
 
 def test_runner_csv_error(
-    executor: ProcessPoolExecutor,
-    store: Store[FileConnector],
+    process_executor: ProcessPoolExecutor,
+    file_store: Store[FileConnector],
     tmp_path: pathlib.Path,
 ) -> None:
     with pytest.raises(ValueError, match='CSV log file should end with'):
         runner(
-            executor,
-            store,
+            process_executor,
+            file_store,
             data_management=[DataManagement.NONE],
             stage_sizes=[1],
             data_sizes=[100],

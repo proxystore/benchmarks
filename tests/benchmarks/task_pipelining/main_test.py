@@ -1,45 +1,23 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Any
-from typing import Generator
 from unittest import mock
 
 import pytest
 from proxystore.connectors.file import FileConnector
-from proxystore.store import store_registration
 from proxystore.store.base import Store
 
 from psbench.benchmarks.task_pipelining.main import main
 from psbench.benchmarks.task_pipelining.main import run_pipelined_workflow
 from psbench.benchmarks.task_pipelining.main import run_sequential_workflow
 from psbench.benchmarks.task_pipelining.main import runner
-from psbench.executor.protocol import Executor
 from testing.executor import ThreadPoolExecutor
 from testing.globus_compute import mock_globus_compute
 
 
-@pytest.fixture()
-def executor() -> Generator[ThreadPoolExecutor, None, None]:
-    with ThreadPoolExecutor(2) as executor:
-        yield executor
-
-
-@pytest.fixture()
-def store(
-    tmp_path: pathlib.Path,
-) -> Generator[Store[FileConnector], None, None]:
-    with Store(
-        'task-pipelining-fixture',
-        FileConnector(str(tmp_path / 'store')),
-    ) as store:
-        with store_registration(store):
-            yield store
-
-
 def test_run_sequential_workflow(
-    executor: Executor,
-    store: Store[Any],
+    thread_executor: ThreadPoolExecutor,
+    file_store: Store[FileConnector],
 ) -> None:
     task_chain_length = 5
     task_data_bytes = 100
@@ -47,8 +25,8 @@ def test_run_sequential_workflow(
     task_compute_sleep = 0.01
 
     stats = run_sequential_workflow(
-        executor,
-        store,
+        thread_executor,
+        file_store,
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
         task_overhead_sleep=task_overhead_sleep,
@@ -62,8 +40,8 @@ def test_run_sequential_workflow(
 
 
 def test_run_pipelined_workflow(
-    executor: Executor,
-    store: Store[Any],
+    thread_executor: ThreadPoolExecutor,
+    file_store: Store[FileConnector],
 ) -> None:
     task_chain_length = 5
     task_data_bytes = 100
@@ -72,8 +50,8 @@ def test_run_pipelined_workflow(
     task_submit_sleep = 0.001
 
     stats = run_pipelined_workflow(
-        executor,
-        store,
+        thread_executor,
+        file_store,
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
         task_overhead_sleep=task_overhead_sleep,
@@ -89,16 +67,16 @@ def test_run_pipelined_workflow(
 def test_runner(
     use_csv: bool,
     tmp_path: pathlib.Path,
-    executor: Executor,
-    store: Store[Any],
+    thread_executor: ThreadPoolExecutor,
+    file_store: Store[FileConnector],
 ) -> None:
     task_data_bytes = [1, 10]
     repeat = 3
     csv_file = str(tmp_path / 'data.csv') if use_csv else None
 
     runner(
-        executor,
-        store,
+        thread_executor,
+        file_store,
         task_chain_length=1,
         task_data_bytes=task_data_bytes,
         task_overhead_sleep=0,
