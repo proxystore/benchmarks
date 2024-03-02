@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from psbench.logging import TESTING_LOG_LEVEL
 
 
-class RunConfig(BaseModel):
+class GeneralConfig(BaseModel):
     csv_file: str = 'results.csv'
     log_file: str = 'log.txt'
     log_level: int = TESTING_LOG_LEVEL
@@ -23,7 +23,7 @@ class RunConfig(BaseModel):
 
     @staticmethod
     def add_parser_group(parser: argparse.ArgumentParser) -> None:
-        group = parser.add_argument_group(title='Run Configuration')
+        group = parser.add_argument_group(title='General Configuration')
 
         group.add_argument(
             '--csv-file',

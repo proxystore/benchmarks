@@ -4,7 +4,7 @@ from psbench.config.executor import DaskConfig
 from psbench.config.executor import ExecutorConfig
 from psbench.config.executor import GlobusComputeConfig
 from psbench.config.executor import ParslConfig
-from psbench.config.run import RunConfig
+from psbench.config.general import GeneralConfig
 from psbench.config.store import StoreConfig
 from psbench.config.stream import StreamConfig
 
@@ -13,7 +13,7 @@ __all__ = [
     'ExecutorConfig',
     'GlobusComputeConfig',
     'ParslConfig',
-    'RunConfig',
+    'GeneralConfig',
     'StoreConfig',
     'StreamConfig',
 ]
