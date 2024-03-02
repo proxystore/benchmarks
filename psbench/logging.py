@@ -33,10 +33,15 @@ def init_logging(
     """
     logging.addLevelName(TESTING_LOG_LEVEL, 'TESTING')
 
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(level)
+
+    handlers: list[logging.Handler] = [stdout_handler]
     if logfile is not None:
         make_parent_dirs(logfile)
-        handlers.append(logging.FileHandler(logfile))
+        handler = logging.FileHandler(logfile)
+        handler.setLevel(logging.INFO)
+        handlers.append(handler)
 
     kwargs: dict[str, Any] = {}
     if force:  # pragma: no cover
@@ -48,7 +53,7 @@ def init_logging(
             '%(message)s'
         ),
         datefmt='%Y-%m-%d %H:%M:%S',
-        level=level,
+        level=logging.DEBUG,
         handlers=handlers,
         **kwargs,
     )
