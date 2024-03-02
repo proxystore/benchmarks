@@ -5,9 +5,16 @@ import pathlib
 from typing import NamedTuple
 
 import pytest
+from pydantic import BaseModel
 
 from psbench.csv import CSVLogger
 from psbench.csv import field_names
+
+
+class DataBM(BaseModel):
+    time: float
+    value: int
+    result: str
 
 
 @dataclasses.dataclass
@@ -21,6 +28,12 @@ class DataNT(NamedTuple):
     time: float
     value: int
     result: str
+
+
+def test_field_names_basemodel() -> None:
+    data = DataBM(time=1.0, value=1, result='')
+    assert list(field_names(data)) == ['time', 'value', 'result']
+    assert list(field_names(DataBM)) == ['time', 'value', 'result']
 
 
 def test_field_names_dataclass() -> None:
@@ -62,8 +75,13 @@ def test_csv_logger_append(tmp_path: pathlib.Path) -> None:
     logger2.log(DataDC(7.0, 8, '9'))
     logger2.close()
 
+    logger3 = CSVLogger(filepath, DataBM)
+    logger3.log(DataBM(time=4.0, value=5, result='6'))
+    logger3.log(DataBM(time=7.0, value=8, result='9'))
+    logger3.close()
+
     with open(filepath) as f:
-        assert len(f.readlines()) == 4
+        assert len(f.readlines()) == 6
 
 
 def test_csv_logger_mismatch_headers(tmp_path: pathlib.Path) -> None:

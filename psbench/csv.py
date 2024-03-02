@@ -15,6 +15,8 @@ from typing import Sequence
 from typing import TypeVar
 from typing import Union
 
+from pydantic import BaseModel
+
 from psbench.utils import make_parent_dirs
 
 
@@ -37,7 +39,10 @@ class NamedTupleProtocol(Protocol):
         ...
 
 
-DTYPE = TypeVar('DTYPE', bound=Union[NewDataClassProtocol, NamedTuple])
+DTYPE = TypeVar(
+    'DTYPE',
+    bound=Union[BaseModel, NewDataClassProtocol, NamedTuple],
+)
 
 
 class CSVLogger(Generic[DTYPE]):
@@ -80,7 +85,9 @@ class CSVLogger(Generic[DTYPE]):
 
     def log(self, data: DTYPE) -> None:
         """Log new row."""
-        if dataclasses.is_dataclass(data) and not isinstance(data, type):
+        if isinstance(data, BaseModel):
+            self.writer.writerow(data.dict())
+        elif dataclasses.is_dataclass(data) and not isinstance(data, type):
             self.writer.writerow(dataclasses.asdict(data))
         elif isinstance(data, NamedTupleProtocol):
             cast(NamedTupleProtocol, data)
@@ -105,7 +112,9 @@ def field_names(data_type: DTYPE) -> Sequence[str]:
 
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:
     """Extract field names from NamedTuple or Dataclass."""
-    if dataclasses.is_dataclass(data_type):
+    if isinstance(data_type, (BaseModel, type(BaseModel))):
+        return list(data_type.__fields__.keys())
+    elif dataclasses.is_dataclass(data_type):
         return [f.name for f in dataclasses.fields(data_type)]
     elif isinstance(data_type, NamedTupleProtocol):
         return data_type._fields
