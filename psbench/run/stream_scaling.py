@@ -31,9 +31,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     BenchmarkMatrix.add_parser_group(parser)
-    ExecutorConfig.add_parser_group(parser, required=True)
-    StoreConfig.add_parser_group(parser, required=True)
-    StreamConfig.add_parser_group(parser, required=True)
+    ExecutorConfig.add_parser_group(parser, required=True, argv=argv)
+    StoreConfig.add_parser_group(parser, required=True, argv=argv)
+    StreamConfig.add_parser_group(parser, required=True, argv=argv)
     GeneralConfig.add_parser_group(parser)
 
     args = vars(parser.parse_args(argv))
