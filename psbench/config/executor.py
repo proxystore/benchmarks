@@ -15,15 +15,11 @@ else:  # pragma: <3.11 cover
 
 import dask
 import globus_compute_sdk
-from parsl.addresses import address_by_hostname
-from parsl.channels import LocalChannel
 from parsl.config import Config
-from parsl.executors import HighThroughputExecutor
-from parsl.executors import ThreadPoolExecutor
-from parsl.executors.base import ParslExecutor as _ParslExecutor
-from parsl.providers import LocalProvider
 from pydantic import BaseModel
 
+from psbench.config.parsl import get_htex_local_config
+from psbench.config.parsl import get_thread_config
 from psbench.executor.dask import DaskExecutor
 from psbench.executor.globus import GlobusComputeExecutor
 from psbench.executor.parsl import ParslExecutor
@@ -149,30 +145,20 @@ class ParslConfig(BaseModel):
         return cls(**options)
 
     def get_executor(self) -> ParslExecutor:
-        executor: _ParslExecutor
-
         workers = (
             self.workers
             if self.workers is not None
             else multiprocessing.cpu_count()
         )
+
+        config: Config
         if self.executor == 'thread':
-            executor = ThreadPoolExecutor(max_threads=workers)
+            config = get_thread_config(self.run_dir, workers)
         elif self.executor == 'htex-local':
-            executor = HighThroughputExecutor(
-                max_workers=workers,
-                address=address_by_hostname(),
-                cores_per_worker=1,
-                provider=LocalProvider(
-                    channel=LocalChannel(),
-                    init_blocks=1,
-                    max_blocks=1,
-                ),
-            )
+            config = get_htex_local_config(self.run_dir, workers)
         else:
             raise AssertionError(f'Unknown Parsl Executor "{self.executor}".')
 
-        config = Config(executors=[executor], run_dir=self.run_dir)
         return ParslExecutor(config)
 
 

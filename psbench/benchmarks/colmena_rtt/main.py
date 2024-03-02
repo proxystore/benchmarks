@@ -4,9 +4,6 @@ Tests round trip task times in Colmena with configurable backends,
 ProxyStore methods, payload sizes, etc. Colmena additionally requires
 Redis which is not installed when installing the psbench package.
 
-The Parsl executor config can be modified in
-    psbench/benchmarks/colmena_rtt/config.py
-
 Note: this is a fork of
     https://github.com/exalearn/colmena/tree/master/demo_apps/synthetic-data
 """
@@ -40,7 +37,7 @@ from proxystore.store.utils import get_key
 
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
-from psbench.benchmarks.colmena_rtt.config import get_config
+from psbench.config.parsl import get_htex_local_config
 from psbench.logging import init_logging
 from psbench.logging import TESTING_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
@@ -349,7 +346,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             queues,
         )
     elif args.parsl:
-        config = get_config(output_dir)
+        config = get_htex_local_config(output_dir, workers=1)
         doer = ParslTaskServer([target_function], queues, config)
     else:
         raise AssertionError(
