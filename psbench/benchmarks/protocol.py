@@ -15,15 +15,15 @@ else:  # pragma: <3.11 cover
 
 from pydantic import BaseModel
 
-ConfigT = TypeVar('ConfigT', bound=BaseModel)
-ResultT = TypeVar('ResultT', bound=NamedTuple)
+RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
+RunResultT = TypeVar('RunResultT', bound=NamedTuple)
 
 
 @runtime_checkable
-class Benchmark(Protocol[ConfigT, ResultT]):
+class Benchmark(Protocol[RunConfigT, RunResultT]):
     name: str
-    config_type: type[ConfigT]
-    result_type: type[ResultT]
+    config_type: type[RunConfigT]
+    result_type: type[RunResultT]
 
     def __enter__(self) -> Self:
         ...
@@ -39,5 +39,5 @@ class Benchmark(Protocol[ConfigT, ResultT]):
     def config(self) -> dict[str, Any]:
         ...
 
-    def run(self, config: ConfigT) -> ResultT:
+    def run(self, config: RunConfigT) -> RunResultT:
         ...
