@@ -53,48 +53,51 @@ class StoreConfig(BaseModel):
             help='ProxyStore connector to use',
         )
 
-        argv = [] if argv is None else argv
+        connector_type: str | None = None
+        if argv is not None and '--ps-connector' in argv:
+            connector_type = argv[argv.index('--ps-connector') + 1]
+
         group.add_argument(
             '--ps-daos-pool',
             metavar='NAME',
-            required=required and 'daos' in argv,
+            required=required and connector_type == 'daos',
             help='DAOS pool name.',
         )
         group.add_argument(
             '--ps-daos-container',
             metavar='NAME',
-            required=required and 'daos' in argv,
+            required=required and connector_type == 'daos',
             help='DAOS container name.',
         )
         group.add_argument(
             '--ps-daos-namespace',
             metavar='NAME',
-            required=required and 'daos' in argv,
+            required=required and connector_type == 'daos',
             help='DAOS dictionary name within container.',
         )
         group.add_argument(
             '--ps-endpoints',
             metavar='UUID',
             nargs='+',
-            required=required and 'endpoint' in argv,
+            required=required and connector_type == 'endpoint',
             help='ProxyStore Endpoint UUIDs accessible by the program',
         )
         group.add_argument(
             '--ps-file-dir',
             metavar='DIR',
-            required=required and 'file' in argv,
+            required=required and connector_type == 'file',
             help='Temp directory to store ProxyStore objects in',
         )
         group.add_argument(
             '--ps-globus-config',
             metavar='CFG',
-            required=required and 'globus' in argv,
+            required=required and connector_type == 'globus',
             help='Globus Endpoint config for ProxyStore',
         )
         group.add_argument(
             '--ps-host',
             metavar='HOST',
-            required=required and 'redis' in argv,
+            required=required and connector_type == 'redis',
             help='Hostname of server or interface to use with ProxyStore',
         )
         group.add_argument(
@@ -102,8 +105,7 @@ class StoreConfig(BaseModel):
             metavar='PORT',
             type=int,
             required=(
-                required
-                and any(c in argv for c in ('redis', 'margo', 'uxc', 'zmq'))
+                required and connector_type in ('redis', 'margo', 'uxc', 'zmq')
             ),
             help='Port of server to use with ProxyStore',
         )

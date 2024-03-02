@@ -39,8 +39,6 @@ class StreamConfig(BaseModel):
             required=required,
             help='Stream broker to use',
         )
-
-        argv = [] if argv is None else argv
         group.add_argument(
             '--stream-topic',
             default='stream-benchmark-data',

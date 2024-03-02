@@ -96,7 +96,11 @@ def test_executor_argparse() -> None:
     assert isinstance(config.config, ParslConfig)
 
     parser = argparse.ArgumentParser()
-    ExecutorConfig.add_parser_group(parser, required=True, argv=['globus'])
+    ExecutorConfig.add_parser_group(
+        parser,
+        required=True,
+        argv=['--executor', 'globus'],
+    )
     # Suppress argparse error message
     with mock.patch('argparse.ArgumentParser._print_message'):
         with pytest.raises(SystemExit):

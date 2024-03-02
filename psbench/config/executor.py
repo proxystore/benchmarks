@@ -197,18 +197,21 @@ class ExecutorConfig(BaseModel):
             help='Task executor/workflow engine',
         )
 
-        argv = [] if argv is None else argv
+        executor_type: str | None = None
+        if argv is not None and '--executor' in argv:
+            executor_type = argv[argv.index('--executor') + 1]
+
         DaskConfig.add_parser_group(
             parser,
-            required=required and 'dask' in argv,
+            required=required and executor_type == 'dask',
         )
         GlobusComputeConfig.add_parser_group(
             parser,
-            required=required and 'globus' in argv,
+            required=required and executor_type == 'globus',
         )
         ParslConfig.add_parser_group(
             parser,
-            required=required and 'parsl' in argv,
+            required=required and executor_type == 'parsl',
         )
 
     @classmethod
