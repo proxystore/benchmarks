@@ -25,8 +25,16 @@ T = TypeVar('T')
 class GlobusComputeExecutor:
     """Globus Compute task execution engine."""
 
-    def __init__(self, executor: Executor) -> None:
+    def __init__(
+        self,
+        executor: Executor,
+        max_workers: int | None = None,
+    ) -> None:
         self._executor = executor
+        # Worker count is not used internally for anything, but is here
+        # to satisfy the Executor protocol because some external code may
+        # want to know how many workers are in the executor.
+        self.max_workers = max_workers
 
     def __enter__(self) -> Self:
         self.start()

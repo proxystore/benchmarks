@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import multiprocessing
 import sys
 from typing import Any
 from typing import Literal
@@ -112,7 +111,7 @@ class GlobusComputeConfig(BaseModel):
 class ParslConfig(BaseModel):
     executor: Literal['thread', 'htex-local']
     run_dir: str
-    workers: Optional[int] = None  # noqa: UP007
+    max_workers: int
 
     @staticmethod
     def add_parser_group(
@@ -128,11 +127,15 @@ class ParslConfig(BaseModel):
             help='Parsl executor type',
         )
         group.add_argument(
-            '--parsl-workers',
-            default=None,
+            '--parsl-max-workers',
             metavar='WORKERS',
+            required=required,
             type=int,
-            help='Number of Parsl workers to configure',
+            help=(
+                'Number of Parsl workers. This configures the value for '
+                'local executors or hints to the benchmark how many workers '
+                'there will be when using a remote executor.'
+            ),
         )
 
     @classmethod
@@ -140,26 +143,20 @@ class ParslConfig(BaseModel):
         options = {
             'executor': kwargs['parsl_executor'],
             'run_dir': kwargs['parsl_run_dir'],
+            'max_workers': kwargs['parsl_max_workers'],
         }
-        options['workers'] = kwargs.get('parsl_workers', None)
         return cls(**options)
 
     def get_executor(self) -> ParslExecutor:
-        workers = (
-            self.workers
-            if self.workers is not None
-            else multiprocessing.cpu_count()
-        )
-
         config: Config
         if self.executor == 'thread':
-            config = get_thread_config(self.run_dir, workers)
+            config = get_thread_config(self.run_dir, self.max_workers)
         elif self.executor == 'htex-local':
-            config = get_htex_local_config(self.run_dir, workers)
+            config = get_htex_local_config(self.run_dir, self.max_workers)
         else:
             raise AssertionError(f'Unknown Parsl Executor "{self.executor}".')
 
-        return ParslExecutor(config)
+        return ParslExecutor(config, max_workers=self.max_workers)
 
 
 class ExecutorConfig(BaseModel):

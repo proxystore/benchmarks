@@ -24,6 +24,7 @@ T = TypeVar('T')
 
 class ProcessPoolExecutor:
     def __init__(self, max_workers: int | None = None) -> None:
+        self.max_workers = max_workers
         self._executor = _ProcessPoolExecutor(max_workers)
 
     def __enter__(self) -> Self:
@@ -56,6 +57,7 @@ class ProcessPoolExecutor:
 
 class ThreadPoolExecutor:
     def __init__(self, max_workers: int | None = None) -> None:
+        self.max_workers = max_workers
         self._executor = _ThreadPoolExecutor(max_workers)
 
     def __enter__(self) -> Self:

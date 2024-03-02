@@ -21,6 +21,7 @@ else:  # pragma: <3.11 cover
 import parsl
 from parsl.app.python import PythonApp
 from parsl.config import Config
+from parsl.executors import ThreadPoolExecutor
 
 P = ParamSpec('P')
 T = TypeVar('T')
@@ -31,13 +32,23 @@ class ParslExecutor:
 
     def __init__(
         self,
-        config: Config | None = None,
+        config: Config,
         app_options: dict[str, Any] | None = None,
+        max_workers: int | None = None,
     ) -> None:
+        if len(config.executors) > 1:
+            raise ValueError('Multiple Parsl executors is not supported.')
+
         self._config = config
         self._app_options = {} if app_options is None else app_options
         # Mapping of function to function wrapped in Parsl App
         self._parsl_apps: dict[Callable[[Any], Any], PythonApp] = {}
+
+        self.max_workers: int | None = None
+
+        (executor,) = config.executors
+        if isinstance(executor, ThreadPoolExecutor):
+            self.max_workers = executor.max_threads
 
     def __enter__(self) -> Self:
         self.start()

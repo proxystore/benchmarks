@@ -18,7 +18,6 @@ class RunConfig(BaseModel):
     producer_sleep: float
     task_count: int
     task_sleep: int
-    workers: int
 
 
 class RunResult(BaseModel):
@@ -39,7 +38,6 @@ class BenchmarkMatrix(BaseModel):
     producer_sleep: float
     task_count: int
     task_sleep: int
-    workers: int
 
     @staticmethod
     def add_parser_group(parser: argparse.ArgumentParser) -> None:
@@ -73,13 +71,6 @@ class BenchmarkMatrix(BaseModel):
             type=float,
             help='Stream processing task sleep time',
         )
-        group.add_argument(
-            '--workers',
-            metavar='INT',
-            required=True,
-            type=float,
-            help='Number of workers (should match the --executor config)',
-        )
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
@@ -88,7 +79,6 @@ class BenchmarkMatrix(BaseModel):
             producer_sleep=kwargs['producer_sleep'],
             task_count=kwargs['task_count'],
             task_sleep=kwargs['task_sleep'],
-            workers=kwargs['workers'],
         )
 
     def configs(self) -> tuple[RunConfig, ...]:
@@ -98,7 +88,6 @@ class BenchmarkMatrix(BaseModel):
                 producer_sleep=self.producer_sleep,
                 task_count=self.task_count,
                 task_sleep=self.task_sleep,
-                workers=self.workers,
             )
             for size in self.data_size_bytes
         )

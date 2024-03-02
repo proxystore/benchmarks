@@ -27,6 +27,8 @@ T = TypeVar('T')
 class Executor(Protocol):
     """Protocol for task execution engine."""
 
+    max_workers: int | None
+
     def __enter__(self) -> Self:
         ...
 

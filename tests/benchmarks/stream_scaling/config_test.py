@@ -20,8 +20,6 @@ def test_benchmark_matrix_argparse() -> None:
             '5',
             '--task-sleep',
             '6',
-            '--workers',
-            '7',
         ],
     )
     matrix = BenchmarkMatrix.from_args(**vars(args))
@@ -30,7 +28,6 @@ def test_benchmark_matrix_argparse() -> None:
     assert matrix.producer_sleep == 4
     assert matrix.task_count == 5
     assert matrix.task_sleep == 6
-    assert matrix.workers == 7
 
 
 def test_benchmark_matrix_configs() -> None:
@@ -39,7 +36,6 @@ def test_benchmark_matrix_configs() -> None:
         producer_sleep=4,
         task_count=5,
         task_sleep=6,
-        workers=7,
     )
 
     configs = matrix.configs()
@@ -49,4 +45,3 @@ def test_benchmark_matrix_configs() -> None:
         assert config.producer_sleep == matrix.producer_sleep
         assert config.task_count == matrix.task_count
         assert config.task_sleep == matrix.task_sleep
-        assert config.workers == config.workers

@@ -63,6 +63,9 @@ class DaskExecutor:
 
     def __init__(self, client: Client) -> None:
         self._client = client
+        # The number of workers in Dask can change over time, so this assumes
+        # they are all active at the start.
+        self.max_workers: int | None = len(client.scheduler_info()['workers'])
 
     def __enter__(self) -> Self:
         self.start()

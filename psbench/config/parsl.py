@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import multiprocessing
+
 from parsl.addresses import address_by_hostname
 from parsl.channels import LocalChannel
 from parsl.config import Config
@@ -12,6 +14,7 @@ def get_thread_config(
     run_dir: str,
     workers: int | None = None,
 ) -> Config:
+    workers = workers if workers is not None else multiprocessing.cpu_count()
     executor = ThreadPoolExecutor(max_threads=workers)
     return Config(executors=[executor], run_dir=run_dir)
 
@@ -20,6 +23,7 @@ def get_htex_local_config(
     run_dir: str,
     workers: int | None = None,
 ) -> Config:
+    workers = workers if workers is not None else multiprocessing.cpu_count()
     executor = HighThroughputExecutor(
         label='htex-local',
         max_workers=workers,

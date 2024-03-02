@@ -52,11 +52,13 @@ def test_globus_compute_argparse() -> None:
 def test_parsl_argparse() -> None:
     parser = argparse.ArgumentParser()
     ParslConfig.add_parser_group(parser)
-    args = parser.parse_args(['--parsl-executor', 'thread'])
+    args = parser.parse_args(
+        ['--parsl-executor', 'thread', '--parsl-max-workers', '1'],
+    )
     config = ParslConfig.from_args(parsl_run_dir='test', **vars(args))
     assert config.executor == 'thread'
     assert config.run_dir == 'test'
-    assert config.workers is None
+    assert config.max_workers == 1
 
     parser = argparse.ArgumentParser()
     ParslConfig.add_parser_group(parser, required=True)
@@ -86,7 +88,14 @@ def test_executor_argparse() -> None:
     parser = argparse.ArgumentParser()
     ExecutorConfig.add_parser_group(parser)
     args = parser.parse_args(
-        ['--executor', 'parsl', '--parsl-executor', 'thread'],
+        [
+            '--executor',
+            'parsl',
+            '--parsl-executor',
+            'thread',
+            '--parsl-max-workers',
+            '1',
+        ],
     )
     config = ExecutorConfig.from_args(
         parsl_run_dir='/tmp/rundir',
@@ -136,13 +145,21 @@ def test_globus_compute_config() -> None:
 
 
 def test_parsl_config_thread(tmp_path: pathlib.Path) -> None:
-    config = ParslConfig(executor='thread', run_dir=str(tmp_path))
+    config = ParslConfig(
+        executor='thread',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
     executor = config.get_executor()
     assert isinstance(executor, ParslExecutor)
 
 
 def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
-    config = ParslConfig(executor='htex-local', run_dir=str(tmp_path))
+    config = ParslConfig(
+        executor='htex-local',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
     executor = config.get_executor()
     assert isinstance(executor, ParslExecutor)
 
