@@ -17,7 +17,7 @@ from psbench.logging import TESTING_LOG_LEVEL
 class GeneralConfig(BaseModel):
     csv_file: str = 'results.csv'
     log_file: str = 'log.txt'
-    log_level: int = TESTING_LOG_LEVEL
+    log_level: int | str = TESTING_LOG_LEVEL
     repeat: int = 1
     run_dir: str = 'runs/'
 
@@ -52,7 +52,11 @@ class GeneralConfig(BaseModel):
             '--run-dir',
             default='runs/',
             metavar='PATH',
-            help='Run directory for logs and results',
+            help=(
+                'Run directory for logs and results. A subdirectory with '
+                'the benchmark name and timestamp will be created for each '
+                'invocation of the script.'
+            ),
         )
 
     @classmethod

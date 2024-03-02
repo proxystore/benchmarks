@@ -24,10 +24,10 @@ from parsl.executors.base import ParslExecutor as _ParslExecutor
 from parsl.providers import LocalProvider
 from pydantic import BaseModel
 
-from psbench.executors.dask import DaskExecutor
-from psbench.executors.globus import GlobusComputeExecutor
-from psbench.executors.parsl import ParslExecutor
-from psbench.executors.protocol import Executor
+from psbench.executor.dask import DaskExecutor
+from psbench.executor.globus import GlobusComputeExecutor
+from psbench.executor.parsl import ParslExecutor
+from psbench.executor.protocol import Executor
 
 
 class DaskConfig(BaseModel):
