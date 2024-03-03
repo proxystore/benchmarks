@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+import time
+from typing import Any
+
+from proxystore.store.base import Store
+from proxystore.store.future import Future
+from proxystore.stream.interface import StreamProducer
+
+from psbench.config.stream import StreamConfig
+from psbench.utils import randbytes
+
+
+def generate_data(
+    producer: StreamProducer[bytes],
+    stop_generator: Future[bool],
+    *,
+    item_size_bytes: int,
+    max_items: int,
+    sleep: float,
+    topic: str,
+) -> None:
+    sent_items = 0
+
+    while sent_items < max_items:
+        if stop_generator.done():
+            break
+
+        data = randbytes(item_size_bytes)
+        producer.send(topic, data, evict=True)
+        sent_items += 1
+
+        time.sleep(sleep)
+
+    producer.close_topics(topic)
+
+
+def generator_task(
+    store_config: dict[str, Any],
+    stream_config: StreamConfig,
+    stop_generator: Future[bool],
+    *,
+    item_size_bytes: int,
+    max_items: int,
+    sleep: float,
+    topic: str,
+) -> None:
+    store: Store[Any] = Store.from_config(store_config)
+    publisher = stream_config.get_publisher()
+
+    with StreamProducer[bytes](publisher, {topic: store}) as producer:
+        generate_data(
+            producer,
+            stop_generator,
+            item_size_bytes=item_size_bytes,
+            max_items=max_items,
+            sleep=sleep,
+            topic=topic,
+        )
