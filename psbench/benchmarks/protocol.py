@@ -5,6 +5,7 @@ from types import TracebackType
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
+from typing import Sequence
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -38,5 +39,5 @@ class Benchmark(Protocol[RunConfigT, RunResultT]):
     def config(self) -> dict[str, Any]:
         ...
 
-    def run(self, config: RunConfigT) -> RunResultT:
+    def run(self, config: RunConfigT) -> RunResultT | Sequence[RunResultT]:
         ...
