@@ -15,9 +15,8 @@ from pydantic import BaseModel
 
 class RunConfig(BaseModel):
     data_size_bytes: int
-    producer_sleep: float
     task_count: int
-    task_sleep: int
+    task_sleep: float
 
 
 class RunResult(BaseModel):
@@ -25,17 +24,16 @@ class RunResult(BaseModel):
     connector: str
     stream: str
     data_size_bytes: int
-    producer_sleep: float
     task_count: int
     task_sleep: float
     workers: int
-    task_submitted_timestamp: float
-    task_received_timestamp: float
+    completed_tasks: int
+    start_submit_tasks_timestamp: float
+    end_tasks_done_timestamp: float
 
 
 class BenchmarkMatrix(BaseModel):
     data_size_bytes: List[int]  # noqa: UP006
-    producer_sleep: float
     task_count: int
     task_sleep: int
 
@@ -49,13 +47,6 @@ class BenchmarkMatrix(BaseModel):
             required=True,
             type=int,
             help='Size of stream data objects in bytes',
-        )
-        group.add_argument(
-            '--producer-sleep',
-            metavar='SECONDS',
-            required=True,
-            type=float,
-            help='Sleep time between producing new stream items',
         )
         group.add_argument(
             '--task-count',
@@ -76,7 +67,6 @@ class BenchmarkMatrix(BaseModel):
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
             data_size_bytes=kwargs['data_size_bytes'],
-            producer_sleep=kwargs['producer_sleep'],
             task_count=kwargs['task_count'],
             task_sleep=kwargs['task_sleep'],
         )
@@ -85,7 +75,6 @@ class BenchmarkMatrix(BaseModel):
         return tuple(
             RunConfig(
                 data_size_bytes=size,
-                producer_sleep=self.producer_sleep,
                 task_count=self.task_count,
                 task_sleep=self.task_sleep,
             )

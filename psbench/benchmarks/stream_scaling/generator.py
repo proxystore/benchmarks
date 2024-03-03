@@ -17,7 +17,7 @@ def generate_data(
     *,
     item_size_bytes: int,
     max_items: int,
-    sleep: float,
+    interval: float,
     topic: str,
 ) -> None:
     sent_items = 0
@@ -30,7 +30,7 @@ def generate_data(
         producer.send(topic, data, evict=True)
         sent_items += 1
 
-        time.sleep(sleep)
+        time.sleep(interval)
 
     producer.close_topics(topic)
 
@@ -42,7 +42,7 @@ def generator_task(
     *,
     item_size_bytes: int,
     max_items: int,
-    sleep: float,
+    interval: float,
     topic: str,
 ) -> None:
     store: Store[Any] = Store.from_config(store_config)
@@ -54,6 +54,6 @@ def generator_task(
             stop_generator,
             item_size_bytes=item_size_bytes,
             max_items=max_items,
-            sleep=sleep,
+            interval=interval,
             topic=topic,
         )
