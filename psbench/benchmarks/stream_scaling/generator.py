@@ -9,6 +9,7 @@ from proxystore.stream.interface import StreamProducer
 
 from psbench.config.stream import StreamConfig
 from psbench.utils import randbytes
+from psbench.utils import wait_until
 
 
 def generate_data(
@@ -23,6 +24,7 @@ def generate_data(
     sent_items = 0
 
     while sent_items < max_items:
+        interval_end = time.time() + interval
         if stop_generator.done():
             break
 
@@ -30,7 +32,7 @@ def generate_data(
         producer.send(topic, data, evict=True)
         sent_items += 1
 
-        time.sleep(interval)
+        wait_until(interval_end)
 
     producer.close_topics(topic)
 
