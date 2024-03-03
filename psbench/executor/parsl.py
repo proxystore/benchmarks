@@ -44,7 +44,7 @@ class ParslExecutor:
         # Mapping of function to function wrapped in Parsl App
         self._parsl_apps: dict[Callable[[Any], Any], PythonApp] = {}
 
-        self.max_workers: int | None = None
+        self.max_workers: int | None = max_workers
 
         (executor,) = config.executors
         if isinstance(executor, ThreadPoolExecutor):

@@ -62,10 +62,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # managers.
     executor = executor_config.get_executor()
     store = store_config.get_store()
-    consumer = StreamConsumer(
-        stream_config.get_subscriber(),
-        {stream_config.topic: store},
-    )
+    consumer = StreamConsumer(stream_config.get_subscriber())
     assert store is not None
 
     benchmark = Benchmark(

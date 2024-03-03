@@ -13,6 +13,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future
 from proxystore.stream.interface import StreamConsumer
@@ -135,7 +136,6 @@ class Benchmark:
             f'interval_seconds={producer_interval}, '
             f'pregenerate={pregen_data}',
         )
-
         completed_tasks = 0
         running_tasks: collections.deque[Future[bytes]] = collections.deque()
 
@@ -143,6 +143,11 @@ class Benchmark:
 
         try:
             for i, item in enumerate(self.consumer):
+                if isinstance(item, Proxy):
+                    # Quick hack because Parsl will accidentally resolve
+                    # proxy when it scans tasks inputs for any special
+                    # files.
+                    item.__wrapped__ = None
                 task_future = self.executor.submit(
                     compute_task,
                     item,
@@ -150,7 +155,7 @@ class Benchmark:
                 )
                 logger.log(
                     TESTING_LOG_LEVEL,
-                    f'Submitted compute task {i}/{config.task_count}',
+                    f'Submitted compute task {i+1}/{config.task_count}',
                 )
                 running_tasks.append(task_future)
 
@@ -169,11 +174,17 @@ class Benchmark:
             logger.log(TESTING_LOG_LEVEL, 'Waiting on generator task')
             generator_task_future.result()
 
-        logger.log(TESTING_LOG_LEVEL, 'Finished submitting new compute tasks')
-        logger.log(TESTING_LOG_LEVEL, 'Waiting on outstanding compute tasks')
+        logger.log(
+            TESTING_LOG_LEVEL,
+            'Finished submitting new compute tasks',
+        )
+
+        logger.log(TESTING_LOG_LEVEL, 'Waiting on generator task')
+        generator_task_future.result()
 
         # Wait on remaining tasks. There should be compute_workers number
         # of tasks remaining unless a KeyboardInterrupt occurred.
+        logger.log(TESTING_LOG_LEVEL, 'Waiting on outstanding compute tasks')
         while len(running_tasks) > 0:
             task = running_tasks.popleft()
             task.result()
