@@ -30,7 +30,27 @@ logger = logging.getLogger('stream-scaling')
 def compute_task(data: bytes, sleep: float) -> None:
     # Resolve data if necessary
     assert isinstance(data, bytes)
+
     time.sleep(sleep)
+
+
+def pregenerate(
+    size: int,
+    interval: float,
+    example_size: int = 100_000_000,
+    example_time: float = 0.250,
+) -> bool:
+    # Determine if the data size is too large to generate within a given
+    # time interval.
+    #
+    # Benchmark with QueuePublisher and Store[FileConnector]:
+    #   - 1000 x 1MB: 1.8s (556 items/s) (1MB in 1.8 ms)
+    #   - 25 x 100MB: 5.7s (4.4 items/s) (100MB in 228 ms)
+    # To err on the safe side, I've chose 100 MB in 0.25 s as the
+    # example interval. Note that this was on a pretty fast workstation.
+    example_rate = example_size / example_time
+    expected_time = size / example_rate
+    return expected_time > interval
 
 
 class Benchmark:
@@ -62,6 +82,8 @@ class Benchmark:
         with contextlib.ExitStack() as stack:
             stack.enter_context(self.consumer)
             stack.enter_context(self.executor)
+            # The consumer will also call close on the store, but close should
+            # be idempotent so it is okay.
             stack.enter_context(self.store)
             self._stack = stack.pop_all()
         return self
@@ -85,6 +107,7 @@ class Benchmark:
     def run(self, config: RunConfig) -> RunResult:
         compute_workers = self.max_workers - 1
         producer_interval = config.task_sleep / compute_workers
+        pregen_data = pregenerate(config.data_size_bytes, producer_interval)
         logger.log(TESTING_LOG_LEVEL, f'Compute workers: {compute_workers}')
         logger.log(TESTING_LOG_LEVEL, 'Generator workers: 1')
         logger.log(
@@ -100,6 +123,7 @@ class Benchmark:
             stop_generator=stop_generator,
             item_size_bytes=config.data_size_bytes,
             max_items=config.task_count,
+            pregenerate=pregen_data,
             interval=producer_interval,
             topic=self.stream_config.topic,
         )
@@ -108,7 +132,8 @@ class Benchmark:
             'Submitted generator task: '
             f'item_size_bytes={config.data_size_bytes}, '
             f'max_items={config.task_count}, '
-            f'interval_seconds={producer_interval}',
+            f'interval_seconds={producer_interval}, '
+            f'pregenerate={pregen_data}',
         )
 
         completed_tasks = 0
@@ -137,10 +162,11 @@ class Benchmark:
                     completed_tasks += 1
         except KeyboardInterrupt:  # pragma: no cover
             logger.warning(
-                'Caught KeyboardInterrupt. Safely stopping generator task '
-                'and waiting on remaining compute tasks',
+                'Caught KeyboardInterrupt... sending stop signal to generator',
             )
             stop_generator.set_result(True)
+        finally:
+            logger.log(TESTING_LOG_LEVEL, 'Waiting on generator task')
             generator_task_future.result()
 
         logger.log(TESTING_LOG_LEVEL, 'Finished submitting new compute tasks')

@@ -18,17 +18,29 @@ def generate_data(
     *,
     item_size_bytes: int,
     max_items: int,
-    interval: float,
     topic: str,
+    interval: float = 0,
+    pregenerate: bool = False,
 ) -> None:
     sent_items = 0
+
+    data: bytes | None = None
+    if pregenerate:
+        # Pregenerate the data when the data size is too large or the interval
+        # is too small to keep up. Note that the StreamProducer will still
+        # create unique events and items in the store even though the data
+        # is the same each time.
+        data = randbytes(item_size_bytes)
 
     while sent_items < max_items:
         interval_end = time.time() + interval
         if stop_generator.done():
             break
 
-        data = randbytes(item_size_bytes)
+        if not pregenerate:
+            data = randbytes(item_size_bytes)
+
+        assert data is not None
         producer.send(topic, data, evict=True)
         sent_items += 1
 
@@ -44,18 +56,23 @@ def generator_task(
     *,
     item_size_bytes: int,
     max_items: int,
-    interval: float,
     topic: str,
+    interval: float = 0,
+    pregenerate: bool = False,
 ) -> None:
     store: Store[Any] = Store.from_config(store_config)
     publisher = stream_config.get_publisher()
 
-    with StreamProducer[bytes](publisher, {topic: store}) as producer:
-        generate_data(
-            producer,
-            stop_generator,
-            item_size_bytes=item_size_bytes,
-            max_items=max_items,
-            interval=interval,
-            topic=topic,
-        )
+    producer = StreamProducer[bytes](publisher, {topic: store})
+
+    generate_data(
+        producer,
+        stop_generator,
+        item_size_bytes=item_size_bytes,
+        max_items=max_items,
+        pregenerate=pregenerate,
+        interval=interval,
+        topic=topic,
+    )
+
+    producer.close(stores=False)

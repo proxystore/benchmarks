@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from unittest import mock
 
+import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
 from proxystore.store.future import Future
@@ -13,7 +14,11 @@ from psbench.config.stream import StreamConfig
 from testing.stream import create_stream_pair
 
 
-def test_generator_max_items(file_store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('pregenerate', (True, False))
+def test_generator_max_items(
+    pregenerate: bool,
+    file_store: Store[FileConnector],
+) -> None:
     stop_generator: Future[bool] = file_store.future()
     item_size_bytes = 100
     max_items = 5
@@ -25,6 +30,7 @@ def test_generator_max_items(file_store: Store[FileConnector]) -> None:
             stop_generator,
             item_size_bytes=100,
             max_items=5,
+            pregenerate=pregenerate,
             interval=0,
             topic=topic,
         )
