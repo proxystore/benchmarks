@@ -7,13 +7,14 @@ from proxystore.store.base import Store
 from proxystore.store.future import Future
 from proxystore.stream.interface import StreamProducer
 
+from psbench.benchmarks.stream_scaling.shims import ProducerShim
 from psbench.config.stream import StreamConfig
 from psbench.utils import randbytes
 from psbench.utils import wait_until
 
 
 def generate_data(
-    producer: StreamProducer[bytes],
+    producer: ProducerShim,
     stop_generator: Future[bool],
     *,
     item_size_bytes: int,
@@ -41,12 +42,12 @@ def generate_data(
             data = randbytes(item_size_bytes)
 
         assert data is not None
-        producer.send(topic, data, evict=True)
+        producer.send(topic, data)
         sent_items += 1
 
         wait_until(interval_end)
 
-    producer.close_topics(topic)
+    producer.close_topic(topic)
 
 
 def generator_task(
@@ -59,14 +60,20 @@ def generator_task(
     topic: str,
     interval: float = 0,
     pregenerate: bool = False,
+    use_proxies: bool = True,
 ) -> None:
     store: Store[Any] = Store.from_config(store_config)
     publisher = stream_config.get_publisher()
 
     producer = StreamProducer[bytes](publisher, {topic: store})
+    producer_shim = ProducerShim(
+        producer,
+        direct_to_publisher=not use_proxies,
+        proxy_evict=True,
+    )
 
     generate_data(
-        producer,
+        producer_shim,
         stop_generator,
         item_size_bytes=item_size_bytes,
         max_items=max_items,

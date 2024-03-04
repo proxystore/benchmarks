@@ -21,7 +21,9 @@ from proxystore.stream.interface import StreamConsumer
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.config import RunResult
 from psbench.benchmarks.stream_scaling.generator import generator_task
+from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
+from psbench.executor.parsl import ParslExecutor
 from psbench.executor.protocol import Executor
 from psbench.logging import TESTING_LOG_LEVEL
 
@@ -127,6 +129,7 @@ class Benchmark:
             pregenerate=pregen_data,
             interval=producer_interval,
             topic=self.stream_config.topic,
+            use_proxies=config.use_proxies,
         )
         logger.log(
             TESTING_LOG_LEVEL,
@@ -134,16 +137,25 @@ class Benchmark:
             f'item_size_bytes={config.data_size_bytes}, '
             f'max_items={config.task_count}, '
             f'interval_seconds={producer_interval}, '
-            f'pregenerate={pregen_data}',
+            f'pregenerate={pregen_data}, '
+            f'use_proxies={config.use_proxies}',
         )
         completed_tasks = 0
         running_tasks: collections.deque[Future[bytes]] = collections.deque()
 
+        consumer = ConsumerShim(
+            self.consumer,
+            direct_from_subscriber=not config.use_proxies,
+        )
+
         start = time.time()
 
         try:
-            for i, item in enumerate(self.consumer):
-                if isinstance(item, Proxy):
+            for i, item in enumerate(consumer):
+                if isinstance(self.executor, ParslExecutor) and isinstance(
+                    item,
+                    Proxy,
+                ):  # pragma: no cover
                     # Quick hack because Parsl will accidentally resolve
                     # proxy when it scans tasks inputs for any special
                     # files.
@@ -202,6 +214,7 @@ class Benchmark:
             data_size_bytes=config.data_size_bytes,
             task_count=config.task_count,
             task_sleep=config.task_sleep,
+            use_proxies=config.use_proxies,
             workers=self.max_workers,
             completed_tasks=completed_tasks,
             start_submit_tasks_timestamp=start,

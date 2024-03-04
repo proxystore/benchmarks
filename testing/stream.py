@@ -21,7 +21,7 @@ def create_stream_pair(
     None,
     None,
 ]:
-    queue_ = queue.Queue[bytes]()
+    queue_: queue.Queue[bytes] = queue.Queue()
 
     publisher = QueuePublisher({topic: queue_})
     subscriber = QueueSubscriber(queue_)

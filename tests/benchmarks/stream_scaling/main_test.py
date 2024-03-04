@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 from unittest import mock
 
+import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
 
@@ -13,7 +14,9 @@ from testing.executor import ThreadPoolExecutor
 from testing.stream import create_stream_pair
 
 
+@pytest.mark.parametrize('use_proxies', (True, False))
 def test_benchmark(
+    use_proxies: bool,
     file_store: Store[FileConnector],
     thread_executor: ThreadPoolExecutor,
 ) -> None:
@@ -26,6 +29,7 @@ def test_benchmark(
         data_size_bytes=100,
         task_count=8,
         task_sleep=0.001,
+        use_proxies=use_proxies,
     )
 
     with contextlib.ExitStack() as stack:

@@ -12,6 +12,8 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
         '1',
         '2',
         '3',
+        '--stream-method',
+        'proxy',
         '--task-count',
         '5',
         '--task-sleep',
@@ -32,5 +34,7 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
         'psbench.config.StoreConfig.get_store',
     ), mock.patch(
         'psbench.config.StreamConfig.get_subscriber',
-    ), mock.patch('psbench.run.stream_scaling.StreamConsumer'):
+    ), mock.patch(
+        'psbench.run.stream_scaling.StreamConsumer',
+    ), mock.patch('psbench.run.stream_scaling.init_logging'):
         main(argv)
