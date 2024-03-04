@@ -15,13 +15,13 @@ from testing.executor import ThreadPoolExecutor
 
 @pytest.fixture()
 def process_executor() -> Generator[ProcessPoolExecutor, None, None]:
-    with ProcessPoolExecutor(2) as executor:
+    with ProcessPoolExecutor(4) as executor:
         yield executor
 
 
 @pytest.fixture()
 def thread_executor() -> Generator[ThreadPoolExecutor, None, None]:
-    with ThreadPoolExecutor(2) as executor:
+    with ThreadPoolExecutor(4) as executor:
         yield executor
 
 

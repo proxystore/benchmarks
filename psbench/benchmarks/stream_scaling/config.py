@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import sys
 from typing import Any
 from typing import List
+from typing import Literal
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -15,9 +17,9 @@ from pydantic import BaseModel
 
 class RunConfig(BaseModel):
     data_size_bytes: int
-    producer_sleep: float
     task_count: int
-    task_sleep: int
+    task_sleep: float
+    use_proxies: bool
 
 
 class RunResult(BaseModel):
@@ -25,17 +27,18 @@ class RunResult(BaseModel):
     connector: str
     stream: str
     data_size_bytes: int
-    producer_sleep: float
     task_count: int
     task_sleep: float
+    use_proxies: bool
     workers: int
-    task_submitted_timestamp: float
-    task_received_timestamp: float
+    completed_tasks: int
+    start_submit_tasks_timestamp: float
+    end_tasks_done_timestamp: float
 
 
 class BenchmarkMatrix(BaseModel):
     data_size_bytes: List[int]  # noqa: UP006
-    producer_sleep: float
+    stream_method: List[Literal['default', 'proxy']]  # noqa: UP006
     task_count: int
     task_sleep: int
 
@@ -51,11 +54,11 @@ class BenchmarkMatrix(BaseModel):
             help='Size of stream data objects in bytes',
         )
         group.add_argument(
-            '--producer-sleep',
-            metavar='SECONDS',
+            '--stream-method',
+            choices=['default', 'proxy'],
+            nargs='+',
             required=True,
-            type=float,
-            help='Sleep time between producing new stream items',
+            help='Stream method',
         )
         group.add_argument(
             '--task-count',
@@ -76,7 +79,7 @@ class BenchmarkMatrix(BaseModel):
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
             data_size_bytes=kwargs['data_size_bytes'],
-            producer_sleep=kwargs['producer_sleep'],
+            stream_method=kwargs['stream_method'],
             task_count=kwargs['task_count'],
             task_sleep=kwargs['task_sleep'],
         )
@@ -85,9 +88,12 @@ class BenchmarkMatrix(BaseModel):
         return tuple(
             RunConfig(
                 data_size_bytes=size,
-                producer_sleep=self.producer_sleep,
                 task_count=self.task_count,
                 task_sleep=self.task_sleep,
+                use_proxies=method == 'proxy',
             )
-            for size in self.data_size_bytes
+            for size, method in itertools.product(
+                self.data_size_bytes,
+                self.stream_method,
+            )
         )

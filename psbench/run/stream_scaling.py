@@ -7,6 +7,8 @@ import sys
 from datetime import datetime
 from typing import Sequence
 
+from proxystore.stream.interface import StreamConsumer
+
 from psbench.benchmarks.stream_scaling.config import BenchmarkMatrix
 from psbench.benchmarks.stream_scaling.main import Benchmark
 from psbench.config import ExecutorConfig
@@ -56,11 +58,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     stream_config = StreamConfig.from_args(**args)
     logger.log(TESTING_LOG_LEVEL, 'All configurations loaded')
 
+    # We'll let the Benchmark object handle entering and exit these context
+    # managers.
     executor = executor_config.get_executor()
     store = store_config.get_store()
+    consumer = StreamConsumer(stream_config.get_subscriber())
     assert store is not None
 
-    benchmark = Benchmark(executor, store, stream_config=stream_config)
+    benchmark = Benchmark(
+        consumer,
+        executor,
+        store,
+        stream_config=stream_config,
+    )
     logger.log(TESTING_LOG_LEVEL, 'Benchmark initialized')
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
