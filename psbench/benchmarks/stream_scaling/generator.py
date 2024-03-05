@@ -64,6 +64,7 @@ def generator_task(
 ) -> None:
     store: Store[Any] = Store.from_config(store_config)
     publisher = stream_config.get_publisher()
+    assert publisher is not None
 
     producer = StreamProducer[bytes](publisher, {topic: store})
     producer_shim = ProducerShim(

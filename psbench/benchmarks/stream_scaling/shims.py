@@ -28,7 +28,7 @@ class ConsumerShim:
 
     def __next__(self) -> Proxy[bytes] | bytes:
         if self.direct_from_subscriber:
-            data = next(self.consumer._subscriber)
+            data = next(self.consumer.subscriber)
             if data == CLOSE_SENTINAL:
                 raise StopIteration
             return data
@@ -49,12 +49,12 @@ class ProducerShim:
 
     def send(self, topic: str, data: bytes) -> None:
         if self.direct_to_publisher:
-            self.producer._publisher.send(topic, data)
+            self.producer.publisher.send(topic, data)
         else:
             self.producer.send(topic, data, evict=self.proxy_evict)
 
     def close_topic(self, topic: str) -> None:
         if self.direct_to_publisher:
-            self.producer._publisher.send(topic, CLOSE_SENTINAL)
+            self.producer.publisher.send(topic, CLOSE_SENTINAL)
         else:
             self.producer.close_topics(topic)
