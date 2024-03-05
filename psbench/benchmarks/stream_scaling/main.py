@@ -5,6 +5,7 @@ import contextlib
 import logging
 import sys
 import time
+from concurrent.futures import Future
 from types import TracebackType
 from typing import Any
 
@@ -15,7 +16,7 @@ else:  # pragma: <3.11 cover
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
-from proxystore.store.future import Future
+from proxystore.store.future import Future as ProxyFuture
 from proxystore.stream.interface import StreamConsumer
 
 from psbench.benchmarks.stream_scaling.config import RunConfig
@@ -118,7 +119,7 @@ class Benchmark:
             f'Generator item interval: {producer_interval}',
         )
 
-        stop_generator: Future[bool] = self.store.future()
+        stop_generator: ProxyFuture[bool] = self.store.future()
         generator_task_future = self.executor.submit(
             generator_task,
             store_config=self.store.config(),
@@ -141,7 +142,9 @@ class Benchmark:
             f'use_proxies={config.use_proxies}',
         )
         completed_tasks = 0
-        running_tasks: collections.deque[Future[bytes]] = collections.deque()
+        running_tasks: collections.deque[
+            Future[bytes] | Future[None]
+        ] = collections.deque()
 
         consumer = ConsumerShim(
             self.consumer,

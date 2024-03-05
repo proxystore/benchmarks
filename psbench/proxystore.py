@@ -9,11 +9,11 @@ from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoints
 from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
-from proxystore.ex.connectors.dim.margo import MargoConnector
-from proxystore.ex.connectors.dim.ucx import UCXConnector
-from proxystore.ex.connectors.dim.zmq import ZeroMQConnector
 from proxystore.store import register_store
 from proxystore.store import Store
+from proxystore_ex.connectors.dim.margo import MargoConnector
+from proxystore_ex.connectors.dim.ucx import UCXConnector
+from proxystore_ex.connectors.dim.zmq import ZeroMQConnector
 
 
 def init_store_from_args(

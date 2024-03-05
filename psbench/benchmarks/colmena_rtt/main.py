@@ -137,12 +137,14 @@ class Thinker(BaseThinker):
         )
         for _ in range(expected_tasks):
             result = self.queues.get_result(topic='generate')
+            assert result is not None
             if not result.success:  # pragma: no cover
                 raise ValueError(f'Failure in task: {result}.')
             value = result.value
             if isinstance(value, Proxy) and self.store is not None:
                 self.store.evict(get_key(value))
 
+            assert result.task_info is not None
             task_stats = TaskStats.from_result(
                 result,
                 result.task_info['input_size'],
@@ -317,6 +319,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     os.makedirs(output_dir, exist_ok=True)
 
     # Make the queues
+    queues: ColmenaQueues
     if (
         args.redis_host is not None or args.redis_port is not None
     ):  # pragma: no cover
