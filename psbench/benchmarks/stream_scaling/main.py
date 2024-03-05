@@ -103,7 +103,7 @@ class Benchmark:
         return {
             'executor': self.executor.__class__.__name__,
             'connector': self.store.connector.__class__.__name__,
-            'subscriber': self.consumer._subscriber.__class__.__name__,
+            'subscriber': self.consumer.subscriber.__class__.__name__,
             'stream-config': self.stream_config,
         }
 

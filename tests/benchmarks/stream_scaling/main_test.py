@@ -40,7 +40,7 @@ def test_benchmark(
         stack.enter_context(
             mock.patch(
                 'psbench.config.stream.StreamConfig.get_publisher',
-                return_value=producer._publisher,
+                return_value=producer.publisher,
             ),
         )
 
