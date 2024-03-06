@@ -21,21 +21,19 @@ def test_run_sequential_workflow(
 ) -> None:
     task_chain_length = 5
     task_data_bytes = 100
-    task_overhead_sleep = 0.001
-    task_compute_sleep = 0.01
+    task_overhead_fraction = 0.1
+    task_sleep = 0.01
 
     stats = run_sequential_workflow(
         thread_executor,
         file_store,
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
-        task_overhead_sleep=task_overhead_sleep,
-        task_compute_sleep=task_compute_sleep,
+        task_overhead_fraction=task_overhead_fraction,
+        task_sleep=task_sleep,
     )
 
-    expected_time_s = (
-        task_chain_length * task_overhead_sleep * task_compute_sleep
-    )
+    expected_time_s = task_chain_length * task_sleep
     assert stats.workflow_makespan_ms > (expected_time_s * 1000)
 
 
@@ -45,21 +43,19 @@ def test_run_pipelined_workflow(
 ) -> None:
     task_chain_length = 5
     task_data_bytes = 100
-    task_overhead_sleep = 0.001
-    task_compute_sleep = 0.001
-    task_submit_sleep = 0.001
+    task_overhead_fraction = 0.1
+    task_sleep = 0.01
 
     stats = run_pipelined_workflow(
         thread_executor,
         file_store,
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
-        task_overhead_sleep=task_overhead_sleep,
-        task_compute_sleep=task_compute_sleep,
-        task_submit_sleep=task_submit_sleep,
+        task_overhead_fraction=task_overhead_fraction,
+        task_sleep=task_sleep,
     )
 
-    expected_time_s = task_chain_length * task_compute_sleep
+    expected_time_s = task_chain_length * task_sleep
     assert stats.workflow_makespan_ms > (expected_time_s * 1000)
 
 
@@ -79,9 +75,8 @@ def test_runner(
         file_store,
         task_chain_length=1,
         task_data_bytes=task_data_bytes,
-        task_overhead_sleep=0,
-        task_compute_sleep=0,
-        task_submit_sleep=0,
+        task_overhead_fractions=[0.1],
+        task_sleep=1.0,
         repeat=repeat,
         csv_file=csv_file,
     )
@@ -103,12 +98,11 @@ def test_main(tmp_path: pathlib.Path) -> None:
         '--task-data-bytes',
         '100',
         '1000',
-        '--task-overhead-sleep',
-        '1',
-        '--task-compute-sleep',
+        '--task-overhead-fractions',
+        '0.1',
+        '0.2',
+        '--task-sleep',
         '2',
-        '--task-submit-sleep',
-        '3',
         '--ps-backend',
         'FILE',
         '--ps-file-dir',

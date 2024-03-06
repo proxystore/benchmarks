@@ -38,16 +38,15 @@ class WorkflowStats(NamedTuple):
     submission_method: Literal['sequential', 'pipelined']
     task_chain_length: int
     task_data_bytes: int
-    task_overhead_sleep: float
-    task_compute_sleep: float
-    task_submit_sleep: float
+    task_overhead_fraction: float
+    task_sleep: float
     workflow_makespan_ms: float
 
 
 def sequential_task(
     data: Proxy[bytes],
-    overhead_sleep: float,
-    compute_sleep: float,
+    overhead_fraction: float,
+    sleep: float,
 ) -> Proxy[bytes]:
     import time
 
@@ -56,12 +55,12 @@ def sequential_task(
 
     from psbench.utils import randbytes
 
-    time.sleep(overhead_sleep)
+    time.sleep(overhead_fraction * sleep)
 
     resolve(data)
     assert isinstance(data, bytes)
 
-    time.sleep(compute_sleep)
+    time.sleep((1 - overhead_fraction) * sleep)
 
     store = get_store(data)
     assert store is not None
@@ -76,8 +75,8 @@ def sequential_task(
 def pipelined_task(
     data: Proxy[bytes],
     future: ProxyFuture[bytes],
-    overhead_sleep: float,
-    compute_sleep: float,
+    overhead_fraction: float,
+    sleep: float,
 ) -> None:
     import time
 
@@ -85,12 +84,12 @@ def pipelined_task(
 
     from psbench.utils import randbytes
 
-    time.sleep(overhead_sleep)
+    time.sleep(overhead_fraction * sleep)
 
     resolve(data)
     assert isinstance(data, bytes)
 
-    time.sleep(compute_sleep)
+    time.sleep((1 - overhead_fraction) * sleep)
 
     result = randbytes(len(data))
     future.set_result(result)
@@ -101,8 +100,8 @@ def run_sequential_workflow(
     store: Store[Any],
     task_chain_length: int,
     task_data_bytes: int,
-    task_overhead_sleep: float,
-    task_compute_sleep: float,
+    task_overhead_fraction: float,
+    task_sleep: float,
 ) -> WorkflowStats:
     start = time.perf_counter_ns()
 
@@ -117,8 +116,8 @@ def run_sequential_workflow(
         future = executor.submit(
             sequential_task,
             proxy,
-            overhead_sleep=task_overhead_sleep,
-            compute_sleep=task_compute_sleep,
+            overhead_fraction=task_overhead_fraction,
+            sleep=task_sleep,
         )
         proxy = future.result()
 
@@ -133,9 +132,8 @@ def run_sequential_workflow(
         submission_method='sequential',
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
-        task_overhead_sleep=task_overhead_sleep,
-        task_compute_sleep=task_compute_sleep,
-        task_submit_sleep=0,
+        task_overhead_fraction=task_overhead_fraction,
+        task_sleep=task_sleep,
         workflow_makespan_ms=(end - start) / 1e6,
     )
 
@@ -145,9 +143,8 @@ def run_pipelined_workflow(
     store: Store[Any],
     task_chain_length: int,
     task_data_bytes: int,
-    task_overhead_sleep: float,
-    task_compute_sleep: float,
-    task_submit_sleep: float,
+    task_overhead_fraction: float,
+    task_sleep: float,
 ) -> WorkflowStats:
     start = time.perf_counter_ns()
 
@@ -162,8 +159,8 @@ def run_pipelined_workflow(
 
     for i in range(task_chain_length):
         if i > 1:
-            task_futures[i - 1].result()
-            time.sleep(task_submit_sleep)
+            old_future = task_futures.pop(0)
+            old_future.result()
         data_future: ProxyFuture[bytes] = store.future(
             evict=True,
             polling_interval=0.001,
@@ -172,14 +169,15 @@ def run_pipelined_workflow(
             pipelined_task,
             proxy,
             data_future,
-            overhead_sleep=task_overhead_sleep,
-            compute_sleep=task_compute_sleep,
+            overhead_fraction=task_overhead_fraction,
+            sleep=task_sleep,
         )
         task_futures.append(task_future)
-        time.sleep(task_submit_sleep)
+        time.sleep((1 - task_overhead_fraction) * task_sleep)
         proxy = data_future.proxy()
 
-    task_futures[-1].result()
+    for future in task_futures:
+        future.result()
 
     # Resolve the final resulting data
     assert isinstance(proxy, bytes)
@@ -192,9 +190,8 @@ def run_pipelined_workflow(
         submission_method='pipelined',
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
-        task_overhead_sleep=task_overhead_sleep,
-        task_compute_sleep=task_compute_sleep,
-        task_submit_sleep=task_submit_sleep,
+        task_overhead_fraction=task_overhead_fraction,
+        task_sleep=task_sleep,
         workflow_makespan_ms=(end - start) / 1e6,
     )
 
@@ -204,9 +201,8 @@ def runner(
     store: Store[Any],
     task_chain_length: int,
     task_data_bytes: Sequence[int],
-    task_overhead_sleep: float,
-    task_compute_sleep: float,
-    task_submit_sleep: float,
+    task_overhead_fractions: Sequence[float],
+    task_sleep: float,
     repeat: int,
     csv_file: str | None,
 ) -> None:
@@ -218,9 +214,8 @@ def runner(
         f' - ProxyStore Connector: {store.connector.__class__.__name__}\n'
         f' - Task chain length: {task_chain_length}\n'
         f' - Task data size (bytes): {task_data_bytes}\n'
-        f' - Task overhead sleep (s): {task_overhead_sleep}\n'
-        f' - Task compute sleep (s): {task_compute_sleep}\n'
-        f' - Task submit sleep (s): {task_submit_sleep}\n'
+        f' - Task overhead fractions (s): {task_overhead_fractions}\n'
+        f' - Task sleep (s): {task_sleep}\n'
         f' - Workflow repeat: {repeat}',
     )
 
@@ -237,28 +232,26 @@ def runner(
     future = executor.submit(sum, [1, 2, 3])
     assert future.result() == 6
 
-    for submission_method, data_size in itertools.product(
+    for submission_method, data_size, overhead_frac in itertools.product(
         ('sequential', 'pipelined'),
         task_data_bytes,
+        task_overhead_fractions,
     ):
         for _ in range(repeat):
-            kwargs: dict[str, Any] = {
-                'executor': executor,
-                'store': store,
-                'task_chain_length': task_chain_length,
-                'task_data_bytes': data_size,
-                'task_overhead_sleep': task_overhead_sleep,
-                'task_compute_sleep': task_compute_sleep,
-            }
-
             run: Callable[..., WorkflowStats]
             if submission_method == 'sequential':
                 run = run_sequential_workflow
             else:
                 run = run_pipelined_workflow
-                kwargs['task_submit_sleep'] = task_submit_sleep
 
-            stats = run(**kwargs)
+            stats = run(
+                executor=executor,
+                store=store,
+                task_chain_length=task_chain_length,
+                task_data_bytes=data_size,
+                task_overhead_fraction=overhead_frac,
+                task_sleep=task_sleep,
+            )
 
             logger.log(
                 TESTING_LOG_LEVEL,
@@ -302,25 +295,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='Intermediate task data size in bytes',
     )
     parser.add_argument(
-        '--task-overhead-sleep',
-        metavar='SECONDS',
+        '--task-overhead-fractions',
+        metavar='FLOAT',
+        nargs='+',
         required=True,
         type=float,
-        help='Simulate initial task overhead',
+        help='Fractions of task sleep time considered initial overhead',
     )
     parser.add_argument(
-        '--task-compute-sleep',
+        '--task-sleep',
         metavar='SECONDS',
         required=True,
         type=float,
-        help='Simulate task computation',
-    )
-    parser.add_argument(
-        '--task-submit-sleep',
-        metavar='SECONDS',
-        required=True,
-        type=float,
-        help='Time between submitting tasks with pipelining',
+        help='Task sleep time (does not include data resolve)',
     )
     parser.add_argument(
         '--repeat',
@@ -347,9 +334,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             store=store,
             task_chain_length=args.task_chain_length,
             task_data_bytes=args.task_data_bytes,
-            task_overhead_sleep=args.task_overhead_sleep,
-            task_compute_sleep=args.task_compute_sleep,
-            task_submit_sleep=args.task_submit_sleep,
+            task_overhead_fractions=args.task_overhead_fractions,
+            task_sleep=args.task_sleep,
             repeat=args.repeat,
             csv_file=args.csv_file,
         )
