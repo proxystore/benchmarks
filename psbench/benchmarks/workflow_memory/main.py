@@ -2,58 +2,37 @@
 
 from __future__ import annotations
 
-import argparse
-import enum
-import itertools
+import contextlib
 import logging
 import sys
 import time
 from concurrent.futures import Future
+from types import TracebackType
 from typing import Any
 from typing import Callable
-from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.ref import borrow
-from proxystore.store.ref import OwnedProxy
+from proxystore.store.ref import into_owned
 from proxystore.store.scopes import submit
 
-from psbench.argparse import add_executor_options
-from psbench.argparse import add_logging_options
-from psbench.argparse import add_proxystore_options
-from psbench.executor.factory import init_executor_from_args
+from psbench.benchmarks.workflow_memory.config import DataManagement
+from psbench.benchmarks.workflow_memory.config import RunConfig
+from psbench.benchmarks.workflow_memory.config import RunResult
 from psbench.executor.protocol import Executor
-from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
-from psbench.memory import SystemMemoryProfiler
-from psbench.proxystore import init_store_from_args
-from psbench.results import CSVResultLogger
 from psbench.utils import randbytes
 
-logger = logging.getLogger('workflow')
+logger = logging.getLogger('workflow-memory')
 
 T = TypeVar('T')
-
-
-class DataManagement(enum.Enum):
-    NONE = 'none'
-    DEFAULT_PROXY = 'default-proxy'
-    OWNED_PROXY = 'owned-proxy'
-
-
-class WorkflowStats(NamedTuple):
-    executor: str
-    connector: str | None
-    data_management: str
-    stage_sizes: str
-    data_size_bytes: int
-    task_sleep: float
-    workflow_start_timestamp: float
-    workflow_end_timestamp: float
-    workflow_makespan_s: float
 
 
 def task_no_proxy(
@@ -140,12 +119,6 @@ def validate_workflow(stage_sizes: Sequence[int]) -> None:
             )
 
 
-def into_owned(proxy: Proxy[T]) -> OwnedProxy[T]:
-    factory = proxy.__factory__
-    factory.evict = False
-    return OwnedProxy(factory)
-
-
 def _run_workflow_stage(
     input_data: tuple[Any, ...],
     executor: Executor,
@@ -212,7 +185,7 @@ def run_workflow(
     stage_sizes: Sequence[int],
     data_size_bytes: int,
     sleep: float,
-) -> WorkflowStats:
+) -> RunResult:
     start_timestamp = time.time()
 
     validate_workflow(stage_sizes)
@@ -236,7 +209,7 @@ def run_workflow(
         current_data = new_data
 
     end_timestamp = time.time()
-    return WorkflowStats(
+    return RunResult(
         executor=executor.__class__.__name__,
         connector=(
             'None' if store is None else store.connector.__class__.__name__
@@ -251,163 +224,49 @@ def run_workflow(
     )
 
 
-def runner(
-    executor: Executor,
-    store: Store[Any] | None,
-    data_management: list[DataManagement],
-    stage_sizes: Sequence[int],
-    data_sizes: Sequence[int],
-    sleep: float,
-    repeat: int,
-    csv_file: str,
-    memory_profile_interval: float,
-) -> None:
-    runner_start = time.perf_counter()
+class Benchmark:
+    name = 'Workflow Memory'
+    config_type = RunConfig
+    result_type = RunResult
 
-    connector_name = (
-        'None' if store is None else store.connector.__class__.__name__
-    )
-    logger.log(
-        TESTING_LOG_LEVEL,
-        'Starting test runner\n'
-        f' - Executor: {executor.__class__.__name__}\n'
-        f' - ProxyStore Connector: {connector_name}\n'
-        f' - Data management: {", ".join(d.value for d in data_management)}\n'
-        f' - Workflow stage sizes: {"-".join(str(s) for s in stage_sizes)}\n'
-        f' - Data sizes (bytes): {data_sizes}\n'
-        f' - Task sleep (s): {sleep}\n'
-        f' - Workflow repeat: {repeat}\n'
-        f' - Memory profile interval (s): {memory_profile_interval}',
-    )
+    def __init__(self, executor: Executor, store: Store[Any]) -> None:
+        self.executor = executor
+        self.store = store
 
-    if not csv_file.endswith('.csv'):
-        raise ValueError('CSV log file should end with ".csv"')
+    def __enter__(self) -> Self:
+        # https://stackoverflow.com/a/39172487
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(self.executor)
+            stack.enter_context(self.store)
+            self._stack = stack.pop_all()
+        return self
 
-    workflow_logger = CSVResultLogger(csv_file, WorkflowStats)
-    memory_file = csv_file.replace('.csv', '-memory.csv')
-    memory_profiler = SystemMemoryProfiler(
-        memory_profile_interval,
-        memory_file,
-    )
-    memory_profiler.start()
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self._stack.__exit__(exc_type, exc_value, exc_traceback)
 
-    logger.log(
-        TESTING_LOG_LEVEL,
-        'Submitted pre-task to alleviate cold-start penalty',
-    )
-    future = executor.submit(sum, [1, 2, 3])
-    assert future.result() == 6
+    def config(self) -> dict[str, Any]:
+        return {
+            'executor': self.executor.__class__.__name__,
+            'connector': self.store.connector.__class__.__name__,
+        }
 
-    options = itertools.product(data_management, data_sizes)
-    for data_method, data_size_bytes in options:
-        for _ in range(repeat):
-            stats = run_workflow(
-                executor,
-                store,
-                data_management=data_method,
-                stage_sizes=stage_sizes,
-                data_size_bytes=data_size_bytes,
-                sleep=sleep,
-            )
-
-            logger.log(
-                TESTING_LOG_LEVEL,
-                f'Workflow completed in {stats.workflow_makespan_s:.3f} s\n'
-                f'{stats}',
-            )
-
-            workflow_logger.log(stats)
-
-    workflow_logger.close()
-    logger.log(TESTING_LOG_LEVEL, f'Workflow run data saved: {csv_file}')
-    memory_profiler.stop()
-    memory_profiler.join(timeout=5.0)
-    logger.log(TESTING_LOG_LEVEL, f'Memory profile data saved: {memory_file}')
-
-    runner_end = time.perf_counter()
-    logger.log(
-        TESTING_LOG_LEVEL,
-        f'Test runner complete in {(runner_end - runner_start):.3f} s',
-    )
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    argv = argv if argv is not None else sys.argv[1:]
-
-    parser = argparse.ArgumentParser(
-        description='Workflow simulation benchmark.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        '--data-management',
-        choices=['none', 'default-proxy', 'owned-proxy'],
-        default=['none', 'default-proxy', 'owned-proxy'],
-        nargs='+',
-        help='Data management method. Default will repeat with all options',
-    )
-    parser.add_argument(
-        '--stage-sizes',
-        type=int,
-        metavar='COUNT',
-        nargs='+',
-        required=True,
-        help='List of stages sizes of the simulated workflow',
-    )
-    parser.add_argument(
-        '--data-sizes',
-        type=int,
-        metavar='BYTES',
-        nargs='+',
-        required=True,
-        help='Task input/output size in bytes (runs repeated for each size)',
-    )
-    parser.add_argument(
-        '--sleep',
-        metavar='SECONDS',
-        required=True,
-        type=float,
-        help='Simulate task computation',
-    )
-    parser.add_argument(
-        '--repeat',
-        default=1,
-        metavar='RUNS',
-        type=int,
-        help='Number of runs to repeat each configuration for',
-    )
-    parser.add_argument(
-        '--memory-profile-interval',
-        default=0.01,
-        metavar='SECONDS',
-        type=float,
-        help='Seconds between logging system memory utilization',
-    )
-
-    add_executor_options(parser)
-    add_proxystore_options(parser, required=True)
-    add_logging_options(parser, require_csv=True)
-    args = parser.parse_args(argv)
-
-    init_logging(args.log_file, args.log_level, force=True)
-
-    executor = init_executor_from_args(args)
-    store = init_store_from_args(args, metrics=True)
-    assert store is not None
-    data_management = [DataManagement(d) for d in args.data_management]
-
-    with executor:
-        runner(
-            executor=executor,
-            store=store,
-            data_management=data_management,
-            stage_sizes=args.stage_sizes,
-            data_sizes=args.data_sizes,
-            sleep=args.sleep,
-            repeat=args.repeat,
-            csv_file=args.csv_file,
-            memory_profile_interval=args.memory_profile_interval,
+    def run(self, config: RunConfig) -> RunResult:
+        result = run_workflow(
+            executor=self.executor,
+            store=(
+                None
+                if config.data_management is DataManagement.NONE
+                else self.store
+            ),
+            data_management=config.data_management,
+            stage_sizes=config.stage_sizes,
+            data_size_bytes=config.data_size_bytes,
+            sleep=config.task_sleep,
         )
 
-    store.close()
-
-    return 0
+        return result
