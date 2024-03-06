@@ -41,7 +41,7 @@ def runner(
             for i in range(repeat):
                 run_start = time.perf_counter()
                 result = benchmark.run(config)
-                run_end = time.perf_counter()
+                run_time = time.perf_counter() - run_start
 
                 results = (
                     [result] if not isinstance(result, Sequence) else result
@@ -51,7 +51,7 @@ def runner(
 
                 logger.log(
                     TESTING_LOG_LEVEL,
-                    f'Run {i+1}/{repeat} completed in {run_end - run_start} s',
+                    f'Run {i+1}/{repeat} completed in {run_time:.3f}s',
                 )
 
     benchmark_end = time.perf_counter()
