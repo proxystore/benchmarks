@@ -111,8 +111,8 @@ class BenchmarkMatrix(BaseModel):
                 data_size_bytes=data_size_bytes,
                 task_sleep=self.task_sleep,
             )
-            for data_management, data_size_bytes in itertools.product(
-                self.data_management,
+            for data_size_bytes, data_management in itertools.product(
                 self.data_sizes_bytes,
+                self.data_management,
             )
         )
