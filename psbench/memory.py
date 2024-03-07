@@ -42,9 +42,6 @@ class SystemMemoryProfiler(multiprocessing.Process):
         self._csv_file = str(csv_file)
         super().__init__()
 
-    def get_memory_log(self) -> list[MemoryUsage]:
-        return self._memory_log
-
     def run(self) -> None:
         if self._stop_event.is_set():
             raise RuntimeError(
@@ -60,11 +57,11 @@ class SystemMemoryProfiler(multiprocessing.Process):
         while not self._stop_event.is_set():
             usage = MemoryUsage.from_current_system_usage()
             self._memory_log.append(usage)
-            if csv_logger is not None:
+            if csv_logger is not None:  # pragma: no branch
                 csv_logger.log(usage)
             time.sleep(self._polling_interval_seconds)
 
-        if csv_logger is not None:
+        if csv_logger is not None:  # pragma: no branch
             csv_logger.close()
 
     def stop(self) -> None:

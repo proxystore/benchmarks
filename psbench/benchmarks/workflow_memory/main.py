@@ -229,9 +229,7 @@ def run_workflow(
     end_timestamp = time.time()
     if store is not None:
         for proxy_key in proxy_keys:
-            if data_management == DataManagement.OWNED_PROXY:
-                assert not store.exists(proxy_key)
-            elif data_management == DataManagement.DEFAULT_PROXY:
+            if data_management == DataManagement.DEFAULT_PROXY:
                 store.evict(proxy_key)
             else:
                 raise AssertionError('Unreachable.')

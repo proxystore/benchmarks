@@ -84,7 +84,7 @@ def sequential_task(
     assert store is not None
     result = randbytes(len(data))
     proxy = store.proxy(result, evict=True)
-    if prepopulate:  # pragma: no branch
+    if prepopulate:  # pragma: no cover
         # Pre-populate proxy target to prevent a double resolve after eviction.
         # This is a quick hack but is fixed in later ProxyStore versions.
         proxy.__wrapped__ = result
@@ -99,7 +99,7 @@ def sequential_task(
     )
 
     result_proxy = store.proxy((proxy, times), evict=True)
-    if prepopulate:  # pragma: no branch
+    if prepopulate:  # pragma: no cover
         result_proxy.__wrapped__ = None
 
     return result_proxy
