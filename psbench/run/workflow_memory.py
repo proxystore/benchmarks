@@ -57,7 +57,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     # We'll let the Benchmark object handle entering and exit these context
     # managers.
     executor = executor_config.get_executor()
-    store = store_config.get_store()
+    # Caching will throw off the memory usage as it will grow across
+    # distinct runs.
+    store = store_config.get_store(cache_size=0)
     assert store is not None
 
     benchmark = Benchmark(executor, store)
