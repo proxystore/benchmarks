@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import queue
 import sys
+import threading
 import time
 from concurrent.futures import Future
 from types import TracebackType
 from typing import Any
 from typing import Callable
+from typing import NamedTuple
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -22,18 +25,43 @@ from proxystore.store.future import Future as ProxyFuture
 
 from psbench.benchmarks.task_pipelining.config import RunConfig
 from psbench.benchmarks.task_pipelining.config import RunResult
+from psbench.executor.dask import DaskExecutor
+from psbench.executor.parsl import ParslExecutor
 from psbench.executor.protocol import Executor
 from psbench.utils import randbytes
 
 logger = logging.getLogger('task-pipelining')
 
 
+class TaskTimes(NamedTuple):
+    start_timestamp: float
+    start_resolve_timestamp: float
+    end_resolve_timestamp: float
+    start_generate_timestamp: float
+    end_generate_timestamp: float
+
+    @staticmethod
+    def serialize(times: list[list[float]]) -> str:
+        return ':'.join('-'.join(str(v) for v in t) for t in times)
+
+    def collate(
+        self,
+        submitted_timestamp: float,
+        received_timestamp: float,
+    ) -> list[float]:
+        timestamps = list(self)
+        return [submitted_timestamp, *timestamps, received_timestamp]
+
+
 def sequential_task(
     data: Proxy[bytes],
     overhead_fraction: float,
     sleep: float,
-) -> Proxy[bytes]:
+    prepopulate: bool = False,
+) -> Proxy[tuple[Proxy[bytes], TaskTimes]]:
     import time
+
+    start_timestamp = time.time()
 
     from proxystore.proxy import resolve
     from proxystore.store import get_store
@@ -42,19 +70,39 @@ def sequential_task(
 
     time.sleep(overhead_fraction * sleep)
 
+    start_resolve_timestamp = time.time()
     resolve(data)
     assert isinstance(data, bytes)
+    end_resolve_timestamp = time.time()
 
-    time.sleep((1 - overhead_fraction) * sleep)
+    resolve_time = end_resolve_timestamp - start_resolve_timestamp
+    compute_sleep = (1 - overhead_fraction) * sleep
+    time.sleep(max(compute_sleep - resolve_time, 0))
 
+    start_generate_timestamp = time.time()
     store = get_store(data)
     assert store is not None
     result = randbytes(len(data))
     proxy = store.proxy(result, evict=True)
-    # Pre-populate proxy target to prevent a double resolve after eviction.
-    # This is a quick hack but is fixed in later ProxyStore versions.
-    proxy.__wrapped__ = result
-    return proxy
+    if prepopulate:  # pragma: no branch
+        # Pre-populate proxy target to prevent a double resolve after eviction.
+        # This is a quick hack but is fixed in later ProxyStore versions.
+        proxy.__wrapped__ = result
+    end_generate_timestamp = time.time()
+
+    times = TaskTimes(
+        start_timestamp=start_timestamp,
+        start_resolve_timestamp=start_resolve_timestamp,
+        end_resolve_timestamp=end_resolve_timestamp,
+        start_generate_timestamp=start_generate_timestamp,
+        end_generate_timestamp=end_generate_timestamp,
+    )
+
+    result_proxy = store.proxy((proxy, times), evict=True)
+    if prepopulate:  # pragma: no branch
+        result_proxy.__wrapped__ = None
+
+    return result_proxy
 
 
 def pipelined_task(
@@ -62,8 +110,11 @@ def pipelined_task(
     future: ProxyFuture[bytes],
     overhead_fraction: float,
     sleep: float,
-) -> None:
+    prepopulate: bool = False,
+) -> TaskTimes:
     import time
+
+    start_timestamp = time.time()
 
     from proxystore.proxy import resolve
 
@@ -71,13 +122,27 @@ def pipelined_task(
 
     time.sleep(overhead_fraction * sleep)
 
+    start_resolve_timestamp = time.time()
     resolve(data)
     assert isinstance(data, bytes)
+    end_resolve_timestamp = time.time()
 
-    time.sleep((1 - overhead_fraction) * sleep)
+    resolve_time = end_resolve_timestamp - start_resolve_timestamp
+    compute_sleep = (1 - overhead_fraction) * sleep
+    time.sleep(max(compute_sleep - resolve_time, 0))
 
+    start_generate_timestamp = time.time()
     result = randbytes(len(data))
     future.set_result(result)
+    end_generate_timestamp = time.time()
+
+    return TaskTimes(
+        start_timestamp=start_timestamp,
+        start_resolve_timestamp=start_resolve_timestamp,
+        end_resolve_timestamp=end_resolve_timestamp,
+        start_generate_timestamp=start_generate_timestamp,
+        end_generate_timestamp=end_generate_timestamp,
+    )
 
 
 def run_sequential_workflow(
@@ -92,10 +157,9 @@ def run_sequential_workflow(
 
     # Create the initial data for the first task
     data = randbytes(task_data_bytes)
-    proxy = store.proxy(data, evict=True)
-    # Pre-populate proxy target to prevent a double resolve after eviction.
-    # This is a quick hack but is fixed in later ProxyStore versions.
-    proxy.__wrapped__ = data
+    proxy = store.proxy(data, evict=True, populate_target=True)
+
+    task_timestamps: list[list[float]] = []
 
     for _ in range(task_chain_length):
         future = executor.submit(
@@ -104,7 +168,12 @@ def run_sequential_workflow(
             overhead_fraction=task_overhead_fraction,
             sleep=task_sleep,
         )
-        proxy = future.result()
+        task_submitted = time.time()
+        proxy, task_time = future.result()
+        task_received = time.time()
+        task_timestamps.append(
+            task_time.collate(task_submitted, task_received),
+        )
 
     # Resolve the final resulting data
     assert isinstance(proxy, bytes)
@@ -119,6 +188,7 @@ def run_sequential_workflow(
         task_data_bytes=task_data_bytes,
         task_overhead_fraction=task_overhead_fraction,
         task_sleep=task_sleep,
+        task_timestamps=TaskTimes.serialize(task_timestamps),
         workflow_makespan_ms=(end - start) / 1e6,
     )
 
@@ -133,41 +203,69 @@ def run_pipelined_workflow(
 ) -> RunResult:
     start = time.perf_counter_ns()
 
-    task_futures: list[Future[None]] = []
+    task_futures: queue.Queue[Future[TaskTimes]] = queue.Queue()
+    task_submitted: list[float] = []
+    task_times: list[TaskTimes] = []
+    task_received: list[float] = []
 
     # Create the initial data for the first task
     data = randbytes(task_data_bytes)
-    proxy = store.proxy(data, evict=True)
-    # Pre-populate proxy target to prevent a double resolve after eviction.
-    # This is a quick hack but is fixed in later ProxyStore versions.
-    proxy.__wrapped__ = data
+    proxy = store.proxy(data, evict=True, populate_target=True)
 
-    for i in range(task_chain_length):
-        if i > 1:
-            old_future = task_futures.pop(0)
-            old_future.result()
-        data_future: ProxyFuture[bytes] = store.future(
-            evict=True,
-            polling_interval=0.001,
-        )
-        task_future = executor.submit(
-            pipelined_task,
-            proxy,
-            data_future,
-            overhead_fraction=task_overhead_fraction,
-            sleep=task_sleep,
-        )
-        task_futures.append(task_future)
-        time.sleep((1 - task_overhead_fraction) * task_sleep)
-        proxy = data_future.proxy()
+    proxies: queue.Queue[Proxy[bytes]] = queue.Queue()
+    proxies.put(proxy)
 
-    for future in task_futures:
-        future.result()
+    def submitter() -> None:
+        for _ in range(task_chain_length):
+            data_future: ProxyFuture[bytes] = store.future(
+                evict=True,
+                polling_interval=0.001,
+            )
+            task_future = executor.submit(
+                pipelined_task,
+                proxies.get(),
+                data_future,
+                overhead_fraction=task_overhead_fraction,
+                sleep=task_sleep,
+                prepopulate=isinstance(
+                    executor,
+                    (DaskExecutor, ParslExecutor),
+                ),
+            )
+            task_submitted.append(time.time())
+            task_futures.put(task_future)
+
+            time.sleep((1 - task_overhead_fraction) * task_sleep)
+
+            proxies.put(data_future.proxy())
+
+    def receiver() -> None:
+        time.sleep(task_overhead_fraction * task_sleep)
+        for _ in range(task_chain_length):
+            time.sleep((1 - task_overhead_fraction) * task_sleep)
+            task_future = task_futures.get()
+            task_time = task_future.result()
+            task_times.append(task_time)
+            task_received.append(time.time())
+
+    submitter_thread = threading.Thread(target=submitter)
+    receiver_thread = threading.Thread(target=receiver)
+
+    submitter_thread.start()
+    receiver_thread.start()
+
+    submitter_thread.join()
+    receiver_thread.join()
 
     # Resolve the final resulting data
     assert isinstance(proxy, bytes)
 
     end = time.perf_counter_ns()
+
+    task_timestamps = [
+        mid.collate(start, end)
+        for start, mid, end in zip(task_submitted, task_times, task_received)
+    ]
 
     return RunResult(
         executor=executor.__class__.__name__,
@@ -177,6 +275,7 @@ def run_pipelined_workflow(
         task_data_bytes=task_data_bytes,
         task_overhead_fraction=task_overhead_fraction,
         task_sleep=task_sleep,
+        task_timestamps=TaskTimes.serialize(task_timestamps),
         workflow_makespan_ms=(end - start) / 1e6,
     )
 
