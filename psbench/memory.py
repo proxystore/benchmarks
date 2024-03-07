@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import multiprocessing
 import pathlib
-import threading
 import time
 from typing import NamedTuple
 
@@ -30,7 +30,7 @@ class MemoryUsage(NamedTuple):
         )
 
 
-class SystemMemoryProfiler(threading.Thread):
+class SystemMemoryProfiler(multiprocessing.Process):
     def __init__(
         self,
         polling_interval_seconds: float = 1.0,
@@ -38,12 +38,8 @@ class SystemMemoryProfiler(threading.Thread):
     ):
         self._polling_interval_seconds = polling_interval_seconds
         self._memory_log: list[MemoryUsage] = []
-        self._stop_event = threading.Event()
-        self._csv_logger = (
-            CSVResultLogger(str(csv_file), MemoryUsage)
-            if csv_file is not None
-            else None
-        )
+        self._stop_event = multiprocessing.Event()
+        self._csv_file = str(csv_file)
         super().__init__()
 
     def get_memory_log(self) -> list[MemoryUsage]:
@@ -55,15 +51,21 @@ class SystemMemoryProfiler(threading.Thread):
                 'SystemMemoryProfiler has already finished.',
             )
 
+        csv_logger = (
+            CSVResultLogger(self._csv_file, MemoryUsage)
+            if self._csv_file is not None
+            else None
+        )
+
         while not self._stop_event.is_set():
             usage = MemoryUsage.from_current_system_usage()
             self._memory_log.append(usage)
-            if self._csv_logger is not None:
-                self._csv_logger.log(usage)
+            if csv_logger is not None:
+                csv_logger.log(usage)
             time.sleep(self._polling_interval_seconds)
 
-        if self._csv_logger is not None:
-            self._csv_logger.close()
+        if csv_logger is not None:
+            csv_logger.close()
 
     def stop(self) -> None:
         self._stop_event.set()
