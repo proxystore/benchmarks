@@ -207,7 +207,10 @@ def run_workflow(
     for stage_size in stage_sizes:
         # Keep track of what proxies were created for clean up at end
         proxy_keys.extend(
-            p.__factory__.key for p in current_data if isinstance(p, Proxy)
+            p.__factory__.key
+            for p in current_data
+            if isinstance(p, Proxy)
+            and data_management == DataManagement.DEFAULT_PROXY
         )
         new_data = _run_workflow_stage(
             current_data,
@@ -221,6 +224,9 @@ def run_workflow(
 
     # Housekeeping to clean up any outstanding memory we might have
     del current_data
+    gc.collect()
+
+    end_timestamp = time.time()
     if store is not None:
         for proxy_key in proxy_keys:
             if data_management == DataManagement.OWNED_PROXY:
@@ -230,7 +236,6 @@ def run_workflow(
             else:
                 raise AssertionError('Unreachable.')
 
-    end_timestamp = time.time()
     return RunResult(
         executor=executor.__class__.__name__,
         connector=(
