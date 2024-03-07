@@ -31,6 +31,7 @@ class RunResult(BaseModel):
     task_data_bytes: int
     task_overhead_fraction: float
     task_sleep: float
+    task_timestamps: str
     workflow_makespan_ms: float
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import gc
 import logging
 import sys
 import time
@@ -84,7 +85,11 @@ def _generate_start_data(
     elif data_management is DataManagement.DEFAULT_PROXY:
         assert store is not None
         return tuple(
-            store.proxy(randbytes(data_bytes), populate_target=True)
+            store.proxy(
+                randbytes(data_bytes),
+                evict=False,
+                populate_target=True,
+            )
             for _ in range(data_count)
         )
     elif data_management is DataManagement.OWNED_PROXY:
@@ -190,6 +195,8 @@ def run_workflow(
 
     validate_workflow(stage_sizes)
 
+    proxy_keys: list[tuple[Any, ...]] = []
+
     current_data = _generate_start_data(
         data_management,
         data_count=stage_sizes[0],
@@ -198,6 +205,13 @@ def run_workflow(
     )
 
     for stage_size in stage_sizes:
+        # Keep track of what proxies were created for clean up at end
+        proxy_keys.extend(
+            p.__factory__.key
+            for p in current_data
+            if isinstance(p, Proxy)
+            and data_management == DataManagement.DEFAULT_PROXY
+        )
         new_data = _run_workflow_stage(
             current_data,
             executor=executor,
@@ -208,7 +222,18 @@ def run_workflow(
         )
         current_data = new_data
 
+    # Housekeeping to clean up any outstanding memory we might have
+    del current_data
+    gc.collect()
+
     end_timestamp = time.time()
+    if store is not None:
+        for proxy_key in proxy_keys:
+            if data_management == DataManagement.DEFAULT_PROXY:
+                store.evict(proxy_key)
+            else:
+                raise AssertionError('Unreachable.')
+
     return RunResult(
         executor=executor.__class__.__name__,
         connector=(
@@ -256,6 +281,9 @@ class Benchmark:
         }
 
     def run(self, config: RunConfig) -> RunResult:
+        # We are interested in memory used so let's make sure we start
+        # fresh.
+        gc.collect()
         result = run_workflow(
             executor=self.executor,
             store=(

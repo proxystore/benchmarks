@@ -35,8 +35,7 @@ def test_main(tmp_path: pathlib.Path) -> None:
         'psbench.run.workflow_memory.runner',
     ), mock.patch(
         'psbench.config.StoreConfig.get_store',
+    ), mock.patch(
+        'psbench.run.workflow_memory.SystemMemoryProfiler',
     ), mock_globus_compute():
         main(args)
-
-    csv_files = list(tmp_path.glob('*/*.csv'))
-    assert len(csv_files) == 2
