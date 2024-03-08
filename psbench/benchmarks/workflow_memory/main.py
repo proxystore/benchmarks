@@ -82,7 +82,10 @@ def _generate_start_data(
 ) -> tuple[Any, ...]:
     if data_management is DataManagement.NONE:
         return tuple(randbytes(data_bytes) for _ in range(data_count))
-    elif data_management is DataManagement.DEFAULT_PROXY:
+    elif (
+        data_management is DataManagement.DEFAULT_PROXY
+        or data_management is DataManagement.MANUAL_PROXY
+    ):
         assert store is not None
         return tuple(
             store.proxy(
@@ -138,6 +141,7 @@ def _run_workflow_stage(
         task = task_no_proxy
     elif (
         data_management is DataManagement.DEFAULT_PROXY
+        or data_management is DataManagement.MANUAL_PROXY
         or data_management is DataManagement.OWNED_PROXY
     ):
         task = task_proxy
@@ -220,10 +224,20 @@ def run_workflow(
             data_size_bytes=data_size_bytes,
             sleep=sleep,
         )
+        if data_management is DataManagement.MANUAL_PROXY:
+            assert store is not None
+            for proxy in current_data:
+                store.evict(proxy.__factory__.key)
         current_data = new_data
 
     # Housekeeping to clean up any outstanding memory we might have
-    del current_data
+    if data_management is DataManagement.OWNED_PROXY:
+        del current_data
+    elif data_management is DataManagement.MANUAL_PROXY:
+        assert store is not None
+        for proxy in current_data:
+            store.evict(proxy.__factory__.key)
+
     gc.collect()
 
     end_timestamp = time.time()

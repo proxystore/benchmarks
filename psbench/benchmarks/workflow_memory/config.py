@@ -19,6 +19,7 @@ from pydantic import BaseModel
 class DataManagement(enum.Enum):
     NONE = 'none'
     DEFAULT_PROXY = 'default-proxy'
+    MANUAL_PROXY = 'manual-proxy'
     OWNED_PROXY = 'owned-proxy'
 
 
@@ -53,8 +54,8 @@ class BenchmarkMatrix(BaseModel):
         group = parser.add_argument_group(title='Benchmark Parameters')
         group.add_argument(
             '--data-management',
-            choices=['none', 'default-proxy', 'owned-proxy'],
-            default=['none', 'default-proxy', 'owned-proxy'],
+            choices=['none', 'default-proxy', 'manual-proxy', 'owned-proxy'],
+            default=['default-proxy', 'manual-proxy', 'owned-proxy'],
             nargs='+',
             help=(
                 'Data management method. Default will repeat with all options'
