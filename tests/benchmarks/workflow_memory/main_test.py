@@ -75,6 +75,7 @@ def test_task_proxy(file_store: Store[FileConnector]) -> None:
     (
         DataManagement.NONE,
         DataManagement.DEFAULT_PROXY,
+        DataManagement.MANUAL_PROXY,
         DataManagement.OWNED_PROXY,
     ),
 )
