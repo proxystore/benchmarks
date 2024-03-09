@@ -210,12 +210,8 @@ def run_workflow(
 
     for stage_index, stage_task_count in enumerate(stage_task_counts):
         # Keep track of what proxies were created for clean up at end
-        proxy_keys.extend(
-            p.__factory__.key
-            for p in current_data
-            if isinstance(p, Proxy)
-            and data_management == DataManagement.DEFAULT_PROXY
-        )
+        if data_management == DataManagement.DEFAULT_PROXY:
+            proxy_keys.extend(p.__factory__.key for p in current_data)
         new_data = _run_workflow_stage(
             current_data,
             executor=executor,

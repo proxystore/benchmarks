@@ -30,7 +30,7 @@ dependencies = [
     "distributed==2024.2.0; python_version >= '3.9'",
     "globus-compute-endpoint==2.13.0",
     "globus-compute-sdk==2.13.0",
-    "proxystore[all]@git+https://github.com/proxystore/proxystore@09121638cc59c8773036c71eda2bb51fa10b427b",
+    "proxystore[all]@git+https://github.com/proxystore/proxystore@9ca564a3741452fb4c6ad9ebfdc68401d9d0e7ca",
     "proxystore-ex>=0.1.2",
     "pydantic==1.10.14",
     "psutil==5.9.8",
