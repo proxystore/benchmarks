@@ -19,6 +19,7 @@ class GeneralConfig(BaseModel):
     csv_file: str = 'results.csv'
     log_file: str = 'log.txt'
     log_level: Union[int, str] = TEST_LOG_LEVEL  # noqa: UP007
+    log_file_level: Union[int, str] = 'INFO'  # noqa: UP007
     repeat: int = 1
     run_dir: str = 'runs/'
 
@@ -41,6 +42,12 @@ class GeneralConfig(BaseModel):
             '--log-file',
             default='log.txt',
             help='Name of log file inside --run-dir',
+        )
+        group.add_argument(
+            '--log-file-level',
+            choices=['ERROR', 'WARNING', 'BENCH', 'TEST', 'INFO', 'DEBUG'],
+            default='INFO',
+            help='Minimum logging level for the log file',
         )
         group.add_argument(
             '--repeat',
@@ -70,6 +77,8 @@ class GeneralConfig(BaseModel):
             options['log_file'] = kwargs['log_file']
         if 'log_level' in kwargs:
             options['log_level'] = kwargs['log_level']
+        if 'log_file_level' in kwargs:
+            options['log_file_level'] = kwargs['log_file_level']
         if 'repeat' in kwargs:
             options['repeat'] = kwargs['repeat']
         if 'run_dir' in kwargs:

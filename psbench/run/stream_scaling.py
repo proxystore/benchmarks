@@ -47,7 +47,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     log_file = os.path.join(general_config.run_dir, general_config.log_file)
-    init_logging(log_file, general_config.log_level, force=True)
+    init_logging(
+        log_file,
+        general_config.log_level,
+        general_config.log_file_level,
+        force=True,
+    )
 
     matrix = BenchmarkMatrix.from_args(**args)
     executor_config = ExecutorConfig.from_args(

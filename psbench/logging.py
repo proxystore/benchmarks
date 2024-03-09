@@ -16,6 +16,7 @@ TEST_LOG_LEVEL = 21
 def init_logging(
     logfile: str | None = None,
     level: int | str = logging.INFO,
+    logfile_level: int | str = logging.INFO,
     force: bool = False,
 ) -> None:
     """Initialize logging with custom formats.
@@ -31,6 +32,8 @@ def init_logging(
     Args:
         logfile (str): option filepath to write log to (default: None).
         level (int, str): minimum logging level (default: INFO).
+        logfile_level (int, str): minimum logging level for the logfile
+            (default: INFO).
         force (bool): remove any existing handlers attached to the root
             handler. This option is useful to silencing the third-party
             package logging. Note: should not be set when running inside
@@ -46,7 +49,7 @@ def init_logging(
     if logfile is not None:
         make_parent_dirs(logfile)
         handler = logging.FileHandler(logfile)
-        handler.setLevel(logging.INFO)
+        handler.setLevel(logfile_level)
         handlers.append(handler)
 
     kwargs: dict[str, Any] = {}
