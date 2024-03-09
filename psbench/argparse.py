@@ -177,8 +177,8 @@ def add_logging_options(
 
     group.add_argument(
         '--log-level',
-        choices=['ERROR', 'WARNING', 'TESTING', 'INFO', 'DEBUG'],
-        default='TESTING',
+        choices=['ERROR', 'WARNING', 'BENCH', 'TEST', 'INFO', 'DEBUG'],
+        default='TEST',
         help='Set minimum logging level',
     )
     group.add_argument(

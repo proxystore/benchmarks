@@ -29,17 +29,18 @@ $ python -m psbench.run.workflow_memory \
     --executor dask --dask-workers 4 \
     --ps-connector file --ps-file-dir runs/cache \
     --data-management none default-proxy owned-proxy \
-    --stage-sizes 1 3 1 1 \
-    --data-sizes-bytes 1000 10000 100000 \
+    --stage-task-counts 1 3 1 1 \
+    --stage-bytes-sizes 1000 10000 10000 10000 1000 \
     --task-sleep 1.0 \
     --repeat 5
 ```
 
 This configuration uses a Dask local process cluster with four workers and ProxyStore configured to use a local `FileConnector`.
 Each run will execute a workflow consisting of four stages with 1, 3, 1, and 1 tasks in each stage, respectively.
+The `stage-bytes-sizes` parameter controls the input and output sizes for the tasks in each stage.
 Each task in the workflow will resolve it's input data, sleep for 1.0 seconds, and generate result data.
-Each workflow will be repeated for each data management method and each task data size, and each of those unique configurations will be repeated five times.
-In total, there will be `3 * 3 * 5 = 45` runs, each taking around 4 seconds (each workflow stage should take around one second).
+Each workflow will be repeated for each data management method, and each of those unique configurations will be repeated five times.
+In total, there will be `3 * 5 = 15` runs, each taking around 4 seconds (each workflow stage should take around one second).
 
 Two CSV files will be saved at the end to `--run-dir` (defaults to `runs/`):
 a results log with one line for each workflow run with the start and end timestamps of the run,

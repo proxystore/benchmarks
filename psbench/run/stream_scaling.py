@@ -15,8 +15,8 @@ from psbench.config import ExecutorConfig
 from psbench.config import GeneralConfig
 from psbench.config import StoreConfig
 from psbench.config import StreamConfig
+from psbench.logging import BENCH_LOG_LEVEL
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
 from psbench.results import CSVResultLogger
 from psbench.runner import runner
 
@@ -47,7 +47,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     log_file = os.path.join(general_config.run_dir, general_config.log_file)
-    init_logging(log_file, general_config.log_level, force=True)
+    init_logging(
+        log_file,
+        general_config.log_level,
+        general_config.log_file_level,
+        force=True,
+    )
 
     matrix = BenchmarkMatrix.from_args(**args)
     executor_config = ExecutorConfig.from_args(
@@ -56,7 +61,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     store_config = StoreConfig.from_args(**args)
     stream_config = StreamConfig.from_args(**args)
-    logger.log(TESTING_LOG_LEVEL, 'All configurations loaded')
+    logger.log(BENCH_LOG_LEVEL, 'All configurations loaded')
 
     # We'll let the Benchmark object handle entering and exit these context
     # managers.
@@ -75,7 +80,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         store,
         stream_config=stream_config,
     )
-    logger.log(TESTING_LOG_LEVEL, 'Benchmark initialized')
+    logger.log(BENCH_LOG_LEVEL, 'Benchmark initialized')
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
     with CSVResultLogger(csv_file, benchmark.result_type) as csv_logger:
@@ -87,7 +92,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     logger.log(
-        TESTING_LOG_LEVEL,
+        BENCH_LOG_LEVEL,
         f'All logs and results saved to: {general_config.run_dir}',
     )
 

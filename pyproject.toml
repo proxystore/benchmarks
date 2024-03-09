@@ -23,14 +23,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "colmena[globus]@git+https://github.com/exalearn/colmena#egg=87447a4dc4fb2999b9bb83d95e2a8318110b05e5",
+    "colmena[globus]@git+https://github.com/exalearn/colmena@87447a4dc4fb2999b9bb83d95e2a8318110b05e5",
     "dask==2023.5.0; python_version < '3.9'",
     "dask==2024.2.0; python_version >= '3.9'",
     "distributed==2023.5.0; python_version < '3.9'",
     "distributed==2024.2.0; python_version >= '3.9'",
     "globus-compute-endpoint==2.13.0",
     "globus-compute-sdk==2.13.0",
-    "proxystore[all]@git+https://github.com/proxystore/proxystore#egg=0c0fe1c28036e46fb21621a299d9eb1bda50604f",
+    "proxystore[all]@git+https://github.com/proxystore/proxystore@9ca564a3741452fb4c6ad9ebfdc68401d9d0e7ca",
     "proxystore-ex>=0.1.2",
     "pydantic==1.10.14",
     "psutil==5.9.8",

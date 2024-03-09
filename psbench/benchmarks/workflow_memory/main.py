@@ -43,8 +43,6 @@ def task_no_proxy(
 ) -> bytes:
     import time
 
-    from psbench.utils import randbytes
-
     assert all(isinstance(d, bytes) for d in data)
     time.sleep(sleep)
     return randbytes(output_size_bytes)
@@ -59,8 +57,6 @@ def task_proxy(
 
     from proxystore.proxy import is_resolved
     from proxystore.store import get_store
-
-    from psbench.utils import randbytes
 
     # Force proxies to resolve
     assert all(isinstance(d, bytes) for d in data)
@@ -131,12 +127,12 @@ def _run_workflow_stage(
     input_data: tuple[Any, ...],
     executor: Executor,
     data_management: DataManagement,
-    stage_size: int,
-    data_size_bytes: int,
+    stage_task_count: int,
+    stage_output_bytes: int,
     sleep: float,
 ) -> tuple[Any, ...]:
     # Returns list of output data of tasks. This could be proxies or bytes.
-    task: Callable[..., bytes]
+    task: Callable[..., Any]
     if data_management is DataManagement.NONE:
         task = task_no_proxy
     elif (
@@ -148,15 +144,17 @@ def _run_workflow_stage(
     else:
         raise AssertionError(f'Unknown data management: {data_management}.')
 
-    futures: list[Future[bytes]] = []
+    futures: list[Future[Any]] = []
 
     # This will have length equal to stage_size
     stage_task_inputs: tuple[list[Any], ...]
-    if len(input_data) == stage_size:
+    if len(input_data) == stage_task_count:
         stage_task_inputs = tuple([data] for data in input_data)
     elif len(input_data) == 1:
-        stage_task_inputs = tuple([input_data[0]] for _ in range(stage_size))
-    elif stage_size == 1:
+        stage_task_inputs = tuple(
+            [input_data[0]] for _ in range(stage_task_count)
+        )
+    elif stage_task_count == 1:
         stage_task_inputs = (list(input_data),)
     else:
         raise AssertionError(
@@ -171,17 +169,15 @@ def _run_workflow_stage(
         )
 
     for task_input in stage_task_inputs:
-        future: Future[bytes] = submit(
+        future: Future[Any] = submit(
             executor.submit,
             args=(task, *task_input),
-            kwargs={'output_size_bytes': data_size_bytes, 'sleep': sleep},
+            kwargs={'output_size_bytes': stage_output_bytes, 'sleep': sleep},
         )
         futures.append(future)
 
     return_data: tuple[Any, ...] = tuple(future.result() for future in futures)
-    # Resolve data if necessary
-    for data in return_data:
-        assert isinstance(data, bytes)
+
     if data_management is DataManagement.OWNED_PROXY:
         return_data = tuple(map(into_owned, return_data))
     return return_data
@@ -191,37 +187,37 @@ def run_workflow(
     executor: Executor,
     store: Store[Any] | None,
     data_management: DataManagement,
-    stage_sizes: Sequence[int],
-    data_size_bytes: int,
+    stage_task_counts: Sequence[int],
+    stage_bytes_sizes: Sequence[int],
     sleep: float,
 ) -> RunResult:
     start_timestamp = time.time()
 
-    validate_workflow(stage_sizes)
+    validate_workflow(stage_task_counts)
+    if len(stage_task_counts) + 1 != len(stage_bytes_sizes):
+        raise ValueError(
+            'Length of data sizes must be one greater than number of stages.',
+        )
 
     proxy_keys: list[tuple[Any, ...]] = []
 
     current_data = _generate_start_data(
         data_management,
-        data_count=stage_sizes[0],
-        data_bytes=data_size_bytes,
+        data_count=stage_task_counts[0],
+        data_bytes=stage_bytes_sizes[0],
         store=store,
     )
 
-    for stage_size in stage_sizes:
+    for stage_index, stage_task_count in enumerate(stage_task_counts):
         # Keep track of what proxies were created for clean up at end
-        proxy_keys.extend(
-            p.__factory__.key
-            for p in current_data
-            if isinstance(p, Proxy)
-            and data_management == DataManagement.DEFAULT_PROXY
-        )
+        if data_management == DataManagement.DEFAULT_PROXY:
+            proxy_keys.extend(p.__factory__.key for p in current_data)
         new_data = _run_workflow_stage(
             current_data,
             executor=executor,
             data_management=data_management,
-            stage_size=stage_size,
-            data_size_bytes=data_size_bytes,
+            stage_task_count=stage_task_count,
+            stage_output_bytes=stage_bytes_sizes[stage_index + 1],
             sleep=sleep,
         )
         if data_management is DataManagement.MANUAL_PROXY:
@@ -254,8 +250,8 @@ def run_workflow(
             'None' if store is None else store.connector.__class__.__name__
         ),
         data_management=data_management.value,
-        stage_sizes='-'.join(str(s) for s in stage_sizes),
-        data_size_bytes=data_size_bytes,
+        stage_task_counts='-'.join(str(s) for s in stage_task_counts),
+        stage_bytes_sizes='-'.join(str(s) for s in stage_bytes_sizes),
         task_sleep=sleep,
         workflow_start_timestamp=start_timestamp,
         workflow_end_timestamp=end_timestamp,
@@ -306,8 +302,8 @@ class Benchmark:
                 else self.store
             ),
             data_management=config.data_management,
-            stage_sizes=config.stage_sizes,
-            data_size_bytes=config.data_size_bytes,
+            stage_task_counts=config.stage_task_counts,
+            stage_bytes_sizes=config.stage_bytes_sizes,
             sleep=config.task_sleep,
         )
 

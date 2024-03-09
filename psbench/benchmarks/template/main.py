@@ -9,18 +9,18 @@ from typing import Sequence
 
 from psbench.argparse import add_logging_options
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 
 logger = logging.getLogger('template')
 
 
 def run() -> None:
     """Benchmark logic."""
-    logger.log(TESTING_LOG_LEVEL, 'starting template benchmark')
+    logger.log(TEST_LOG_LEVEL, 'starting template benchmark')
 
     # ...
 
-    logger.log(TESTING_LOG_LEVEL, 'finished template benchmark')
+    logger.log(TEST_LOG_LEVEL, 'finished template benchmark')
 
     return None
 

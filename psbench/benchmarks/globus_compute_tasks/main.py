@@ -29,7 +29,7 @@ from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.results import CSVResultLogger
 from psbench.tasks.pong import pong
@@ -238,7 +238,7 @@ def runner(
         None if store is None else store.connector.__class__.__name__
     )
     logger.log(
-        TESTING_LOG_LEVEL,
+        TEST_LOG_LEVEL,
         'Starting test runner\n'
         f' - Globus Compute Endpoint: {globus_compute_endpoint}\n'
         f' - ProxyStore backend: {store_connector_name}\n'
@@ -295,7 +295,7 @@ def runner(
                     )
 
                 logger.log(
-                    TESTING_LOG_LEVEL,
+                    TEST_LOG_LEVEL,
                     f'Task completed in {stats.total_time_ms:.3f} ms\n{stats}',
                 )
 
@@ -322,7 +322,7 @@ def runner(
 
     runner_end = time.perf_counter_ns()
     logger.log(
-        TESTING_LOG_LEVEL,
+        TEST_LOG_LEVEL,
         f'Test runner complete in {(runner_end - runner_start) / 1e9:.3f} s',
     )
 

@@ -4,14 +4,14 @@ import logging
 import pathlib
 
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 
 
 def test_logging_no_file() -> None:
     init_logging()
 
     logger = logging.getLogger()
-    logger.log(TESTING_LOG_LEVEL, 'test')
+    logger.log(TEST_LOG_LEVEL, 'test')
 
 
 def test_logging_with_file(tmp_path: pathlib.Path) -> None:

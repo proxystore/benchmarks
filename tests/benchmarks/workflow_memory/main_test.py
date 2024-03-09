@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import time
 
 import pytest
@@ -83,12 +82,11 @@ def test_benchmark_run_workflow(
     data_management: DataManagement,
     process_executor: ProcessPoolExecutor,
     file_store: Store[FileConnector],
-    tmp_path: pathlib.Path,
 ) -> None:
     config = RunConfig(
         data_management=data_management,
-        stage_sizes=[1, 1, 3, 1],
-        data_size_bytes=100,
+        stage_task_counts=[1, 1, 3, 1],
+        stage_bytes_sizes=[100, 100, 100, 100, 100],
         task_sleep=0.001,
     )
 
@@ -97,5 +95,21 @@ def test_benchmark_run_workflow(
 
         result = benchmark.run(config)
 
-    min_makespan = config.task_sleep * len(config.stage_sizes)
+    min_makespan = config.task_sleep * len(config.stage_task_counts)
     assert result.workflow_makespan_s > min_makespan
+
+
+def test_benchmark_run_workflow_mismatched_sizes(
+    process_executor: ProcessPoolExecutor,
+    file_store: Store[FileConnector],
+) -> None:
+    config = RunConfig(
+        data_management=DataManagement.NONE,
+        stage_task_counts=[1, 1, 3, 1],
+        stage_bytes_sizes=[100, 100, 100, 100],
+        task_sleep=0.001,
+    )
+
+    with Benchmark(process_executor, file_store) as benchmark:
+        with pytest.raises(ValueError, match='Length of'):
+            benchmark.run(config)

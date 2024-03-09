@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import enum
-import itertools
 import sys
 from typing import Any
 from typing import List
@@ -13,6 +12,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.utils.data import readable_to_bytes
 from pydantic import BaseModel
 
 
@@ -25,8 +25,8 @@ class DataManagement(enum.Enum):
 
 class RunConfig(BaseModel):
     data_management: DataManagement
-    stage_sizes: List[int]  # noqa: UP006
-    data_size_bytes: int
+    stage_task_counts: List[int]  # noqa: UP006
+    stage_bytes_sizes: List[int]  # noqa: UP006
     task_sleep: float
 
 
@@ -34,8 +34,8 @@ class RunResult(BaseModel):
     executor: str
     connector: Optional[str]  # noqa: UP007
     data_management: str
-    stage_sizes: str
-    data_size_bytes: int
+    stage_task_counts: str
+    stage_bytes_sizes: str
     task_sleep: float
     workflow_start_timestamp: float
     workflow_end_timestamp: float
@@ -44,8 +44,8 @@ class RunResult(BaseModel):
 
 class BenchmarkMatrix(BaseModel):
     data_management: List[DataManagement]  # noqa: UP006
-    stage_sizes: List[int]  # noqa: UP006
-    data_sizes_bytes: List[int]  # noqa: UP006
+    stage_task_counts: List[int]  # noqa: UP006
+    stage_bytes_sizes: List[int]  # noqa: UP006
     task_sleep: float
     memory_profile_interval: float
 
@@ -62,20 +62,22 @@ class BenchmarkMatrix(BaseModel):
             ),
         )
         group.add_argument(
-            '--stage-sizes',
+            '--stage-task-counts',
             type=int,
             metavar='COUNT',
             nargs='+',
             required=True,
-            help='List of stages sizes of the simulated workflow',
+            help='Number of tasks in each workflow stage.',
         )
         group.add_argument(
-            '--data-sizes-bytes',
-            type=int,
+            '--stage-bytes-sizes',
             metavar='BYTES',
             nargs='+',
             required=True,
-            help='Task input/output sizes in bytes',
+            help=(
+                'Intermediate data sizes for tasks in each stage. '
+                'Should have length of stage-task-counts + 1.'
+            ),
         )
         group.add_argument(
             '--task-sleep',
@@ -94,12 +96,15 @@ class BenchmarkMatrix(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
+        stage_bytes_sizes = [
+            readable_to_bytes(s) for s in kwargs['stage_bytes_sizes']
+        ]
         return cls(
             data_management=[
                 DataManagement(d) for d in kwargs['data_management']
             ],
-            stage_sizes=kwargs['stage_sizes'],
-            data_sizes_bytes=kwargs['data_sizes_bytes'],
+            stage_task_counts=kwargs['stage_task_counts'],
+            stage_bytes_sizes=stage_bytes_sizes,
             task_sleep=kwargs['task_sleep'],
             memory_profile_interval=kwargs['memory_profile_interval'],
         )
@@ -108,12 +113,9 @@ class BenchmarkMatrix(BaseModel):
         return tuple(
             RunConfig(
                 data_management=data_management,
-                stage_sizes=self.stage_sizes,
-                data_size_bytes=data_size_bytes,
+                stage_task_counts=self.stage_task_counts,
+                stage_bytes_sizes=self.stage_bytes_sizes,
                 task_sleep=self.task_sleep,
             )
-            for data_size_bytes, data_management in itertools.product(
-                self.data_sizes_bytes,
-                self.data_management,
-            )
+            for data_management in self.data_management
         )
