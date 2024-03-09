@@ -39,7 +39,7 @@ class SystemMemoryProfiler(multiprocessing.Process):
         self._polling_interval_seconds = polling_interval_seconds
         self._memory_log: list[MemoryUsage] = []
         self._stop_event = multiprocessing.Event()
-        self._csv_file = str(csv_file)
+        self._csv_file = str(csv_file) if csv_file is not None else None
         super().__init__()
 
     def run(self) -> None:
