@@ -43,8 +43,6 @@ def task_no_proxy(
 ) -> bytes:
     import time
 
-    from psbench.utils import randbytes
-
     assert all(isinstance(d, bytes) for d in data)
     time.sleep(sleep)
     return randbytes(output_size_bytes)
@@ -59,8 +57,6 @@ def task_proxy(
 
     from proxystore.proxy import is_resolved
     from proxystore.store import get_store
-
-    from psbench.utils import randbytes
 
     # Force proxies to resolve
     assert all(isinstance(d, bytes) for d in data)
@@ -136,7 +132,7 @@ def _run_workflow_stage(
     sleep: float,
 ) -> tuple[Any, ...]:
     # Returns list of output data of tasks. This could be proxies or bytes.
-    task: Callable[..., bytes]
+    task: Callable[..., Any]
     if data_management is DataManagement.NONE:
         task = task_no_proxy
     elif (
@@ -148,7 +144,7 @@ def _run_workflow_stage(
     else:
         raise AssertionError(f'Unknown data management: {data_management}.')
 
-    futures: list[Future[bytes]] = []
+    futures: list[Future[Any]] = []
 
     # This will have length equal to stage_size
     stage_task_inputs: tuple[list[Any], ...]
@@ -173,7 +169,7 @@ def _run_workflow_stage(
         )
 
     for task_input in stage_task_inputs:
-        future: Future[bytes] = submit(
+        future: Future[Any] = submit(
             executor.submit,
             args=(task, *task_input),
             kwargs={'output_size_bytes': stage_output_bytes, 'sleep': sleep},
@@ -181,9 +177,7 @@ def _run_workflow_stage(
         futures.append(future)
 
     return_data: tuple[Any, ...] = tuple(future.result() for future in futures)
-    # Resolve data if necessary
-    for data in return_data:
-        assert isinstance(data, bytes)
+
     if data_management is DataManagement.OWNED_PROXY:
         return_data = tuple(map(into_owned, return_data))
     return return_data

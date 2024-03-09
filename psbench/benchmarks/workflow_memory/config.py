@@ -12,6 +12,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.utils.data import readable_to_bytes
 from pydantic import BaseModel
 
 
@@ -70,7 +71,6 @@ class BenchmarkMatrix(BaseModel):
         )
         group.add_argument(
             '--stage-bytes-sizes',
-            type=int,
             metavar='BYTES',
             nargs='+',
             required=True,
@@ -96,12 +96,15 @@ class BenchmarkMatrix(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
+        stage_bytes_sizes = [
+            readable_to_bytes(s) for s in kwargs['stage_bytes_sizes']
+        ]
         return cls(
             data_management=[
                 DataManagement(d) for d in kwargs['data_management']
             ],
             stage_task_counts=kwargs['stage_task_counts'],
-            stage_bytes_sizes=kwargs['stage_bytes_sizes'],
+            stage_bytes_sizes=stage_bytes_sizes,
             task_sleep=kwargs['task_sleep'],
             memory_profile_interval=kwargs['memory_profile_interval'],
         )
