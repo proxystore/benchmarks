@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import statistics
 import time
 from typing import Sequence
 from typing import TypeVar
@@ -38,10 +39,12 @@ def runner(
                 f'Starting run config (repeat={repeat}): {config}',
             )
 
+            run_times: list[float] = []
             for i in range(repeat):
                 run_start = time.perf_counter()
                 result = benchmark.run(config)
                 run_time = time.perf_counter() - run_start
+                run_times.append(run_time)
 
                 results = (
                     [result] if not isinstance(result, Sequence) else result
@@ -53,6 +56,15 @@ def runner(
                     TESTING_LOG_LEVEL,
                     f'Run {i+1}/{repeat} completed in {run_time:.3f}s',
                 )
+
+            avg_run_time = sum(run_times) / len(run_times)
+            std_run_time = (
+                0.0 if len(run_times) <= 1 else statistics.stdev(run_times)
+            )
+            logger.log(
+                TESTING_LOG_LEVEL,
+                f'Average run time: {avg_run_time:.3f} ± {std_run_time:.3f}s',
+            )
 
     benchmark_end = time.perf_counter()
 
