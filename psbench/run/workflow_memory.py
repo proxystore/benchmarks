@@ -12,8 +12,8 @@ from psbench.benchmarks.workflow_memory.main import Benchmark
 from psbench.config import ExecutorConfig
 from psbench.config import GeneralConfig
 from psbench.config import StoreConfig
+from psbench.logging import BENCH_LOG_LEVEL
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
 from psbench.memory import SystemMemoryProfiler
 from psbench.results import CSVResultLogger
 from psbench.runner import runner
@@ -52,7 +52,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         **args,
     )
     store_config = StoreConfig.from_args(**args)
-    logger.log(TESTING_LOG_LEVEL, 'All configurations loaded')
+    logger.log(BENCH_LOG_LEVEL, 'All configurations loaded')
 
     # We'll let the Benchmark object handle entering and exit these context
     # managers.
@@ -63,7 +63,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     assert store is not None
 
     benchmark = Benchmark(executor, store)
-    logger.log(TESTING_LOG_LEVEL, 'Benchmark initialized')
+    logger.log(BENCH_LOG_LEVEL, 'Benchmark initialized')
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
     memory_file = csv_file.replace('.csv', '-memory.csv')
@@ -84,10 +84,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     memory_profiler.stop()
     memory_profiler.join(timeout=5.0)
-    logger.log(TESTING_LOG_LEVEL, f'Memory profile data saved: {memory_file}')
+    logger.log(BENCH_LOG_LEVEL, f'Memory profile data saved: {memory_file}')
 
     logger.log(
-        TESTING_LOG_LEVEL,
+        BENCH_LOG_LEVEL,
         f'All logs and results saved to: {general_config.run_dir}',
     )
 

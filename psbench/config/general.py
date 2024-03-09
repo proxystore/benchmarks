@@ -12,13 +12,13 @@ else:  # pragma: <3.11 cover
 
 from pydantic import BaseModel
 
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 
 
 class GeneralConfig(BaseModel):
     csv_file: str = 'results.csv'
     log_file: str = 'log.txt'
-    log_level: Union[int, str] = TESTING_LOG_LEVEL  # noqa: UP007
+    log_level: Union[int, str] = TEST_LOG_LEVEL  # noqa: UP007
     repeat: int = 1
     run_dir: str = 'runs/'
 
@@ -33,8 +33,8 @@ class GeneralConfig(BaseModel):
         )
         group.add_argument(
             '--log-level',
-            choices=['ERROR', 'WARNING', 'TESTING', 'INFO', 'DEBUG'],
-            default='TESTING',
+            choices=['ERROR', 'WARNING', 'BENCH', 'TEST', 'INFO', 'DEBUG'],
+            default='BENCH',
             help='Minimum logging level',
         )
         group.add_argument(

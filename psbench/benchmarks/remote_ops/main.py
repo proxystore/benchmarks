@@ -27,7 +27,7 @@ import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
 import psbench.benchmarks.remote_ops.redis_ops as redis_ops
 from psbench.argparse import add_logging_options
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 from psbench.results import CSVResultLogger
 
 BACKEND_TYPE = Literal['ENDPOINT', 'REDIS']
@@ -73,7 +73,7 @@ async def run_endpoint(
     Returns:
         RunStats with summary of test run.
     """
-    logger.log(TESTING_LOG_LEVEL, f'starting endpoint peering test for {op}')
+    logger.log(TEST_LOG_LEVEL, f'starting endpoint peering test for {op}')
 
     if op == 'EVICT':
         times_ms = await endpoint_ops.test_evict(
@@ -149,7 +149,7 @@ def run_redis(
     Returns:
         RunStats with summary of test run.
     """
-    logger.log(TESTING_LOG_LEVEL, f'starting remote redis test for {op}')
+    logger.log(TEST_LOG_LEVEL, f'starting remote redis test for {op}')
 
     if op == 'EVICT':
         times_ms = redis_ops.test_evict(client, repeat)
@@ -227,13 +227,13 @@ async def runner_endpoint(
                         repeat=repeat,
                     )
 
-                    logger.log(TESTING_LOG_LEVEL, run_stats)
+                    logger.log(TEST_LOG_LEVEL, run_stats)
                     if csv_file is not None:
                         csv_logger.log(run_stats)
 
     if csv_file is not None:
         csv_logger.close()
-        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
 
 
 def runner_redis(
@@ -270,13 +270,13 @@ def runner_redis(
                     repeat=repeat,
                 )
 
-                logger.log(TESTING_LOG_LEVEL, run_stats)
+                logger.log(TEST_LOG_LEVEL, run_stats)
                 if csv_file is not None:
                     csv_logger.log(run_stats)
 
     if csv_file is not None:
         csv_logger.close()
-        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
 
 
 def main(argv: Sequence[str] | None = None) -> int:

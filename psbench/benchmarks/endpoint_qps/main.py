@@ -21,7 +21,7 @@ from proxystore.connectors.endpoint import EndpointConnector
 from psbench.argparse import add_logging_options
 from psbench.benchmarks.endpoint_qps import routes
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 from psbench.results import CSVResultLogger
 
 PROCESS_STARTUP_BUFFER_SECONDS = 5
@@ -74,7 +74,7 @@ def run(
     connector = EndpointConnector([endpoint])
 
     logger.log(
-        TESTING_LOG_LEVEL,
+        TEST_LOG_LEVEL,
         f'starting QPS for /{route} with endpoint {endpoint}...',
     )
 
@@ -115,11 +115,11 @@ def run(
     readable_start_time = datetime.datetime.fromtimestamp(start_time).strftime(
         '%H:%M:%S',
     )
-    logger.log(TESTING_LOG_LEVEL, f'starting test at {readable_start_time}')
+    logger.log(TEST_LOG_LEVEL, f'starting test at {readable_start_time}')
 
     with multiprocessing.Pool(workers) as pool:
         logger.log(
-            TESTING_LOG_LEVEL,
+            TEST_LOG_LEVEL,
             f'initialized {workers} worker processes',
         )
         results: list[multiprocessing.pool.AsyncResult[routes.Stats]] = [
@@ -163,7 +163,7 @@ def run(
     )
 
     logger.log(
-        TESTING_LOG_LEVEL,
+        TEST_LOG_LEVEL,
         f'complete {queries} queries across {workers} workers:\n'
         f'slowest worker elapsed time: {max_elapsed_ms / 1000:.3f} seconds\n'
         f'fastest worker elapsed time: {min_elapsed_ms / 1000:.3f} seconds\n'
@@ -221,7 +221,7 @@ def runner(
 
     if csv_file is not None:
         csv_logger.close()
-        logger.log(TESTING_LOG_LEVEL, f'results logged to {csv_file}')
+        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
 
 
 def main(argv: Sequence[str] | None = None) -> int:

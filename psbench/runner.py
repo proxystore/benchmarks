@@ -9,7 +9,7 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from psbench.benchmarks.protocol import Benchmark
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import BENCH_LOG_LEVEL
 from psbench.results import ResultLogger
 
 RunConfigT = TypeVar('RunConfigT', bound=BaseModel)
@@ -24,18 +24,18 @@ def runner(
     result_logger: ResultLogger[RunResultT],
     repeat: int = 1,
 ) -> None:
-    logger.log(TESTING_LOG_LEVEL, f'Starting benchmark: {benchmark.name}')
+    logger.log(BENCH_LOG_LEVEL, f'Starting benchmark: {benchmark.name}')
     pretty_config = '\n'.join(
         f'- {k}: {v}' for k, v in benchmark.config().items()
     )
-    logger.log(TESTING_LOG_LEVEL, f'Benchmark config:\n{pretty_config}')
+    logger.log(BENCH_LOG_LEVEL, f'Benchmark config:\n{pretty_config}')
 
     benchmark_start = time.perf_counter()
 
     with benchmark:
         for config in configs:
             logger.log(
-                TESTING_LOG_LEVEL,
+                BENCH_LOG_LEVEL,
                 f'Starting run config (repeat={repeat}): {config}',
             )
 
@@ -53,7 +53,7 @@ def runner(
                     result_logger.log(result)
 
                 logger.log(
-                    TESTING_LOG_LEVEL,
+                    BENCH_LOG_LEVEL,
                     f'Run {i+1}/{repeat} completed in {run_time:.3f}s',
                 )
 
@@ -62,13 +62,13 @@ def runner(
                 0.0 if len(run_times) <= 1 else statistics.stdev(run_times)
             )
             logger.log(
-                TESTING_LOG_LEVEL,
+                BENCH_LOG_LEVEL,
                 f'Average run time: {avg_run_time:.3f} ± {std_run_time:.3f}s',
             )
 
     benchmark_end = time.perf_counter()
 
     logger.log(
-        TESTING_LOG_LEVEL,
+        BENCH_LOG_LEVEL,
         f'Benchmark completed: {benchmark_end - benchmark_start:.3f} s',
     )

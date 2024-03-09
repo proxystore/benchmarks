@@ -39,7 +39,7 @@ from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
 from psbench.config.parsl import get_htex_local_config
 from psbench.logging import init_logging
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.results import CSVResultLogger
 
@@ -156,7 +156,7 @@ class Thinker(BaseThinker):
                 ),
             )
             logger.log(
-                TESTING_LOG_LEVEL,
+                TEST_LOG_LEVEL,
                 f'Task {result.task_id} completed.\n{task_stats}',
             )
             self.results.append(task_stats)
@@ -370,17 +370,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Launch the servers
         doer.start()
         thinker.start()
-        logging.log(TESTING_LOG_LEVEL, 'launched thinker and task servers')
+        logging.log(TEST_LOG_LEVEL, 'launched thinker and task servers')
 
         # Wait for the task generator to complete
         thinker.join()
-        logging.log(TESTING_LOG_LEVEL, 'thinker completed')
+        logging.log(TEST_LOG_LEVEL, 'thinker completed')
     finally:
         queues.send_kill_signal()
 
     # Wait for the task server to complete
     doer.join()
-    logging.info(TESTING_LOG_LEVEL, 'task server completed')
+    logging.info(TEST_LOG_LEVEL, 'task server completed')
 
     if args.csv_file is not None and len(thinker.results) > 0:
         with CSVResultLogger(args.csv_file, TaskStats) as csv_logger:
@@ -390,6 +390,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     if store is not None:
         store.close()
         unregister_store(store)
-        logger.log(TESTING_LOG_LEVEL, f'cleaned up {store.name}')
+        logger.log(TEST_LOG_LEVEL, f'cleaned up {store.name}')
 
     return 0

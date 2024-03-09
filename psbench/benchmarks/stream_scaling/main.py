@@ -26,7 +26,7 @@ from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
 from psbench.executor.parsl import ParslExecutor
 from psbench.executor.protocol import Executor
-from psbench.logging import TESTING_LOG_LEVEL
+from psbench.logging import TEST_LOG_LEVEL
 
 logger = logging.getLogger('stream-scaling')
 
@@ -112,10 +112,10 @@ class Benchmark:
         compute_workers = self.max_workers - 1
         producer_interval = config.task_sleep / compute_workers
         pregen_data = pregenerate(config.data_size_bytes, producer_interval)
-        logger.log(TESTING_LOG_LEVEL, f'Compute workers: {compute_workers}')
-        logger.log(TESTING_LOG_LEVEL, 'Generator workers: 1')
+        logger.log(TEST_LOG_LEVEL, f'Compute workers: {compute_workers}')
+        logger.log(TEST_LOG_LEVEL, 'Generator workers: 1')
         logger.log(
-            TESTING_LOG_LEVEL,
+            TEST_LOG_LEVEL,
             f'Generator item interval: {producer_interval}',
         )
 
@@ -133,7 +133,7 @@ class Benchmark:
             use_proxies=config.use_proxies,
         )
         logger.log(
-            TESTING_LOG_LEVEL,
+            TEST_LOG_LEVEL,
             'Submitted generator task: '
             f'item_size_bytes={config.data_size_bytes}, '
             f'max_items={config.task_count}, '
@@ -169,7 +169,7 @@ class Benchmark:
                     sleep=config.task_sleep,
                 )
                 logger.log(
-                    TESTING_LOG_LEVEL,
+                    TEST_LOG_LEVEL,
                     f'Submitted compute task {i+1}/{config.task_count}',
                 )
                 running_tasks.append(task_future)
@@ -186,26 +186,26 @@ class Benchmark:
             )
             stop_generator.set_result(True)
         finally:
-            logger.log(TESTING_LOG_LEVEL, 'Waiting on generator task')
+            logger.log(TEST_LOG_LEVEL, 'Waiting on generator task')
             generator_task_future.result()
 
         logger.log(
-            TESTING_LOG_LEVEL,
+            TEST_LOG_LEVEL,
             'Finished submitting new compute tasks',
         )
 
-        logger.log(TESTING_LOG_LEVEL, 'Waiting on generator task')
+        logger.log(TEST_LOG_LEVEL, 'Waiting on generator task')
         generator_task_future.result()
 
         # Wait on remaining tasks. There should be compute_workers number
         # of tasks remaining unless a KeyboardInterrupt occurred.
-        logger.log(TESTING_LOG_LEVEL, 'Waiting on outstanding compute tasks')
+        logger.log(TEST_LOG_LEVEL, 'Waiting on outstanding compute tasks')
         while len(running_tasks) > 0:
             task = running_tasks.popleft()
             task.result()
             completed_tasks += 1
 
-        logger.log(TESTING_LOG_LEVEL, 'All compute tasks finished')
+        logger.log(TEST_LOG_LEVEL, 'All compute tasks finished')
 
         end = time.time()
 
