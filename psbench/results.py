@@ -42,8 +42,7 @@ class NamedTupleProtocol(Protocol):
 
     _fields: tuple[str, Any]
 
-    def _asdict(self) -> dict[str, Any]:
-        ...
+    def _asdict(self) -> dict[str, Any]: ...
 
 
 DTYPE = TypeVar(
@@ -54,22 +53,18 @@ DTYPE = TypeVar(
 
 
 class ResultLogger(Protocol[DTYPE]):
-    def __enter__(self) -> Self:
-        ...
+    def __enter__(self) -> Self: ...
 
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def log(self, data: DTYPE) -> None:
-        ...
+    def log(self, data: DTYPE) -> None: ...
 
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
 
 
 class BasicResultLogger:
@@ -150,13 +145,11 @@ class CSVResultLogger(Generic[DTYPE]):
 
 
 @overload
-def field_names(data_type: type[DTYPE]) -> Sequence[str]:
-    ...
+def field_names(data_type: type[DTYPE]) -> Sequence[str]: ...
 
 
 @overload
-def field_names(data_type: DTYPE) -> Sequence[str]:
-    ...
+def field_names(data_type: DTYPE) -> Sequence[str]: ...
 
 
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:
