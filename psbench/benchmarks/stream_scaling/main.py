@@ -142,9 +142,9 @@ class Benchmark:
             f'use_proxies={config.use_proxies}',
         )
         completed_tasks = 0
-        running_tasks: collections.deque[
-            Future[bytes] | Future[None]
-        ] = collections.deque()
+        running_tasks: collections.deque[Future[bytes] | Future[None]] = (
+            collections.deque()
+        )
 
         consumer = ConsumerShim(
             self.consumer,
