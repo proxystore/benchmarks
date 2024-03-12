@@ -14,11 +14,9 @@ else:  # pragma: <3.11 cover
 
 import dask
 import globus_compute_sdk
-from parsl.config import Config
 from pydantic import BaseModel
 
-from psbench.config.parsl import get_htex_local_config
-from psbench.config.parsl import get_thread_config
+from psbench.config.parsl import CONFIG_FACTORY
 from psbench.executor.dask import DaskExecutor
 from psbench.executor.globus import GlobusComputeExecutor
 from psbench.executor.parsl import ParslExecutor
@@ -109,7 +107,7 @@ class GlobusComputeConfig(BaseModel):
 
 
 class ParslConfig(BaseModel):
-    executor: Literal['thread', 'htex-local']
+    executor: str
     run_dir: str
     max_workers: int
 
@@ -122,7 +120,7 @@ class ParslConfig(BaseModel):
 
         group.add_argument(
             '--parsl-executor',
-            choices=['thread', 'htex-local'],
+            choices=list(CONFIG_FACTORY.keys()),
             required=required,
             help='Parsl executor type',
         )
@@ -134,7 +132,7 @@ class ParslConfig(BaseModel):
             help=(
                 'Number of Parsl workers. This configures the value for '
                 'local executors or hints to the benchmark how many workers '
-                'there will be when using a remote executor.'
+                'there will be when using an executor over multiple nodes.'
             ),
         )
 
@@ -148,14 +146,15 @@ class ParslConfig(BaseModel):
         return cls(**options)
 
     def get_executor(self) -> ParslExecutor:
-        config: Config
-        if self.executor == 'thread':
-            config = get_thread_config(self.run_dir, self.max_workers)
-        elif self.executor == 'htex-local':
-            config = get_htex_local_config(self.run_dir, self.max_workers)
-        else:
-            raise AssertionError(f'Unknown Parsl Executor "{self.executor}".')
+        try:
+            factory = CONFIG_FACTORY[self.executor]
+        except KeyError as e:
+            raise ValueError(
+                f'Unknown Parsl Executor "{self.executor}". '
+                f'Expected one of: {list(CONFIG_FACTORY.keys())}.',
+            ) from e
 
+        config = factory(self.run_dir, self.max_workers)
         return ParslExecutor(config, max_workers=self.max_workers)
 
 
