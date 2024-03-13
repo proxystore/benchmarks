@@ -370,6 +370,8 @@ class Benchmark:
             run_workflow = run_sequential_workflow
         elif method == SubmissionMethod.PIPELINED_PROXY_FUTURE:
             run_workflow = run_pipelined_workflow
+        else:
+            raise AssertionError('Unreachable.')
 
         result = run_workflow(
             executor=self.executor,

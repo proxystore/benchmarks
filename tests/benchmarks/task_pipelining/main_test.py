@@ -84,5 +84,5 @@ def test_benchmark_run(
         benchmark.config()
         result = benchmark.run(config)
 
-    assert result.submission_method == config.submission_method
+    assert result.submission_method == config.submission_method.value
     assert result.workflow_makespan_ms > config.task_sleep

@@ -12,7 +12,7 @@ def test_benchmark_matrix_argparse() -> None:
     args = parser.parse_args(
         [
             '--submission-method',
-            'pipelined',
+            'pipelined-proxy-future',
             '--task-chain-length',
             '5',
             '--task-data-bytes',

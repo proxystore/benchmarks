@@ -144,6 +144,16 @@ def test_globus_compute_config() -> None:
     executor.close()
 
 
+def test_parsl_config_unknown(tmp_path: pathlib.Path) -> None:
+    config = ParslConfig(
+        executor='unknown',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
+    with pytest.raises(ValueError, match=config.executor):
+        config.get_executor()
+
+
 def test_parsl_config_thread(tmp_path: pathlib.Path) -> None:
     config = ParslConfig(
         executor='thread',
@@ -161,6 +171,17 @@ def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
         max_workers=1,
     )
     executor = config.get_executor()
+    assert isinstance(executor, ParslExecutor)
+
+
+def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
+    config = ParslConfig(
+        executor='htex-polaris-headless',
+        run_dir=str(tmp_path),
+        max_workers=256,
+    )
+    with mock.patch('psbench.config.parsl.address_by_interface'):
+        executor = config.get_executor()
     assert isinstance(executor, ParslExecutor)
 
 
