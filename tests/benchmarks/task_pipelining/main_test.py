@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Literal
 
 import pytest
 from proxystore.connectors.file import FileConnector
@@ -11,6 +10,7 @@ from psbench.benchmarks.task_pipelining.config import RunConfig
 from psbench.benchmarks.task_pipelining.main import Benchmark
 from psbench.benchmarks.task_pipelining.main import run_pipelined_workflow
 from psbench.benchmarks.task_pipelining.main import run_sequential_workflow
+from psbench.benchmarks.task_pipelining.main import SubmissionMethod
 from testing.executor import ThreadPoolExecutor
 
 
@@ -58,9 +58,16 @@ def test_run_pipelined_workflow(
     assert stats.workflow_makespan_ms > (expected_time_s * 1000)
 
 
-@pytest.mark.parametrize('submission_method', ('sequential', 'pipelined'))
+@pytest.mark.parametrize(
+    'submission_method',
+    (
+        SubmissionMethod.SEQUENTIAL_NO_PROXY,
+        SubmissionMethod.SEQUENTIAL_PROXY,
+        SubmissionMethod.PIPELINED_PROXY_FUTURE,
+    ),
+)
 def test_benchmark_run(
-    submission_method: Literal['sequential', 'pipelined'],
+    submission_method: SubmissionMethod,
     tmp_path: pathlib.Path,
     thread_executor: ThreadPoolExecutor,
     file_store: Store[FileConnector],
@@ -77,5 +84,5 @@ def test_benchmark_run(
         benchmark.config()
         result = benchmark.run(config)
 
-    assert result.submission_method == config.submission_method
+    assert result.submission_method == config.submission_method.value
     assert result.workflow_makespan_ms > config.task_sleep

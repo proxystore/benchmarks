@@ -138,6 +138,7 @@ class CSVResultLogger(Generic[DTYPE]):
             self.writer.writerow(data._asdict())
         else:
             raise AssertionError
+        self.f.flush()
 
     def close(self) -> None:
         """Close file handles."""

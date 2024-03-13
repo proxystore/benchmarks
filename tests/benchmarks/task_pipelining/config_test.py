@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from psbench.benchmarks.task_pipelining.config import BenchmarkMatrix
+from psbench.benchmarks.task_pipelining.config import SubmissionMethod
 
 
 def test_benchmark_matrix_argparse() -> None:
@@ -11,7 +12,7 @@ def test_benchmark_matrix_argparse() -> None:
     args = parser.parse_args(
         [
             '--submission-method',
-            'pipelined',
+            'pipelined-proxy-future',
             '--task-chain-length',
             '5',
             '--task-data-bytes',
@@ -26,7 +27,9 @@ def test_benchmark_matrix_argparse() -> None:
     )
     matrix = BenchmarkMatrix.from_args(**vars(args))
 
-    assert matrix.submission_method == ['pipelined']
+    assert matrix.submission_method == [
+        SubmissionMethod.PIPELINED_PROXY_FUTURE,
+    ]
     assert matrix.task_chain_length == 5
     assert matrix.task_data_bytes == [100, 1000]
     assert matrix.task_overhead_fractions == [0.1, 0.2]
@@ -35,7 +38,10 @@ def test_benchmark_matrix_argparse() -> None:
 
 def test_benchmark_matrix_configs() -> None:
     matrix = BenchmarkMatrix(
-        submission_method=['sequential', 'pipelined'],
+        submission_method=[
+            SubmissionMethod.SEQUENTIAL_PROXY,
+            SubmissionMethod.PIPELINED_PROXY_FUTURE,
+        ],
         task_chain_length=5,
         task_data_bytes=[100, 1000, 10000],
         task_overhead_fractions=[0.1],
