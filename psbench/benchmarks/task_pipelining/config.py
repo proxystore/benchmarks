@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import enum
 import itertools
 import sys
 from typing import Any
 from typing import List
-from typing import Literal
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -15,8 +15,14 @@ else:  # pragma: <3.11 cover
 from pydantic import BaseModel
 
 
+class SubmissionMethod(enum.Enum):
+    SEQUENTIAL_NO_PROXY = 'sequential-no-proxy'
+    SEQUENTIAL_PROXY = 'sequential-proxy'
+    PIPELINED_PROXY_FUTURE = 'pipelined-proxy-future'
+
+
 class RunConfig(BaseModel):
-    submission_method: Literal['sequential', 'pipelined']
+    submission_method: SubmissionMethod
     task_chain_length: int
     task_data_bytes: int
     task_overhead_fraction: float
@@ -26,7 +32,7 @@ class RunConfig(BaseModel):
 class RunResult(BaseModel):
     executor: str
     connector: str
-    submission_method: Literal['sequential', 'pipelined']
+    submission_method: str
     task_chain_length: int
     task_data_bytes: int
     task_overhead_fraction: float
@@ -36,7 +42,7 @@ class RunResult(BaseModel):
 
 
 class BenchmarkMatrix(BaseModel):
-    submission_method: List[Literal['sequential', 'pipelined']]  # noqa: UP006
+    submission_method: List[SubmissionMethod]  # noqa: UP006
     task_chain_length: int
     task_data_bytes: List[int]  # noqa: UP006
     task_overhead_fractions: List[float]  # noqa: UP006
@@ -47,8 +53,8 @@ class BenchmarkMatrix(BaseModel):
         group = parser.add_argument_group(title='Benchmark Parameters')
         group.add_argument(
             '--submission-method',
-            choices=['sequential', 'pipelined'],
-            default=['sequential', 'pipelined'],
+            choices=[e.value for e in SubmissionMethod],
+            default=['sequential-proxy', 'pipelined-proxy-future'],
             nargs='+',
             help='Task submission method',
         )
@@ -96,7 +102,7 @@ class BenchmarkMatrix(BaseModel):
     def configs(self) -> tuple[RunConfig, ...]:
         return tuple(
             RunConfig(
-                submission_method=submission_method,
+                submission_method=SubmissionMethod(submission_method),
                 task_chain_length=self.task_chain_length,
                 task_data_bytes=task_data_bytes,
                 task_overhead_fraction=task_overhead_fraction,

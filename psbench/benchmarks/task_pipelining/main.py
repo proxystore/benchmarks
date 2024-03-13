@@ -25,6 +25,7 @@ from proxystore.store.future import Future as ProxyFuture
 
 from psbench.benchmarks.task_pipelining.config import RunConfig
 from psbench.benchmarks.task_pipelining.config import RunResult
+from psbench.benchmarks.task_pipelining.config import SubmissionMethod
 from psbench.executor.dask import DaskExecutor
 from psbench.executor.parsl import ParslExecutor
 from psbench.executor.protocol import Executor
@@ -53,7 +54,43 @@ class TaskTimes(NamedTuple):
         return [submitted_timestamp, *timestamps, received_timestamp]
 
 
-def sequential_task(
+def sequential_no_proxy_task(
+    data: bytes,
+    overhead_fraction: float,
+    sleep: float,
+) -> tuple[bytes, TaskTimes]:
+    import time
+
+    start_timestamp = time.time()
+
+    from psbench.utils import randbytes
+
+    time.sleep(overhead_fraction * sleep)
+
+    start_resolve_timestamp = time.time()
+    assert isinstance(data, bytes)
+    end_resolve_timestamp = time.time()
+
+    resolve_time = end_resolve_timestamp - start_resolve_timestamp
+    compute_sleep = (1 - overhead_fraction) * sleep
+    time.sleep(max(compute_sleep - resolve_time, 0))
+
+    start_generate_timestamp = time.time()
+    result = randbytes(len(data))
+    end_generate_timestamp = time.time()
+
+    times = TaskTimes(
+        start_timestamp=start_timestamp,
+        start_resolve_timestamp=start_resolve_timestamp,
+        end_resolve_timestamp=end_resolve_timestamp,
+        start_generate_timestamp=start_generate_timestamp,
+        end_generate_timestamp=end_generate_timestamp,
+    )
+
+    return result, times
+
+
+def sequential_proxy_task(
     data: Proxy[bytes],
     overhead_fraction: float,
     sleep: float,
@@ -147,7 +184,7 @@ def pipelined_task(
 
 def run_sequential_workflow(
     executor: Executor,
-    store: Store[Any],
+    store: Store[Any] | None,
     task_chain_length: int,
     task_data_bytes: int,
     task_overhead_fraction: float,
@@ -157,33 +194,43 @@ def run_sequential_workflow(
 
     # Create the initial data for the first task
     data = randbytes(task_data_bytes)
-    proxy = store.proxy(data, evict=True, populate_target=True)
+    if store is not None:
+        data = store.proxy(data, evict=True, populate_target=True)
+
+    sequential_task: Callable[..., tuple[Any, TaskTimes]]
+    if store is None:
+        sequential_task = sequential_no_proxy_task
+    else:
+        sequential_task = sequential_proxy_task
 
     task_timestamps: list[list[float]] = []
 
     for _ in range(task_chain_length):
-        future = executor.submit(
+        task_submitted = time.time()
+        future: Future[Any] = executor.submit(
             sequential_task,
-            proxy,
+            data,
             overhead_fraction=task_overhead_fraction,
             sleep=task_sleep,
         )
-        task_submitted = time.time()
-        proxy, task_time = future.result()
+        data, task_time = future.result()
         task_received = time.time()
         task_timestamps.append(
             task_time.collate(task_submitted, task_received),
         )
 
     # Resolve the final resulting data
-    assert isinstance(proxy, bytes)
+    assert isinstance(data, bytes)
 
     end = time.perf_counter_ns()
 
+    method = 'sequential-no-proxy' if store is None else 'sequential-proxy'
     return RunResult(
         executor=executor.__class__.__name__,
-        connector=store.connector.__class__.__name__,
-        submission_method='sequential',
+        connector=store.connector.__class__.__name__
+        if store is not None
+        else 'None',
+        submission_method=method,
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
         task_overhead_fraction=task_overhead_fraction,
@@ -270,7 +317,7 @@ def run_pipelined_workflow(
     return RunResult(
         executor=executor.__class__.__name__,
         connector=store.connector.__class__.__name__,
-        submission_method='pipelined',
+        submission_method='pipelined-proxy-future',
         task_chain_length=task_chain_length,
         task_data_bytes=task_data_bytes,
         task_overhead_fraction=task_overhead_fraction,
@@ -312,15 +359,21 @@ class Benchmark:
         }
 
     def run(self, config: RunConfig) -> RunResult:
+        store: Store[Any] | None = self.store
+
         run_workflow: Callable[..., RunResult]
-        if config.submission_method == 'sequential':
+        method = config.submission_method
+        if method == SubmissionMethod.SEQUENTIAL_NO_PROXY:
             run_workflow = run_sequential_workflow
-        else:
+            store = None
+        elif method == SubmissionMethod.SEQUENTIAL_PROXY:
+            run_workflow = run_sequential_workflow
+        elif method == SubmissionMethod.PIPELINED_PROXY_FUTURE:
             run_workflow = run_pipelined_workflow
 
         result = run_workflow(
             executor=self.executor,
-            store=self.store,
+            store=store,
             task_chain_length=config.task_chain_length,
             task_data_bytes=config.task_data_bytes,
             task_overhead_fraction=config.task_overhead_fraction,
