@@ -87,6 +87,7 @@ def test_benchmark_run_workflow(
         data_management=data_management,
         stage_task_counts=[1, 1, 3, 1],
         stage_bytes_sizes=[100, 100, 100, 100, 100],
+        stage_repeat=1,
         task_sleep=0.001,
     )
 
@@ -107,6 +108,7 @@ def test_benchmark_run_workflow_mismatched_sizes(
         data_management=DataManagement.NONE,
         stage_task_counts=[1, 1, 3, 1],
         stage_bytes_sizes=[100, 100, 100, 100],
+        stage_repeat=1,
         task_sleep=0.001,
     )
 

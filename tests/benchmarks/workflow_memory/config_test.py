@@ -23,6 +23,8 @@ def test_benchmark_matrix_argparse() -> None:
             '100',
             '100',
             '100',
+            '--stage-repeat',
+            '3',
             '--task-sleep',
             '0.01',
             '--memory-profile-interval',
@@ -37,6 +39,7 @@ def test_benchmark_matrix_argparse() -> None:
     ]
     assert matrix.stage_task_counts == [1, 3, 1]
     assert matrix.stage_bytes_sizes == [100, 100, 100, 100]
+    assert matrix.stage_repeat == 3
     assert matrix.task_sleep == 0.01
     assert matrix.memory_profile_interval == 0.001
 
@@ -50,6 +53,7 @@ def test_benchmark_matrix_configs() -> None:
         ],
         stage_task_counts=[1, 3, 1],
         stage_bytes_sizes=[100, 1000],
+        stage_repeat=3,
         task_sleep=0.01,
         memory_profile_interval=0.001,
     )
@@ -59,6 +63,7 @@ def test_benchmark_matrix_configs() -> None:
     assert len(configs) == expected
 
     for config in configs:
-        assert config.stage_task_counts == config.stage_task_counts
+        assert config.stage_task_counts == matrix.stage_task_counts
         assert config.stage_bytes_sizes == matrix.stage_bytes_sizes
+        assert config.stage_repeat == matrix.stage_repeat
         assert config.task_sleep == matrix.task_sleep

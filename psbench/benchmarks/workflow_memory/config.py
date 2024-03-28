@@ -27,6 +27,7 @@ class RunConfig(BaseModel):
     data_management: DataManagement
     stage_task_counts: List[int]  # noqa: UP006
     stage_bytes_sizes: List[int]  # noqa: UP006
+    stage_repeat: int
     task_sleep: float
 
 
@@ -36,6 +37,7 @@ class RunResult(BaseModel):
     data_management: str
     stage_task_counts: str
     stage_bytes_sizes: str
+    stage_repeat: int
     task_sleep: float
     workflow_start_timestamp: float
     workflow_end_timestamp: float
@@ -46,6 +48,7 @@ class BenchmarkMatrix(BaseModel):
     data_management: List[DataManagement]  # noqa: UP006
     stage_task_counts: List[int]  # noqa: UP006
     stage_bytes_sizes: List[int]  # noqa: UP006
+    stage_repeat: int
     task_sleep: float
     memory_profile_interval: float
 
@@ -80,6 +83,13 @@ class BenchmarkMatrix(BaseModel):
             ),
         )
         group.add_argument(
+            '--stage-repeat',
+            metavar='SECONDS',
+            default=1,
+            type=int,
+            help='Number of times to repeat the stages',
+        )
+        group.add_argument(
             '--task-sleep',
             metavar='SECONDS',
             required=True,
@@ -105,6 +115,7 @@ class BenchmarkMatrix(BaseModel):
             ],
             stage_task_counts=kwargs['stage_task_counts'],
             stage_bytes_sizes=stage_bytes_sizes,
+            stage_repeat=kwargs['stage_repeat'],
             task_sleep=kwargs['task_sleep'],
             memory_profile_interval=kwargs['memory_profile_interval'],
         )
@@ -115,6 +126,7 @@ class BenchmarkMatrix(BaseModel):
                 data_management=data_management,
                 stage_task_counts=self.stage_task_counts,
                 stage_bytes_sizes=self.stage_bytes_sizes,
+                stage_repeat=self.stage_repeat,
                 task_sleep=self.task_sleep,
             )
             for data_management in self.data_management

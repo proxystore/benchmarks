@@ -189,6 +189,7 @@ def run_workflow(
     data_management: DataManagement,
     stage_task_counts: Sequence[int],
     stage_bytes_sizes: Sequence[int],
+    stage_repeat: int,
     sleep: float,
 ) -> RunResult:
     start_timestamp = time.time()
@@ -201,30 +202,31 @@ def run_workflow(
 
     proxy_keys: list[tuple[Any, ...]] = []
 
-    current_data = _generate_start_data(
-        data_management,
-        data_count=stage_task_counts[0],
-        data_bytes=stage_bytes_sizes[0],
-        store=store,
-    )
-
-    for stage_index, stage_task_count in enumerate(stage_task_counts):
-        # Keep track of what proxies were created for clean up at end
-        if data_management == DataManagement.DEFAULT_PROXY:
-            proxy_keys.extend(p.__factory__.key for p in current_data)
-        new_data = _run_workflow_stage(
-            current_data,
-            executor=executor,
-            data_management=data_management,
-            stage_task_count=stage_task_count,
-            stage_output_bytes=stage_bytes_sizes[stage_index + 1],
-            sleep=sleep,
+    for _ in range(stage_repeat):
+        current_data = _generate_start_data(
+            data_management,
+            data_count=stage_task_counts[0],
+            data_bytes=stage_bytes_sizes[0],
+            store=store,
         )
-        if data_management is DataManagement.MANUAL_PROXY:
-            assert store is not None
-            for proxy in current_data:
-                store.evict(proxy.__factory__.key)
-        current_data = new_data
+
+        for stage_index, stage_task_count in enumerate(stage_task_counts):
+            # Keep track of what proxies were created for clean up at end
+            if data_management == DataManagement.DEFAULT_PROXY:
+                proxy_keys.extend(p.__factory__.key for p in current_data)
+            new_data = _run_workflow_stage(
+                current_data,
+                executor=executor,
+                data_management=data_management,
+                stage_task_count=stage_task_count,
+                stage_output_bytes=stage_bytes_sizes[stage_index + 1],
+                sleep=sleep,
+            )
+            if data_management is DataManagement.MANUAL_PROXY:
+                assert store is not None
+                for proxy in current_data:
+                    store.evict(proxy.__factory__.key)
+            current_data = new_data
 
     # Housekeeping to clean up any outstanding memory we might have
     if data_management is DataManagement.OWNED_PROXY:
@@ -252,6 +254,7 @@ def run_workflow(
         data_management=data_management.value,
         stage_task_counts='-'.join(str(s) for s in stage_task_counts),
         stage_bytes_sizes='-'.join(str(s) for s in stage_bytes_sizes),
+        stage_repeat=stage_repeat,
         task_sleep=sleep,
         workflow_start_timestamp=start_timestamp,
         workflow_end_timestamp=end_timestamp,
@@ -304,6 +307,7 @@ class Benchmark:
             data_management=config.data_management,
             stage_task_counts=config.stage_task_counts,
             stage_bytes_sizes=config.stage_bytes_sizes,
+            stage_repeat=config.stage_repeat,
             sleep=config.task_sleep,
         )
 
