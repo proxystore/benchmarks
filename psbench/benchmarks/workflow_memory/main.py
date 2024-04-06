@@ -7,6 +7,7 @@ import gc
 import logging
 import sys
 import time
+from concurrent.futures import Executor
 from concurrent.futures import Future
 from types import TracebackType
 from typing import Any
@@ -28,7 +29,6 @@ from proxystore.store.scopes import submit
 from psbench.benchmarks.workflow_memory.config import DataManagement
 from psbench.benchmarks.workflow_memory.config import RunConfig
 from psbench.benchmarks.workflow_memory.config import RunResult
-from psbench.executor.protocol import Executor
 from psbench.utils import randbytes
 
 logger = logging.getLogger('workflow-memory')

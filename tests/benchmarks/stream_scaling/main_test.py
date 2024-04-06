@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 
 import pytest
@@ -10,7 +11,6 @@ from proxystore.store.base import Store
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.main import Benchmark
 from psbench.config import StreamConfig
-from testing.executor import ThreadPoolExecutor
 from testing.stream import create_stream_pair
 
 
@@ -27,6 +27,7 @@ def test_benchmark(
     )
     run_config = RunConfig(
         data_size_bytes=100,
+        max_workers=thread_executor._max_workers,
         task_count=8,
         task_sleep=0.001,
         use_proxies=use_proxies,

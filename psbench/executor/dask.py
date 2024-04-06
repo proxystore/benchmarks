@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import functools
 import sys
+from concurrent.futures import Executor
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Callable
 from typing import cast
+from typing import Generator
+from typing import Iterable
+from typing import Iterator
 from typing import TypeVar
 
 if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
@@ -14,9 +17,9 @@ else:  # pragma: <3.10 cover
     from typing_extensions import ParamSpec
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 from dask.distributed import Client
 from proxystore.proxy import _proxy_trampoline
@@ -58,36 +61,16 @@ def proxy_task_wrapper(function: Callable[P, T]) -> Callable[P, T]:
     return _proxy_wrapper
 
 
-class DaskExecutor:
+class DaskExecutor(Executor):
     """Dask task execution engine."""
 
     def __init__(self, client: Client) -> None:
-        self._client = client
-        # The number of workers in Dask can change over time, so this assumes
-        # they are all active at the start.
-        self.max_workers: int | None = len(client.scheduler_info()['workers'])
-
-    def __enter__(self) -> Self:
-        self.start()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        self.close()
-
-    def start(self) -> None:
-        pass
-
-    def close(self) -> None:
-        self._client.close()
+        self.client = client
 
     def submit(
         self,
         function: Callable[P, T],
+        /,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Future[T]:
@@ -103,7 +86,7 @@ class DaskExecutor:
             for k, v in kwargs.items()
         }
 
-        base_future = self._client.submit(function, *new_args, **new_kwargs)
+        base_future = self.client.submit(function, *new_args, **new_kwargs)
 
         # This custom future will cast any factory results back to proxies.
         return _CustomDaskFuture(
@@ -112,3 +95,30 @@ class DaskExecutor:
             inform=base_future._inform,
             state=base_future._state,
         )
+
+    def map(
+        self,
+        function: Callable[P, T],
+        *iterables: Iterable[P.args],
+        timeout: float | None = None,
+        chunksize: int = 1,
+    ) -> Iterator[T]:
+        # Based on the Parsl implementation.
+        # https://github.com/Parsl/parsl/blob/7fba7d634ccade76618ee397d3c951c5cbf2cd49/parsl/concurrent/__init__.py#L58
+        futures = [self.submit(function, *args) for args in zip(*iterables)]
+
+        def _result_iterator() -> Generator[T, None, None]:
+            futures.reverse()
+            while futures:
+                yield futures.pop().result(timeout)
+
+        return _result_iterator()
+
+    def shutdown(
+        self,
+        wait: bool = True,
+        *,
+        cancel_futures: bool = False,
+    ) -> None:
+        # Note: wait and cancel_futures are not implemented.
+        self.client.close()

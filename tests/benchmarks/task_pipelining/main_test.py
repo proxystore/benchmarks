@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from proxystore.connectors.file import FileConnector
@@ -11,7 +12,6 @@ from psbench.benchmarks.task_pipelining.main import Benchmark
 from psbench.benchmarks.task_pipelining.main import run_pipelined_workflow
 from psbench.benchmarks.task_pipelining.main import run_sequential_workflow
 from psbench.benchmarks.task_pipelining.main import SubmissionMethod
-from testing.executor import ThreadPoolExecutor
 
 
 def test_run_sequential_workflow(

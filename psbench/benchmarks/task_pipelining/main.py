@@ -19,6 +19,9 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from concurrent.futures import Executor
+
+from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
@@ -27,8 +30,6 @@ from psbench.benchmarks.task_pipelining.config import RunConfig
 from psbench.benchmarks.task_pipelining.config import RunResult
 from psbench.benchmarks.task_pipelining.config import SubmissionMethod
 from psbench.executor.dask import DaskExecutor
-from psbench.executor.parsl import ParslExecutor
-from psbench.executor.protocol import Executor
 from psbench.utils import randbytes
 
 logger = logging.getLogger('task-pipelining')
@@ -276,7 +277,7 @@ def run_pipelined_workflow(
                 sleep=task_sleep,
                 prepopulate=isinstance(
                     executor,
-                    (DaskExecutor, ParslExecutor),
+                    (DaskExecutor, ParslPoolExecutor),
                 ),
             )
             task_submitted.append(time.time())

@@ -12,6 +12,8 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
         '1',
         '2',
         '3',
+        '--max-workers',
+        '7',
         '--stream-method',
         'proxy',
         '--task-count',

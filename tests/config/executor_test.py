@@ -5,14 +5,14 @@ import pathlib
 from unittest import mock
 
 import pytest
+from globus_compute_sdk import Executor as GlobusComputeExecutor
+from parsl.concurrent import ParslPoolExecutor
 
 from psbench.config.executor import DaskConfig
 from psbench.config.executor import ExecutorConfig
 from psbench.config.executor import GlobusComputeConfig
 from psbench.config.executor import ParslConfig
 from psbench.executor.dask import DaskExecutor
-from psbench.executor.globus import GlobusComputeExecutor
-from psbench.executor.parsl import ParslExecutor
 from testing.globus_compute import mock_globus_compute
 
 
@@ -121,7 +121,7 @@ def test_dask_config_local() -> None:
     config = DaskConfig(threaded_workers=True, workers=1)
     executor = config.get_executor()
     assert isinstance(executor, DaskExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_dask_config_remote_scheduler() -> None:
@@ -131,7 +131,7 @@ def test_dask_config_remote_scheduler() -> None:
         executor = config.get_executor()
 
     assert isinstance(executor, DaskExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_globus_compute_config() -> None:
@@ -141,7 +141,7 @@ def test_globus_compute_config() -> None:
         executor = config.get_executor()
 
     assert isinstance(executor, GlobusComputeExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_parsl_config_unknown(tmp_path: pathlib.Path) -> None:
@@ -161,7 +161,7 @@ def test_parsl_config_thread(tmp_path: pathlib.Path) -> None:
         max_workers=1,
     )
     executor = config.get_executor()
-    assert isinstance(executor, ParslExecutor)
+    assert isinstance(executor, ParslPoolExecutor)
 
 
 def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
@@ -171,7 +171,7 @@ def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
         max_workers=1,
     )
     executor = config.get_executor()
-    assert isinstance(executor, ParslExecutor)
+    assert isinstance(executor, ParslPoolExecutor)
 
 
 def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
@@ -180,9 +180,12 @@ def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
         run_dir=str(tmp_path),
         max_workers=256,
     )
-    with mock.patch('psbench.config.parsl.address_by_interface'):
+    with mock.patch(
+        'psbench.config.executor.ParslPoolExecutor',
+        autospec=True,
+    ), mock.patch('psbench.config.parsl.address_by_interface'):
         executor = config.get_executor()
-    assert isinstance(executor, ParslExecutor)
+    assert isinstance(executor, ParslPoolExecutor)
 
 
 def test_executor_config() -> None:
@@ -195,4 +198,4 @@ def test_executor_config() -> None:
         executor = config.get_executor()
 
     assert isinstance(executor, GlobusComputeExecutor)
-    executor.close()
+    executor.shutdown()
