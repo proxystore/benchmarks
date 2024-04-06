@@ -14,6 +14,9 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from concurrent.futures import Executor
+
+from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
@@ -24,8 +27,6 @@ from psbench.benchmarks.stream_scaling.config import RunResult
 from psbench.benchmarks.stream_scaling.generator import generator_task
 from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
-from psbench.executor.parsl import ParslExecutor
-from psbench.executor.protocol import Executor
 from psbench.logging import TEST_LOG_LEVEL
 
 logger = logging.getLogger('stream-scaling')
@@ -74,13 +75,6 @@ class Benchmark:
         self.store = store
         self.stream_config = stream_config
 
-        if self.executor.max_workers is None:  # pragma: no cover
-            raise ValueError(
-                'Executor max_workers is None but this benchmark requires '
-                'the executor to define the maximum number of workers.',
-            )
-        self.max_workers = self.executor.max_workers
-
     def __enter__(self) -> Self:
         # https://stackoverflow.com/a/39172487
         with contextlib.ExitStack() as stack:
@@ -109,7 +103,7 @@ class Benchmark:
         }
 
     def run(self, config: RunConfig) -> RunResult:
-        compute_workers = self.max_workers - 1
+        compute_workers = config.max_workers - 1
         producer_interval = config.task_sleep / compute_workers
         pregen_data = pregenerate(config.data_size_bytes, producer_interval)
         logger.log(TEST_LOG_LEVEL, f'Compute workers: {compute_workers}')
@@ -155,7 +149,7 @@ class Benchmark:
 
         try:
             for i, item in enumerate(consumer):
-                if isinstance(self.executor, ParslExecutor) and isinstance(
+                if isinstance(self.executor, ParslPoolExecutor) and isinstance(
                     item,
                     Proxy,
                 ):  # pragma: no cover
@@ -218,7 +212,7 @@ class Benchmark:
             task_count=config.task_count,
             task_sleep=config.task_sleep,
             use_proxies=config.use_proxies,
-            workers=self.max_workers,
+            workers=config.max_workers,
             completed_tasks=completed_tasks,
             start_submit_tasks_timestamp=start,
             end_tasks_done_timestamp=end,

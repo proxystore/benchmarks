@@ -4,11 +4,12 @@ import argparse
 import pathlib
 from unittest import mock
 
+from globus_compute_sdk import Executor as GlobusComputeExecutor
+from parsl.concurrent import ParslPoolExecutor
+
 from psbench.argparse import add_executor_options
 from psbench.executor.dask import DaskExecutor
 from psbench.executor.factory import init_executor_from_args
-from psbench.executor.globus import GlobusComputeExecutor
-from psbench.executor.parsl import ParslExecutor
 from testing.globus_compute import mock_globus_compute
 
 
@@ -21,7 +22,7 @@ def test_init_dask_executor_local() -> None:
 
     executor = init_executor_from_args(args)
     assert isinstance(executor, DaskExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_init_dask_executor_remote_scheduler() -> None:
@@ -35,7 +36,7 @@ def test_init_dask_executor_remote_scheduler() -> None:
         executor = init_executor_from_args(args)
 
     assert isinstance(executor, DaskExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_init_globus_compute_executor() -> None:
@@ -49,7 +50,7 @@ def test_init_globus_compute_executor() -> None:
         executor = init_executor_from_args(args)
 
     assert isinstance(executor, GlobusComputeExecutor)
-    executor.close()
+    executor.shutdown()
 
 
 def test_init_parsl_thread_executor(tmp_path: pathlib.Path) -> None:
@@ -66,7 +67,7 @@ def test_init_parsl_thread_executor(tmp_path: pathlib.Path) -> None:
     )
 
     executor = init_executor_from_args(args)
-    assert isinstance(executor, ParslExecutor)
+    assert isinstance(executor, ParslPoolExecutor)
 
 
 def test_init_parsl_htex(tmp_path: pathlib.Path) -> None:
@@ -83,4 +84,4 @@ def test_init_parsl_htex(tmp_path: pathlib.Path) -> None:
     )
 
     executor = init_executor_from_args(args)
-    assert isinstance(executor, ParslExecutor)
+    assert isinstance(executor, ParslPoolExecutor)

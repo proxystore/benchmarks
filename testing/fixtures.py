@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import pathlib
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from typing import Generator
 
 import pytest
@@ -8,9 +10,6 @@ from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
 from proxystore.store import store_registration
 from proxystore.store.base import Store
-
-from testing.executor import ProcessPoolExecutor
-from testing.executor import ThreadPoolExecutor
 
 
 @pytest.fixture()

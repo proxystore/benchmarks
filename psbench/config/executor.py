@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from concurrent.futures import Executor
 from typing import Any
 from typing import Literal
 from typing import Optional
@@ -14,13 +15,11 @@ else:  # pragma: <3.11 cover
 
 import dask
 import globus_compute_sdk
+from parsl.concurrent import ParslPoolExecutor
 from pydantic import BaseModel
 
 from psbench.config.parsl import CONFIG_FACTORY
 from psbench.executor.dask import DaskExecutor
-from psbench.executor.globus import GlobusComputeExecutor
-from psbench.executor.parsl import ParslExecutor
-from psbench.executor.protocol import Executor
 
 
 class DaskConfig(BaseModel):
@@ -100,10 +99,8 @@ class GlobusComputeConfig(BaseModel):
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(endpoint=kwargs['globus_compute_endpoint'])
 
-    def get_executor(self) -> GlobusComputeExecutor:
-        return GlobusComputeExecutor(
-            globus_compute_sdk.Executor(self.endpoint),
-        )
+    def get_executor(self) -> globus_compute_sdk.Executor:
+        return globus_compute_sdk.Executor(self.endpoint)
 
 
 class ParslConfig(BaseModel):
@@ -145,7 +142,7 @@ class ParslConfig(BaseModel):
         }
         return cls(**options)
 
-    def get_executor(self) -> ParslExecutor:
+    def get_executor(self) -> ParslPoolExecutor:
         try:
             factory = CONFIG_FACTORY[self.executor]
         except KeyError as e:
@@ -155,7 +152,7 @@ class ParslConfig(BaseModel):
             ) from e
 
         config = factory(self.run_dir, self.max_workers)
-        return ParslExecutor(config, max_workers=self.max_workers)
+        return ParslPoolExecutor(config)
 
 
 class ExecutorConfig(BaseModel):

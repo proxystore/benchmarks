@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 class RunConfig(BaseModel):
     data_size_bytes: int
+    max_workers: int
     task_count: int
     task_sleep: float
     use_proxies: bool
@@ -38,6 +39,7 @@ class RunResult(BaseModel):
 
 class BenchmarkMatrix(BaseModel):
     data_size_bytes: List[int]  # noqa: UP006
+    max_workers: int
     stream_method: List[Literal['default', 'proxy']]  # noqa: UP006
     task_count: int
     task_sleep: int
@@ -52,6 +54,13 @@ class BenchmarkMatrix(BaseModel):
             required=True,
             type=int,
             help='Size of stream data objects in bytes',
+        )
+        group.add_argument(
+            '--max-workers',
+            metavar='INT',
+            required=True,
+            type=int,
+            help='Max workers that will be available in the executor',
         )
         group.add_argument(
             '--stream-method',
@@ -79,6 +88,7 @@ class BenchmarkMatrix(BaseModel):
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
             data_size_bytes=kwargs['data_size_bytes'],
+            max_workers=kwargs['max_workers'],
             stream_method=kwargs['stream_method'],
             task_count=kwargs['task_count'],
             task_sleep=kwargs['task_sleep'],
@@ -88,6 +98,7 @@ class BenchmarkMatrix(BaseModel):
         return tuple(
             RunConfig(
                 data_size_bytes=size,
+                max_workers=self.max_workers,
                 task_count=self.task_count,
                 task_sleep=self.task_sleep,
                 use_proxies=method == 'proxy',

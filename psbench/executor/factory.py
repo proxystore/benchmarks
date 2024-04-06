@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import argparse
 import multiprocessing
+from concurrent.futures import Executor
 
 import dask
 import globus_compute_sdk
 from parsl.addresses import address_by_hostname
 from parsl.channels import LocalChannel
+from parsl.concurrent import ParslPoolExecutor
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 from parsl.executors import ThreadPoolExecutor
@@ -14,9 +16,6 @@ from parsl.executors.base import ParslExecutor as ParslBaseExecutor
 from parsl.providers import LocalProvider
 
 from psbench.executor.dask import DaskExecutor
-from psbench.executor.globus import GlobusComputeExecutor
-from psbench.executor.parsl import ParslExecutor
-from psbench.executor.protocol import Executor
 
 
 def init_executor_from_args(args: argparse.Namespace) -> Executor:
@@ -45,9 +44,7 @@ def init_executor_from_args(args: argparse.Namespace) -> Executor:
             )
         return DaskExecutor(client)
     elif args.executor == 'globus':
-        return GlobusComputeExecutor(
-            globus_compute_sdk.Executor(args.globus_compute_endpoint),
-        )
+        return globus_compute_sdk.Executor(args.globus_compute_endpoint)
     elif args.executor == 'parsl':
         executor: ParslBaseExecutor
         workers = (
@@ -74,7 +71,7 @@ def init_executor_from_args(args: argparse.Namespace) -> Executor:
                 'or --parsl-local-htex.',
             )
         config = Config(executors=[executor], run_dir=args.parsl_run_dir)
-        return ParslExecutor(config)
+        return ParslPoolExecutor(config)
     else:
         raise AssertionError(
             f'Unknown executor type "{args.executor}". '

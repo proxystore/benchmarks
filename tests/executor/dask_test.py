@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from concurrent.futures import Executor
+
 import pytest
 from dask.distributed import Client
 from proxystore.connectors.local import LocalConnector
@@ -7,7 +9,6 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 
 from psbench.executor.dask import DaskExecutor
-from psbench.executor.protocol import Executor
 
 
 @pytest.fixture()
@@ -29,6 +30,15 @@ def test_submit_function(local_client: Client) -> None:
     with DaskExecutor(local_client) as executor:
         future = executor.submit(round, 1.75, ndigits=1)
         assert future.result() == 1.8
+
+
+def test_map_function(local_client: Client) -> None:
+    def _sum(x: int, y: int) -> int:
+        return x + y
+
+    with DaskExecutor(local_client) as executor:
+        results = executor.map(_sum, (1, 2, 3), (4, 5, 6))
+        assert tuple(results) == (5, 7, 9)
 
 
 def proxy_function(proxy: Proxy[int]) -> Proxy[int]:

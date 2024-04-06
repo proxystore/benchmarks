@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ProcessPoolExecutor
 
 import pytest
 from proxystore.connectors.file import FileConnector
@@ -14,7 +15,6 @@ from psbench.benchmarks.workflow_memory.main import task_no_proxy
 from psbench.benchmarks.workflow_memory.main import task_proxy
 from psbench.benchmarks.workflow_memory.main import validate_workflow
 from psbench.utils import randbytes
-from testing.executor import ProcessPoolExecutor
 
 
 @pytest.mark.parametrize(
