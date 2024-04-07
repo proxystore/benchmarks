@@ -28,13 +28,13 @@ from psbench.argparse import add_globus_compute_options
 from psbench.argparse import add_ipfs_options
 from psbench.argparse import add_logging_options
 from psbench.argparse import add_proxystore_options
+from psbench.benchmarks.globus_compute_tasks.tasks import pong
+from psbench.benchmarks.globus_compute_tasks.tasks import pong_ipfs
+from psbench.benchmarks.globus_compute_tasks.tasks import pong_proxy
 from psbench.logging import init_logging
 from psbench.logging import TEST_LOG_LEVEL
 from psbench.proxystore import init_store_from_args
 from psbench.results import CSVResultLogger
-from psbench.tasks.pong import pong
-from psbench.tasks.pong import pong_ipfs
-from psbench.tasks.pong import pong_proxy
 from psbench.utils import randbytes
 
 logger = logging.getLogger('globus-compute-test')
