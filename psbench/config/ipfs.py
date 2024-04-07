@@ -49,7 +49,7 @@ class IPFSConfig(BaseModel):
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
-            use_ipfs=kwargs['ipfs'],
-            local_dir=kwargs['ipfs_local_dir'],
-            remote_dir=kwargs['ipfs_remote_dir'],
+            use_ipfs=kwargs.get('ipfs', False),
+            local_dir=kwargs.get('ipfs_local_dir', None),
+            remote_dir=kwargs.get('ipfs_remote_dir', None),
         )
