@@ -28,11 +28,12 @@ The full list of options can be found using `--help`.
 
 **Globus Compute**
 ```bash
-$ python -m psbench.benchmarks.colmena_rtt \
-    --globus-compute --endpoint b8aba48a-386d-4977-b5c9-9bcbbaebd0bf \
+$ python -m psbench.run.colmena_rtt \
+    --executor globus-compute \
+    --globus-compute-endpoint b8aba48a-386d-4977-b5c9-9bcbbaebd0bf \
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
-    --task-repeat 5
+    --repeat 5
 ```
 
 By default, Colmena's `PipeQueues` are used which only work when the thinker and workers are on the same host.
@@ -40,10 +41,10 @@ For distributed compute, the Colmena `RedisQueues` need to be enabled by 1) star
 
 **Parsl**
 ```bash
-$ python -m psbench.benchmarks.colmena_rtt \
-    --parsl \
+$ python -m psbench.run.colmena_rtt \
+    --executor parsl --parsl-executor htex-local --parsl-max-workers 1 \
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
     --task-repeat 5
 ```
-The Parsl config can be modified in `psbench/benchmarks/colmena_rtt/config.py`.
+New Parsl executor configs can be modified in `psbench/configs/parsl.py`.

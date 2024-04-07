@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 import pathlib
+import uuid
 from unittest import mock
 
 import pytest
 import redis
+from proxystore.connectors.file import FileConnector
+from proxystore.store import Store
 
-from psbench.benchmarks.colmena_rtt.main import main
-from testing.colmena import MockGlobusComputeTaskServer
+from psbench.benchmarks.colmena_rtt.config import RunConfig
+from psbench.benchmarks.colmena_rtt.main import Benchmark
+from psbench.config.executor import GlobusComputeConfig
+from psbench.config.executor import ParslConfig
 from testing.globus_compute import mock_globus_compute
+from testing.globus_compute import MockExecutor
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
@@ -24,83 +30,97 @@ except redis.exceptions.ConnectionError:  # pragma: no cover
     redis_available = False
 
 
-@pytest.fixture()
-def default_args(tmp_path) -> list[str]:
-    return [
-        '--input-sizes',
-        '100',
-        '1000',
-        '--output-sizes',
-        '100',
-        '1000',
-        '--task-repeat',
-        '2',
-    ]
+@pytest.mark.parametrize('reuse_inputs', (True, False))
+def test_benchmark(reuse_inputs: bool, tmp_path: pathlib.Path) -> None:
+    parsl_config = ParslConfig(
+        executor='thread',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
+    run_config = RunConfig(
+        input_sizes=[10, 100],
+        output_sizes=[10, 100],
+        task_sleep=0,
+        reuse_inputs=reuse_inputs,
+    )
+
+    with Benchmark(parsl_config, store=None) as benchmark:
+        benchmark.config()
+        results = benchmark.run(run_config)
+
+    expected = len(run_config.input_sizes) * len(run_config.output_sizes)
+    assert len(results) == expected
 
 
-@pytest.mark.parametrize(
-    ('use_proxystore', 'use_csv', 'args'),
-    (
-        (True, True, []),
-        (False, False, ['--reuse-inputs']),
-    ),
-)
-def test_parsl_e2e(
-    use_proxystore: bool,
-    use_csv: bool,
-    args: list[str],
+def test_benchmark_with_proxystore(
+    file_store: Store[FileConnector],
     tmp_path: pathlib.Path,
-    default_args: list[str],
 ) -> None:
-    run_dir = tmp_path / 'runs'
-    run_dir.mkdir()
+    parsl_config = ParslConfig(
+        executor='thread',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
+    run_config = RunConfig(
+        input_sizes=[10, 100],
+        output_sizes=[10, 100],
+        task_sleep=0,
+        reuse_inputs=False,
+    )
 
-    args = ['--parsl', '--output-dir', str(run_dir), *args, *default_args]
-    if use_proxystore:
-        args += ['--ps-backend', 'FILE', '--ps-file-dir', str(run_dir / 'ps')]
-    if use_csv:
-        args += ['--csv-file', str(run_dir / 'log.csv')]
+    with Benchmark(parsl_config, store=file_store) as benchmark:
+        results = benchmark.run(run_config)
 
-    assert main(args) == 0
+    expected = len(run_config.input_sizes) * len(run_config.output_sizes)
+    assert len(results) == expected
 
 
-def test_globus_compute_e2e(
-    tmp_path: pathlib.Path,
-    default_args: list[str],
-) -> None:
-    run_dir = tmp_path / 'runs'
-    run_dir.mkdir()
+def test_benchmark_with_globus_compute(tmp_path: pathlib.Path) -> None:
+    gc_config = GlobusComputeConfig(endpoint=str(uuid.uuid4()))
+    run_config = RunConfig(
+        input_sizes=[10, 100],
+        output_sizes=[10, 100],
+        task_sleep=0,
+        reuse_inputs=False,
+    )
 
-    args = [
-        '--globus-compute',
-        '--endpoint',
-        'ENDPOINT',
-        '--output-dir',
-        str(run_dir),
-    ]
-    args += default_args
-
-    with mock.patch(
-        'psbench.benchmarks.colmena_rtt.main.GlobusComputeTaskServer',
-        MockGlobusComputeTaskServer,
+    with mock_globus_compute(), mock.patch(
+        'colmena.task_server.globus.Executor',
+        MockExecutor,
     ):
-        with mock_globus_compute():
-            assert main(args) == 0
+        with Benchmark(gc_config, store=None) as benchmark:
+            results = benchmark.run(run_config)
+
+    expected = len(run_config.input_sizes) * len(run_config.output_sizes)
+    assert len(results) == expected
 
 
 @pytest.mark.skipif(
     not redis_available,
     reason='Unable to connect to Redis server at localhost:6379',
 )
-def test_redis_queues(
+def test_benchmark_with_redis_queue(
     tmp_path: pathlib.Path,
-    default_args: list[str],
 ) -> None:  # pragma: no cover
-    run_dir = tmp_path / 'runs'
-    run_dir.mkdir()
+    parsl_config = ParslConfig(
+        executor='thread',
+        run_dir=str(tmp_path),
+        max_workers=1,
+    )
+    run_config = RunConfig(
+        input_sizes=[10, 100],
+        output_sizes=[10, 100],
+        task_sleep=0,
+        reuse_inputs=False,
+    )
 
-    args = ['--parsl', '--output-dir', str(run_dir)]
-    args += ['--redis-host', REDIS_HOST, '--redis-port', str(REDIS_PORT)]
-    args += default_args
+    with Benchmark(
+        parsl_config,
+        store=None,
+        redis_host=REDIS_HOST,
+        redis_port=REDIS_PORT,
+    ) as benchmark:
+        results = benchmark.run(run_config)
 
-    assert main(args) == 0
+    expected = len(run_config.input_sizes) * len(run_config.output_sizes)
+    assert len(results) == expected
