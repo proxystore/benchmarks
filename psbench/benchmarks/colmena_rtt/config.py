@@ -11,7 +11,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-from colmena.models import Result
+from colmena.models.results import Result
 from pydantic import BaseModel
 
 

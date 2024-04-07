@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import argparse
 
-from colmena.models import Result
-from colmena.models import TimeSpans
-from colmena.models import Timestamps
+from colmena.models.results import Result
+from colmena.models.results import TimeSpans
+from colmena.models.results import Timestamps
 
 from psbench.benchmarks.colmena_rtt.config import BenchmarkMatrix
 from psbench.benchmarks.colmena_rtt.config import RunResult
