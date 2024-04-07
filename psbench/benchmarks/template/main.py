@@ -1,46 +1,66 @@
-"""Benchmark template."""
-
 from __future__ import annotations
 
-import argparse
+import contextlib
 import logging
+import random
 import sys
-from typing import Sequence
+from types import TracebackType
+from typing import Any
 
-from psbench.argparse import add_logging_options
-from psbench.logging import init_logging
-from psbench.logging import TEST_LOG_LEVEL
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
+
+from concurrent.futures import Executor
+
+from proxystore.store.base import Store
+
+from psbench.benchmarks.template.config import RunConfig
+from psbench.benchmarks.template.config import RunResult
 
 logger = logging.getLogger('template')
 
 
-def run() -> None:
-    """Benchmark logic."""
-    logger.log(TEST_LOG_LEVEL, 'starting template benchmark')
+class Benchmark:
+    name = 'Template'
+    config_type = RunConfig
+    result_type = RunResult
 
-    # ...
+    def __init__(self, executor: Executor, store: Store[Any] | None) -> None:
+        self.executor = executor
+        self.store = store
 
-    logger.log(TEST_LOG_LEVEL, 'finished template benchmark')
+    def __enter__(self) -> Self:
+        # https://stackoverflow.com/a/39172487
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(self.executor)
+            if self.store is not None:
+                stack.enter_context(self.store)
+            self._stack = stack.pop_all()
+        return self
 
-    return None
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self._stack.__exit__(exc_type, exc_value, exc_traceback)
 
+    def config(self) -> dict[str, Any]:
+        connector = (
+            self.store.connector.__class__.__name__
+            if self.store is not None
+            else 'None'
+        )
+        return {
+            'executor': self.executor.__class__.__name__,
+            'connector': connector,
+        }
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Benchmark entrypoint."""
-    argv = argv if argv is not None else sys.argv[1:]
-
-    parser = argparse.ArgumentParser(
-        description='Template benchmark.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    # Add arguments as necessary:
-    # parser.add_argument('host', help='hostname')
-
-    add_logging_options(parser)
-    args = parser.parse_args(argv)
-
-    init_logging(args.log_file, args.log_level, force=True)
-
-    run()
-
-    return 0
+    def run(self, config: RunConfig) -> RunResult:
+        return RunResult(
+            name=config.name,
+            result=random.randint(0, 100),
+        )
