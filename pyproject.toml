@@ -40,8 +40,8 @@ dependencies = [
 
 [project.urls]
 homepage = "https://proxystore.dev"
-documentation = "https://proxystore.readthedocs.io"
-repository = "https://github.com/proxystore/proxystore-benchmarks"
+documentation = "https://docs.proxystore.dev"
+repository = "https://github.com/proxystore/benchmarks"
 
 [project.optional-dependencies]
 dev = [
