@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any
+from typing import Generator
+from unittest import mock
 
 
 class MockStrictRedis:
@@ -32,3 +35,11 @@ class MockStrictRedis:
     ) -> None:
         """Set value with key."""
         self.data[key] = value
+
+
+@contextlib.contextmanager
+def disable_logging(path: str) -> Generator[None, None, None]:
+    with mock.patch(f'{path}.runner'), mock.patch(
+        f'{path}.init_logging',
+    ), mock.patch(f'{path}.CSVResultLogger'):
+        yield

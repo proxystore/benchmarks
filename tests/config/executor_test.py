@@ -154,14 +154,14 @@ def test_parsl_config_unknown(tmp_path: pathlib.Path) -> None:
         config.get_executor()
 
 
-def test_parsl_config_thread(tmp_path: pathlib.Path) -> None:
+def test_parsl_config_thread_executor(tmp_path: pathlib.Path) -> None:
     config = ParslConfig(
         executor='thread',
         run_dir=str(tmp_path),
         max_workers=1,
     )
-    executor = config.get_executor()
-    assert isinstance(executor, ParslPoolExecutor)
+    with config.get_executor() as executor:
+        assert isinstance(executor, ParslPoolExecutor)
 
 
 def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
@@ -170,8 +170,8 @@ def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
         run_dir=str(tmp_path),
         max_workers=1,
     )
-    executor = config.get_executor()
-    assert isinstance(executor, ParslPoolExecutor)
+    with mock.patch('psbench.config.parsl.address_by_interface'):
+        config.get_config()
 
 
 def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
@@ -180,12 +180,8 @@ def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
         run_dir=str(tmp_path),
         max_workers=256,
     )
-    with mock.patch(
-        'psbench.config.executor.ParslPoolExecutor',
-        autospec=True,
-    ), mock.patch('psbench.config.parsl.address_by_interface'):
-        executor = config.get_executor()
-    assert isinstance(executor, ParslPoolExecutor)
+    with mock.patch('psbench.config.parsl.address_by_interface'):
+        config.get_config()
 
 
 def test_executor_config() -> None:

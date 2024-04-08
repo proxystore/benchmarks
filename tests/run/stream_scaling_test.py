@@ -4,6 +4,7 @@ import pathlib
 from unittest import mock
 
 from psbench.run.stream_scaling import main
+from testing.mocking import disable_logging
 
 
 def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
@@ -32,11 +33,11 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
         'localhost',
     ]
 
-    with mock.patch('psbench.run.stream_scaling.runner'), mock.patch(
+    with disable_logging('psbench.run.stream_scaling'), mock.patch(
         'psbench.config.StoreConfig.get_store',
     ), mock.patch(
         'psbench.config.StreamConfig.get_subscriber',
     ), mock.patch(
         'psbench.run.stream_scaling.StreamConsumer',
-    ), mock.patch('psbench.run.stream_scaling.init_logging'):
+    ):
         main(argv)

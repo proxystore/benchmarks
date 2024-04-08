@@ -5,6 +5,7 @@ from unittest import mock
 
 from psbench.run.workflow_memory import main
 from testing.globus_compute import mock_globus_compute
+from testing.mocking import disable_logging
 
 
 def test_main(tmp_path: pathlib.Path) -> None:
@@ -31,9 +32,7 @@ def test_main(tmp_path: pathlib.Path) -> None:
         str(tmp_path / 'dump'),
     ]
 
-    with mock.patch(
-        'psbench.run.workflow_memory.runner',
-    ), mock.patch(
+    with disable_logging('psbench.run.workflow_memory'), mock.patch(
         'psbench.config.StoreConfig.get_store',
     ), mock.patch(
         'psbench.run.workflow_memory.SystemMemoryProfiler',
