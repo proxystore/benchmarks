@@ -28,7 +28,7 @@ def get_htex_local_config(
     workers = workers if workers is not None else multiprocessing.cpu_count()
     executor = HighThroughputExecutor(
         label='htex-local',
-        max_workers=workers,
+        max_workers_per_node=workers,
         address=address_by_hostname(),
         cores_per_worker=1,
         provider=LocalProvider(
@@ -51,7 +51,7 @@ def get_htex_polaris_headless(
     workers_per_node = min(workers, 32)
     executor = HighThroughputExecutor(
         label='htex-polaris-headless',
-        max_workers=workers_per_node,
+        max_workers_per_node=workers_per_node,
         address=address_by_interface('bond0'),
         cpu_affinity='block-reverse',
         prefetch_capacity=0,
