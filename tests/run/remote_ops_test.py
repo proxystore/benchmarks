@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pathlib
-from unittest import mock
 
 from psbench.run.remote_ops import main
+from testing.mocking import disable_logging
 
 
 def test_main(tmp_path: pathlib.Path) -> None:
@@ -19,9 +19,5 @@ def test_main(tmp_path: pathlib.Path) -> None:
         '100',
     ]
 
-    with mock.patch(
-        'psbench.run.remote_ops.runner',
-    ), mock.patch(
-        'psbench.run.remote_ops.init_logging',
-    ):
+    with disable_logging('psbench.run.remote_ops'):
         main(args)

@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import pathlib
-from unittest import mock
 
 from psbench.run.endpoint_qps import main
+from testing.mocking import disable_logging
 
 
 def test_main(tmp_path: pathlib.Path) -> None:
     args = ['UUID', '--routes', 'GET']
 
-    with mock.patch(
-        'psbench.run.endpoint_qps.runner',
-    ), mock.patch(
-        'psbench.run.endpoint_qps.init_logging',
-    ):
+    with disable_logging('psbench.run.endpoint_qps'):
         main(args)

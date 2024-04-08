@@ -5,6 +5,7 @@ from unittest import mock
 
 from psbench.run.task_pipelining import main
 from testing.globus_compute import mock_globus_compute
+from testing.mocking import disable_logging
 
 
 def test_main(tmp_path: pathlib.Path) -> None:
@@ -29,11 +30,7 @@ def test_main(tmp_path: pathlib.Path) -> None:
         str(tmp_path),
     ]
 
-    with mock.patch(
-        'psbench.run.task_pipelining.runner',
-    ), mock.patch(
+    with disable_logging('psbench.run.task_pipelining'), mock.patch(
         'psbench.config.StoreConfig.get_store',
-    ), mock.patch(
-        'psbench.run.stream_scaling.init_logging',
     ), mock_globus_compute():
         main(args)

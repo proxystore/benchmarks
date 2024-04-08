@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pathlib
-from unittest import mock
 
 from psbench.run.task_rtt import main
 from testing.globus_compute import mock_globus_compute
+from testing.mocking import disable_logging
 
 
 def test_main(tmp_path: pathlib.Path) -> None:
@@ -19,9 +19,5 @@ def test_main(tmp_path: pathlib.Path) -> None:
         '2',
     ]
 
-    with mock.patch(
-        'psbench.run.task_rtt.runner',
-    ), mock.patch(
-        'psbench.run.task_rtt.init_logging',
-    ), mock_globus_compute():
+    with disable_logging('psbench.run.task_rtt'), mock_globus_compute():
         main(args)
