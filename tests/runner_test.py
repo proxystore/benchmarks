@@ -8,11 +8,11 @@ from testing.benchmark import MockRunResult
 
 
 def test_runner() -> None:
-    benchmark = MockBenchmark()
     configs = [MockRunConfig(param=i) for i in range(5)]
     repeat = 3
 
     with BasicResultLogger(MockRunResult) as logger:
-        runner(benchmark, configs, logger, repeat=repeat)
+        with MockBenchmark() as benchmark:
+            runner(benchmark, configs, logger, repeat=repeat)
 
         assert len(logger.results) == repeat * len(configs)

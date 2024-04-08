@@ -10,18 +10,16 @@ Note: this is a fork of
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
 import sys
 from threading import Event
-from types import TracebackType
 from typing import Any
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 import globus_compute_sdk
 from colmena.queue.base import ColmenaQueues
@@ -38,6 +36,7 @@ from proxystore.store.utils import get_key
 
 from psbench.benchmarks.colmena_rtt.config import RunConfig
 from psbench.benchmarks.colmena_rtt.config import RunResult
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.config.executor import GlobusComputeConfig
 from psbench.config.executor import ParslConfig
 from psbench.logging import TEST_LOG_LEVEL
@@ -176,7 +175,7 @@ def target_function(
     return generate_bytes(output_size_bytes)
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Colmena RTT'
     config_type = RunConfig
     result_type = RunResult
@@ -194,22 +193,7 @@ class Benchmark:
         self.redis_host = redis_host
         self.redis_port = redis_port
         self.repeat = repeat
-
-    def __enter__(self) -> Self:
-        # https://stackoverflow.com/a/39172487
-        with contextlib.ExitStack() as stack:
-            if self.store is not None:
-                stack.enter_context(self.store)
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        self._stack.__exit__(exc_type, exc_value, exc_traceback)
+        super().__init__(managers=[self.store])
 
     def config(self) -> dict[str, Any]:
         executor = (

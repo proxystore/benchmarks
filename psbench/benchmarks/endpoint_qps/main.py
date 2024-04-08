@@ -10,14 +10,13 @@ import multiprocessing
 import sys
 import time
 from statistics import stdev
-from types import TracebackType
 from typing import Any
 from typing import Callable
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 from proxystore.connectors.endpoint import EndpointConnector
 
@@ -25,6 +24,7 @@ from psbench.benchmarks.endpoint_qps import routes
 from psbench.benchmarks.endpoint_qps.config import ROUTE_TYPE
 from psbench.benchmarks.endpoint_qps.config import RunConfig
 from psbench.benchmarks.endpoint_qps.config import RunResult
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.logging import TEST_LOG_LEVEL
 
 PROCESS_STARTUP_BUFFER_SECONDS = 5
@@ -162,24 +162,13 @@ def run(
     return run_stats
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Endpoint QPS'
     config_type = RunConfig
     result_type = RunResult
 
     def __init__(self) -> None:
-        pass
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        return
+        super().__init__()
 
     def config(self) -> dict[str, Any]:
         return {}

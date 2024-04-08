@@ -12,13 +12,12 @@ import socket
 import statistics
 import sys
 import uuid
-from types import TracebackType
 from typing import Any
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 import redis
 from proxystore.endpoint.endpoint import Endpoint
@@ -27,6 +26,7 @@ from proxystore.p2p.relay.client import RelayClient
 
 import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
 import psbench.benchmarks.remote_ops.redis_ops as redis_ops
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.remote_ops.config import OP_TYPE
 from psbench.benchmarks.remote_ops.config import RunConfig
 from psbench.benchmarks.remote_ops.config import RunResult
@@ -250,7 +250,7 @@ def runner_redis(
     return results
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Remote Ops'
     config_type = RunConfig
     result_type = RunResult
@@ -288,17 +288,7 @@ class Benchmark:
         self.redis_host = redis_host
         self.redis_port = redis_port
         self.use_uvloop = use_uvloop
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        pass
+        super().__init__()
 
     def config(self) -> dict[str, Any]:
         return {

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
 import shutil
@@ -8,13 +7,12 @@ import sys
 import time
 import uuid
 from concurrent.futures import Executor
-from types import TracebackType
 from typing import Any
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 import proxystore
 from proxystore.proxy import Proxy
@@ -22,6 +20,7 @@ from proxystore.store.base import Store
 from proxystore.store.utils import get_key
 
 from psbench import ipfs
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.task_rtt.config import RunConfig
 from psbench.benchmarks.task_rtt.config import RunResult
 from psbench.benchmarks.task_rtt.tasks import pong
@@ -194,7 +193,7 @@ def time_task_proxy(
     )
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Task RTT'
     config_type = RunConfig
     result_type = RunResult
@@ -217,22 +216,9 @@ class Benchmark:
         self.use_ipfs = use_ipfs
         self.ipfs_local_dir = ipfs_local_dir
         self.ipfs_remote_dir = ipfs_remote_dir
+        super().__init__(managers=[self.executor, self.store])
 
-    def __enter__(self) -> Self:
-        # https://stackoverflow.com/a/39172487
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(self.executor)
-            if self.store is not None:
-                stack.enter_context(self.store)
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
+    def close(self) -> None:
         if self.use_ipfs:
             # Clean up local and remote IPFS files
             assert self.ipfs_local_dir is not None
@@ -247,8 +233,6 @@ class Benchmark:
             fut = self.executor.submit(_remote_cleanup)
             fut.result()
             logger.log(BENCH_LOG_LEVEL, 'Cleaned up IPFS directories')
-
-        self._stack.__exit__(exc_type, exc_value, exc_traceback)
 
     def config(self) -> dict[str, Any]:
         connector = (

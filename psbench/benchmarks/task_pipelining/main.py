@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import queue
 import sys
 import threading
 import time
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import NamedTuple
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 from concurrent.futures import Executor
 
@@ -26,6 +24,7 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
 
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.task_pipelining.config import RunConfig
 from psbench.benchmarks.task_pipelining.config import RunResult
 from psbench.benchmarks.task_pipelining.config import SubmissionMethod
@@ -328,7 +327,7 @@ def run_pipelined_workflow(
     )
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Task Pipelining'
     config_type = RunConfig
     result_type = RunResult
@@ -336,22 +335,7 @@ class Benchmark:
     def __init__(self, executor: Executor, store: Store[Any]) -> None:
         self.executor = executor
         self.store = store
-
-    def __enter__(self) -> Self:
-        # https://stackoverflow.com/a/39172487
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(self.executor)
-            stack.enter_context(self.store)
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        self._stack.__exit__(exc_type, exc_value, exc_traceback)
+        super().__init__(managers=[self.executor, self.store])
 
     def config(self) -> dict[str, Any]:
         return {
