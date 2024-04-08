@@ -33,18 +33,19 @@ Here's an example of a minimal working example that uses the ProxyStore
 file backend.
 
 ```
-$ python -m psbench.benchmarks.globus_compute_tasks \
+$ python -m psbench.run.task_rtt \
+    --executor globus
     --globus-compute-endpoint {ENDPOINT_UUID} \
     --input-sizes 100 1000 10000 \
     --output-sizes 100 1000 10000 \
-    --ps-backend FILE --ps-file-dir /tmp/proxystore-dump
+    --ps-connector file --ps-file-dir /tmp/proxystore-dump
 ```
 
-Omitting `--ps-backend` will result in data being passed directly via
+Omitting `--ps-connector` will result in data being passed directly via
 Globus Compute. `--input-sizes` and `--output-sizes` take a list of options and
 will result in a matrix of tasks being run. Individual task configurations can
-be repeated *n* times with the `--task-repeat` parameter. A sleep can be added
-to tasks with `--task-sleep`. Task timing stats can be saved to a CSV file
-with `--csv-file PATH` (this will append to existing files as well).
+be repeated *n* times with the `--repeat` parameter. A sleep can be added
+to tasks with `--task-sleep`. Task timing stats are saved to a CSV file
+if the run directory.
 
 The full list of options can be found using `--help`.

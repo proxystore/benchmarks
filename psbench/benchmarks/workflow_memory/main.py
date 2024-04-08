@@ -2,23 +2,21 @@
 
 from __future__ import annotations
 
-import contextlib
 import gc
 import logging
 import sys
 import time
 from concurrent.futures import Executor
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Sequence
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
@@ -26,6 +24,7 @@ from proxystore.store.ref import borrow
 from proxystore.store.ref import into_owned
 from proxystore.store.scopes import submit
 
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.workflow_memory.config import DataManagement
 from psbench.benchmarks.workflow_memory.config import RunConfig
 from psbench.benchmarks.workflow_memory.config import RunResult
@@ -262,7 +261,7 @@ def run_workflow(
     )
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Workflow Memory'
     config_type = RunConfig
     result_type = RunResult
@@ -270,22 +269,7 @@ class Benchmark:
     def __init__(self, executor: Executor, store: Store[Any]) -> None:
         self.executor = executor
         self.store = store
-
-    def __enter__(self) -> Self:
-        # https://stackoverflow.com/a/39172487
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(self.executor)
-            stack.enter_context(self.store)
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        self._stack.__exit__(exc_type, exc_value, exc_traceback)
+        super().__init__(managers=[self.executor, self.store])
 
     def config(self) -> dict[str, Any]:
         return {

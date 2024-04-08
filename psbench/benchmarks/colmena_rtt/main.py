@@ -10,18 +10,18 @@ Note: this is a fork of
 
 from __future__ import annotations
 
-import argparse
 import logging
 import os
 import sys
-from datetime import datetime
 from threading import Event
 from typing import Any
-from typing import NamedTuple
-from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    pass
+else:  # pragma: <3.11 cover
+    pass
 
 import globus_compute_sdk
-from colmena.models import Result
 from colmena.queue.base import ColmenaQueues
 from colmena.queue.python import PipeQueues
 from colmena.queue.redis import RedisQueues
@@ -31,80 +31,20 @@ from colmena.task_server.parsl import ParslTaskServer
 from colmena.thinker import agent
 from colmena.thinker import BaseThinker
 from proxystore.proxy import Proxy
-from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.utils import get_key
 
-from psbench.argparse import add_logging_options
-from psbench.argparse import add_proxystore_options
-from psbench.config.parsl import get_htex_local_config
-from psbench.logging import init_logging
+from psbench.benchmarks.colmena_rtt.config import RunConfig
+from psbench.benchmarks.colmena_rtt.config import RunResult
+from psbench.benchmarks.protocol import ContextManagerAddIn
+from psbench.config.executor import GlobusComputeConfig
+from psbench.config.executor import ParslConfig
 from psbench.logging import TEST_LOG_LEVEL
-from psbench.proxystore import init_store_from_args
-from psbench.results import CSVResultLogger
 
 logger = logging.getLogger('colmena-rtt')
 
 
-class TaskStats(NamedTuple):
-    """Stats from an individual task. Represents a row in the output CSV."""
-
-    task_id: str
-    method: str
-    success: bool
-    input_size_bytes: int
-    output_size_bytes: int
-    proxystore_backend: str
-    # Defined in colmena.models.Timestamps
-    time_created: float
-    time_input_received: float
-    time_compute_started: float
-    time_compute_ended: float
-    time_result_sent: float
-    time_result_received: float
-    time_start_task_submission: float
-    time_task_received: float
-    # Defined in colmena.models.TimeSpans
-    time_running: float
-    time_serialize_inputs: float
-    time_deserialize_inputs: float
-    time_serialize_results: float
-    time_deserialize_results: float
-    time_async_resolve_proxies: float
-
-    @classmethod
-    def from_result(
-        cls,
-        result: Result,
-        input_size_bytes: int,
-        output_size_bytes: int,
-        proxystore_backend: str,
-    ) -> TaskStats:
-        """Construct a TaskStats instance from a Colmena result."""
-        kwargs = {
-            'task_id': result.task_id,
-            'method': result.method,
-            'success': result.success,
-            'input_size_bytes': input_size_bytes,
-            'output_size_bytes': output_size_bytes,
-            'proxystore_backend': proxystore_backend,
-        }
-        for field in result.timestamp.__fields_set__:
-            if f'time_{field}' in cls._fields:  # pragma: no branch
-                kwargs[f'time_{field}'] = getattr(result.timestamp, field)
-        for field in result.time.__fields_set__:
-            if f'time_{field}' in cls._fields:  # pragma: no branch
-                kwargs[f'time_{field}'] = getattr(result.time, field)
-        return cls(**kwargs)
-
-
 class Thinker(BaseThinker):
-    """Benchmark Thinker.
-
-    Executes matrix of tasks based on parameters synchronously (i.e., one
-    task is executes and completes before the next one is created).
-    """
-
     def __init__(
         self,
         queues: ColmenaQueues,
@@ -124,7 +64,7 @@ class Thinker(BaseThinker):
         self.task_sleep = task_sleep
         self.reuse_inputs = reuse_inputs
 
-        self.results: list[TaskStats] = []
+        self.results: list[RunResult] = []
         self.alternator = Event()
 
     @agent
@@ -145,7 +85,7 @@ class Thinker(BaseThinker):
                 self.store.evict(get_key(value))
 
             assert result.task_info is not None
-            task_stats = TaskStats.from_result(
+            task_stats = RunResult.from_result(
                 result,
                 result.task_info['input_size'],
                 result.task_info['output_size'],
@@ -169,7 +109,7 @@ class Thinker(BaseThinker):
             if self.reuse_inputs:
                 input_data = generate_bytes(input_size)
             for output_size in self.output_sizes_bytes:
-                for _ in range(self.task_repeat):
+                for i in range(self.task_repeat):
                     if self.done.is_set():  # pragma: no cover
                         break
                     if not self.reuse_inputs:
@@ -184,6 +124,13 @@ class Thinker(BaseThinker):
                             'input_size': input_size,
                             'output_size': output_size,
                         },
+                    )
+                    logger.log(
+                        TEST_LOG_LEVEL,
+                        f'Submitted task {i+1}/{self.task_repeat} '
+                        f'(input_size={input_size}, '
+                        f'output_size={output_size}, '
+                        f'sleep={self.task_sleep}).',
                     )
                     self.alternator.wait()
                     self.alternator.clear()
@@ -228,168 +175,110 @@ def target_function(
     return generate_bytes(output_size_bytes)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Benchmark entrypoint."""
-    argv = argv if argv is not None else sys.argv[1:]
+class Benchmark(ContextManagerAddIn):
+    name = 'Colmena RTT'
+    config_type = RunConfig
+    result_type = RunResult
 
-    parser = argparse.ArgumentParser(
-        description='Template benchmark.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    backend_group = parser.add_mutually_exclusive_group(required=True)
-    backend_group.add_argument(
-        '--globus-compute',
-        action='store_true',
-        help='Use the Globus Compute Colmena Task Server',
-    )
-    backend_group.add_argument(
-        '--parsl',
-        action='store_true',
-        help='Use the Parsl Colmena Task Server',
-    )
+    def __init__(
+        self,
+        executor_config: GlobusComputeConfig | ParslConfig,
+        store: Store[Any] | None = None,
+        redis_host: str | None = None,
+        redis_port: int | None = None,
+        repeat: int = 1,
+    ) -> None:
+        self.executor_config = executor_config
+        self.store = store
+        self.redis_host = redis_host
+        self.redis_port = redis_port
+        self.repeat = repeat
+        super().__init__(managers=[self.store])
 
-    globus_compute_group = parser.add_argument_group()
-    globus_compute_group.add_argument(
-        '--endpoint',
-        required='--globus-compute' in sys.argv,
-        help='Globus Compute endpoint for task execution',
-    )
-
-    task_group = parser.add_argument_group()
-    task_group.add_argument(
-        '--redis-host',
-        default=None,
-        help='Hostname for Colmena RedisQueue',
-    )
-    task_group.add_argument(
-        '--redis-port',
-        default=None,
-        help='Port for Colmena PipeQueue',
-    )
-    task_group.add_argument(
-        '--input-sizes',
-        type=int,
-        nargs='+',
-        required=True,
-        help='Task input sizes [bytes]',
-    )
-    task_group.add_argument(
-        '--output-sizes',
-        type=int,
-        nargs='+',
-        required=True,
-        help='Task output sizes [bytes]',
-    )
-    task_group.add_argument(
-        '--task-repeat',
-        type=int,
-        default=1,
-        help='Number of time to repeat each task configuration',
-    )
-    task_group.add_argument(
-        '--task-sleep',
-        type=float,
-        default=0,
-        help='Sleep time for tasks',
-    )
-    task_group.add_argument(
-        '--reuse-inputs',
-        action='store_true',
-        default=False,
-        help='Send the same input to each task',
-    )
-    task_group.add_argument(
-        '--output-dir',
-        type=str,
-        default='runs',
-        help='Colmena run output directory',
-    )
-
-    add_logging_options(parser)
-    add_proxystore_options(parser, required=False)
-    args = parser.parse_args(argv)
-
-    init_logging(args.log_file, args.log_level, force=True)
-    store = init_store_from_args(args, metrics=True)
-
-    output_dir = os.path.join(
-        args.output_dir,
-        datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S'),
-    )
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Make the queues
-    queues: ColmenaQueues
-    if (
-        args.redis_host is not None or args.redis_port is not None
-    ):  # pragma: no cover
-        queues = RedisQueues(
-            topics=['generate'],
-            hostname=args.redis_host,
-            port=args.redis_port,
-            serialization_method='pickle',
-            keep_inputs=False,
-            proxystore_name=None if store is None else store.name,
-            proxystore_threshold=0,
+    def config(self) -> dict[str, Any]:
+        executor = (
+            'Globus Compute'
+            if isinstance(self.executor_config, GlobusComputeConfig)
+            else 'Parsl'
         )
-    else:
-        queues = PipeQueues(
-            topics=['generate'],
-            serialization_method='pickle',
-            keep_inputs=False,
-            proxystore_name=None if store is None else store.name,
-            proxystore_threshold=0,
+        connector = (
+            'None'
+            if self.store is None
+            else self.store.connector.__class__.__name__
+        )
+        return {
+            'executor': executor,
+            'connector': connector,
+            'redis_host': self.redis_host,
+            'redis_port': self.redis_port,
+            'repeat': self.repeat,
+        }
+
+    def run(self, config: RunConfig) -> list[RunResult]:
+        # Make the queues
+        queues: ColmenaQueues
+        if (
+            self.redis_host is not None or self.redis_port is not None
+        ):  # pragma: no cover
+            queues = RedisQueues(
+                topics=['generate'],
+                hostname=self.redis_host,
+                port=self.redis_port,
+                serialization_method='pickle',
+                keep_inputs=False,
+                proxystore_name=None
+                if self.store is None
+                else self.store.name,
+                proxystore_threshold=0,
+            )
+        else:
+            queues = PipeQueues(
+                topics=['generate'],
+                serialization_method='pickle',
+                keep_inputs=False,
+                proxystore_name=None
+                if self.store is None
+                else self.store.name,
+                proxystore_threshold=0,
+            )
+
+        doer: BaseTaskServer
+        if isinstance(self.executor_config, GlobusComputeConfig):
+            doer = GlobusComputeTaskServer(
+                {target_function: self.executor_config.endpoint},
+                globus_compute_sdk.Client(),
+                queues,
+            )
+        elif isinstance(self.executor_config, ParslConfig):
+            parsl_config = self.executor_config.get_config()
+            doer = ParslTaskServer([target_function], queues, parsl_config)
+        else:
+            raise AssertionError('Unreachable.')
+
+        thinker = Thinker(
+            queues=queues,
+            store=self.store,
+            input_sizes_bytes=config.input_sizes,
+            output_sizes_bytes=config.output_sizes,
+            task_repeat=self.repeat,
+            task_sleep=config.task_sleep,
+            reuse_inputs=config.reuse_inputs,
         )
 
-    doer: BaseTaskServer
-    if args.globus_compute:
-        doer = GlobusComputeTaskServer(
-            {target_function: args.endpoint},
-            globus_compute_sdk.Client(),
-            queues,
-        )
-    elif args.parsl:
-        config = get_htex_local_config(output_dir, workers=1)
-        doer = ParslTaskServer([target_function], queues, config)
-    else:
-        raise AssertionError(
-            '--globus-compute and --parsl are part of a required mutex group.',
-        )
+        try:
+            # Launch the servers
+            doer.start()
+            thinker.start()
+            logging.log(TEST_LOG_LEVEL, 'Launched thinker and task servers')
 
-    thinker = Thinker(
-        queues=queues,
-        store=store,
-        input_sizes_bytes=args.input_sizes,
-        output_sizes_bytes=args.output_sizes,
-        task_repeat=args.task_repeat,
-        task_sleep=args.task_sleep,
-        reuse_inputs=args.reuse_inputs,
-    )
+            # Wait for the task generator to complete
+            thinker.join()
+            logging.log(TEST_LOG_LEVEL, 'Thinker completed')
+        finally:
+            queues.send_kill_signal()
 
-    try:
-        # Launch the servers
-        doer.start()
-        thinker.start()
-        logging.log(TEST_LOG_LEVEL, 'launched thinker and task servers')
+        # Wait for the task server to complete
+        doer.join()
+        logging.log(TEST_LOG_LEVEL, 'Task server completed')
 
-        # Wait for the task generator to complete
-        thinker.join()
-        logging.log(TEST_LOG_LEVEL, 'thinker completed')
-    finally:
-        queues.send_kill_signal()
-
-    # Wait for the task server to complete
-    doer.join()
-    logging.info(TEST_LOG_LEVEL, 'task server completed')
-
-    if args.csv_file is not None and len(thinker.results) > 0:
-        with CSVResultLogger(args.csv_file, TaskStats) as csv_logger:
-            for result in thinker.results:
-                csv_logger.log(result)
-
-    if store is not None:
-        store.close()
-        unregister_store(store)
-        logger.log(TEST_LOG_LEVEL, f'cleaned up {store.name}')
-
-    return 0
+        return thinker.results

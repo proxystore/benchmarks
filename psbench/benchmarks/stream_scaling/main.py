@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import collections
-import contextlib
 import logging
 import sys
 import time
 from concurrent.futures import Future
-from types import TracebackType
 from typing import Any
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
 from concurrent.futures import Executor
 
@@ -22,6 +20,7 @@ from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
 from proxystore.stream.interface import StreamConsumer
 
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.config import RunResult
 from psbench.benchmarks.stream_scaling.generator import generator_task
@@ -58,7 +57,7 @@ def pregenerate(
     return expected_time > interval
 
 
-class Benchmark:
+class Benchmark(ContextManagerAddIn):
     name = 'Stream Scaling'
     config_type = RunConfig
     result_type = RunResult
@@ -74,25 +73,7 @@ class Benchmark:
         self.executor = executor
         self.store = store
         self.stream_config = stream_config
-
-    def __enter__(self) -> Self:
-        # https://stackoverflow.com/a/39172487
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(self.consumer)
-            stack.enter_context(self.executor)
-            # The consumer will also call close on the store, but close should
-            # be idempotent so it is okay.
-            stack.enter_context(self.store)
-            self._stack = stack.pop_all()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> None:
-        self._stack.__exit__(exc_type, exc_value, exc_traceback)
+        super().__init__([self.consumer, self.executor, self.store])
 
     def config(self) -> dict[str, Any]:
         return {

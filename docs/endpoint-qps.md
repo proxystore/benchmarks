@@ -27,7 +27,7 @@ This benchmark measures queries per second of a ProxyStore endpoint.
 The benchmark can be configured using CLI parameters.
 
 ```
-$ python -m psbench.benchmarks.endpoint_qps \
+$ python -m psbench.run.endpoint_qps \
     b8aba48a-386d-4977-b5c9-9bcbbaebd0bf \
     --route SET \
     --queries 1000 \

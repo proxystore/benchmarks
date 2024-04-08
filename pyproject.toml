@@ -23,7 +23,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "colmena[globus]@git+https://github.com/exalearn/colmena@87447a4dc4fb2999b9bb83d95e2a8318110b05e5",
+    "colmena==0.6.1",
     "dask==2023.5.0; python_version < '3.9'",
     "dask==2024.2.0; python_version >= '3.9'",
     "distributed==2023.5.0; python_version < '3.9'",

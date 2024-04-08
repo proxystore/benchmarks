@@ -73,6 +73,26 @@ def test_csv_logger_basic(tmp_path: pathlib.Path) -> None:
     assert '1.0' in data[1]
 
 
+def test_csv_logger_blank_file(tmp_path: pathlib.Path) -> None:
+    filepath = str(tmp_path / 'log.csv')
+
+    with open(filepath, 'w') as f:
+        f.write('')
+
+    with CSVResultLogger(filepath, DataNT) as logger:
+        logger.log(DataNT(1.0, 2, '3'))
+        logger.log(DataNT(4.0, 5, '6'))
+
+    with open(filepath) as f:
+        data = f.readlines()
+
+    assert len(data) == 3
+    assert 'time' in data[0]
+    assert 'value' in data[0]
+    assert 'result' in data[0]
+    assert '1.0' in data[1]
+
+
 def test_csv_logger_append(tmp_path: pathlib.Path) -> None:
     filepath = str(tmp_path / 'log.csv')
     logger1 = CSVResultLogger(filepath, DataNT)

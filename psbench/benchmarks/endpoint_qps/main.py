@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import datetime
 import functools
 import logging
@@ -11,42 +10,26 @@ import multiprocessing
 import sys
 import time
 from statistics import stdev
+from typing import Any
 from typing import Callable
-from typing import Literal
-from typing import NamedTuple
-from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    pass
+else:  # pragma: <3.11 cover
+    pass
 
 from proxystore.connectors.endpoint import EndpointConnector
 
-from psbench.argparse import add_logging_options
 from psbench.benchmarks.endpoint_qps import routes
-from psbench.logging import init_logging
+from psbench.benchmarks.endpoint_qps.config import ROUTE_TYPE
+from psbench.benchmarks.endpoint_qps.config import RunConfig
+from psbench.benchmarks.endpoint_qps.config import RunResult
+from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.logging import TEST_LOG_LEVEL
-from psbench.results import CSVResultLogger
 
 PROCESS_STARTUP_BUFFER_SECONDS = 5
-ROUTE_TYPE = Literal['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT']
 
 logger = logging.getLogger('endpoint-qps')
-
-
-class RunStats(NamedTuple):
-    """Stats for the run."""
-
-    route: ROUTE_TYPE
-    payload_size_bytes: int
-    total_queries: int
-    sleep_seconds: float
-    workers: int
-    min_worker_elapsed_time_ms: float
-    max_worker_elapsed_time_ms: float
-    avg_worker_elapsed_time_ms: float
-    stdev_worker_elapsed_time_ms: float
-    min_latency_ms: float
-    max_latency_ms: float
-    avg_latency_ms: float
-    stdev_latency_ms: float
-    qps: float
 
 
 def run(
@@ -57,7 +40,7 @@ def run(
     queries: int = 100,
     sleep: float = 0,
     workers: int = 1,
-) -> RunStats:
+) -> RunResult:
     """Run test workers and gather results.
 
     Args:
@@ -69,7 +52,7 @@ def run(
         workers (int): number of worker processes to use.
 
     Returns:
-        RunStats with summary of test run.
+        RunResult with summary of test run.
     """
     connector = EndpointConnector([endpoint])
 
@@ -145,7 +128,7 @@ def run(
     )
     queries = sum(s.queries for s in stats)
 
-    run_stats = RunStats(
+    run_stats = RunResult(
         route=route,
         payload_size_bytes=payload_size,
         total_queries=queries,
@@ -179,110 +162,23 @@ def run(
     return run_stats
 
 
-def runner(
-    endpoint: str,
-    routes: list[ROUTE_TYPE],
-    *,
-    payload_sizes: list[int],
-    queries: int,
-    sleeps: list[float],
-    workers: list[int],
-    csv_file: str | None = None,
-) -> None:
-    """Run matrix of test test configurations.
+class Benchmark(ContextManagerAddIn):
+    name = 'Endpoint QPS'
+    config_type = RunConfig
+    result_type = RunResult
 
-    Args:
-        endpoint (str): endpoint uuid.
-        routes (str): endpoint routes to query.
-        payload_sizes (int): bytes to send/receive for GET/SET routes.
-        queries (int): number of queries to perform per worker.
-        sleeps (float): sleep (seconds) between queries.
-        workers (int): number of worker processes to use.
-        csv_file (str): optional csv filepath to log results to.
-    """
-    if csv_file is not None:
-        csv_logger = CSVResultLogger(csv_file, RunStats)
+    def __init__(self) -> None:
+        super().__init__()
 
-    for route in routes:
-        for payload_size in payload_sizes:
-            for sleep in sleeps:
-                for workers_ in workers:
-                    run_stats = run(
-                        endpoint,
-                        route,
-                        payload_size=payload_size,
-                        queries=queries,
-                        sleep=sleep,
-                        workers=workers_,
-                    )
+    def config(self) -> dict[str, Any]:
+        return {}
 
-                    if csv_file is not None:
-                        csv_logger.log(run_stats)
-
-    if csv_file is not None:
-        csv_logger.close()
-        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    """Endpoint QPS test entrypoint."""
-    argv = argv if argv is not None else sys.argv[1:]
-
-    parser = argparse.ArgumentParser(
-        description='ProxyStore Endpoint QPS Test.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        'endpoint',
-        help='ProxyStore Endpoint UUID',
-    )
-    parser.add_argument(
-        '--routes',
-        choices=['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT'],
-        nargs='+',
-        required=True,
-        help='Endpoint routes to query',
-    )
-    parser.add_argument(
-        '--payload-sizes',
-        type=int,
-        nargs='+',
-        default=[0],
-        help='Payload sizes for GET/SET queries',
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        nargs='+',
-        default=[1],
-        help='Number of workers (processes) making queries',
-    )
-    parser.add_argument(
-        '--sleep',
-        type=float,
-        nargs='+',
-        default=[0],
-        help='Sleeps (seconds) between queries',
-    )
-    parser.add_argument(
-        '--queries',
-        type=int,
-        default=100,
-        help='Number of queries per worker to make',
-    )
-    add_logging_options(parser)
-    args = parser.parse_args(argv)
-
-    init_logging(args.log_file, args.log_level, force=True)
-
-    runner(
-        args.endpoint,
-        args.routes,
-        payload_sizes=args.payload_sizes,
-        queries=args.queries,
-        sleeps=args.sleep,
-        workers=args.workers,
-        csv_file=args.csv_file,
-    )
-
-    return 0
+    def run(self, config: RunConfig) -> RunResult:
+        return run(
+            config.endpoint,
+            config.route,
+            payload_size=config.payload_size_bytes,
+            queries=config.total_queries,
+            sleep=config.sleep_seconds,
+            workers=config.workers,
+        )

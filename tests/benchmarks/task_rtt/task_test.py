@@ -11,9 +11,9 @@ from proxystore.store import Store
 from proxystore.store import unregister_store
 
 from psbench import ipfs
-from psbench.tasks.pong import pong
-from psbench.tasks.pong import pong_ipfs
-from psbench.tasks.pong import pong_proxy
+from psbench.benchmarks.task_rtt.tasks import pong
+from psbench.benchmarks.task_rtt.tasks import pong_ipfs
+from psbench.benchmarks.task_rtt.tasks import pong_proxy
 from testing.ipfs import mock_ipfs
 
 

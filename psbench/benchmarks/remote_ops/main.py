@@ -6,7 +6,6 @@ and Redis servers.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import logging
 import socket
@@ -14,9 +13,11 @@ import statistics
 import sys
 import uuid
 from typing import Any
-from typing import Literal
-from typing import NamedTuple
-from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    pass
+else:  # pragma: <3.11 cover
+    pass
 
 import redis
 from proxystore.endpoint.endpoint import Endpoint
@@ -25,30 +26,14 @@ from proxystore.p2p.relay.client import RelayClient
 
 import psbench.benchmarks.remote_ops.endpoint_ops as endpoint_ops
 import psbench.benchmarks.remote_ops.redis_ops as redis_ops
-from psbench.argparse import add_logging_options
-from psbench.logging import init_logging
+from psbench.benchmarks.protocol import ContextManagerAddIn
+from psbench.benchmarks.remote_ops.config import OP_TYPE
+from psbench.benchmarks.remote_ops.config import RunConfig
+from psbench.benchmarks.remote_ops.config import RunResult
+from psbench.logging import BENCH_LOG_LEVEL
 from psbench.logging import TEST_LOG_LEVEL
-from psbench.results import CSVResultLogger
-
-BACKEND_TYPE = Literal['ENDPOINT', 'REDIS']
-OP_TYPE = Literal['EVICT', 'EXISTS', 'GET', 'SET']
 
 logger = logging.getLogger('remote-ops')
-
-
-class RunStats(NamedTuple):
-    """Stats for a given run configuration."""
-
-    backend: BACKEND_TYPE
-    op: OP_TYPE
-    payload_size_bytes: int | None
-    repeat: int
-    total_time_ms: float
-    avg_time_ms: float
-    min_time_ms: float
-    max_time_ms: float
-    stdev_time_ms: float
-    avg_bandwidth_mbps: float | None
 
 
 async def run_endpoint(
@@ -57,7 +42,7 @@ async def run_endpoint(
     op: OP_TYPE,
     payload_size: int = 0,
     repeat: int = 3,
-) -> RunStats:
+) -> RunResult:
     """Run test for single operation and measure performance.
 
     Args:
@@ -71,30 +56,30 @@ async def run_endpoint(
             a connection.
 
     Returns:
-        RunStats with summary of test run.
+        RunResult with summary of test run.
     """
     logger.log(TEST_LOG_LEVEL, f'starting endpoint peering test for {op}')
 
-    if op == 'EVICT':
+    if op == 'evict':
         times_ms = await endpoint_ops.test_evict(
             endpoint,
             remote_endpoint,
             repeat,
         )
-    elif op == 'EXISTS':
+    elif op == 'exists':
         times_ms = await endpoint_ops.test_exists(
             endpoint,
             remote_endpoint,
             repeat,
         )
-    elif op == 'GET':
+    elif op == 'get':
         times_ms = await endpoint_ops.test_get(
             endpoint,
             remote_endpoint,
             payload_size,
             repeat,
         )
-    elif op == 'SET':
+    elif op == 'set':
         times_ms = await endpoint_ops.test_set(
             endpoint,
             remote_endpoint,
@@ -110,13 +95,13 @@ async def run_endpoint(
     avg_time_s = sum(times_ms) / 1000 / len(times_ms)
     payload_mb = payload_size / 1e6
     avg_bandwidth_mbps = (
-        payload_mb / avg_time_s if op in ('GET', 'SET') else None
+        payload_mb / avg_time_s if op in ('get', 'set') else None
     )
 
-    return RunStats(
-        backend='ENDPOINT',
+    return RunResult(
+        backend='endpoint',
         op=op,
-        payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+        payload_size_bytes=payload_size if op in ('get', 'set') else None,
         repeat=repeat,
         total_time_ms=sum(times_ms),
         avg_time_ms=sum(times_ms) / len(times_ms),
@@ -134,7 +119,7 @@ def run_redis(
     op: OP_TYPE,
     payload_size: int = 0,
     repeat: int = 3,
-) -> RunStats:
+) -> RunResult:
     """Run test for single operation and measure performance.
 
     Args:
@@ -147,17 +132,17 @@ def run_redis(
             a connection.
 
     Returns:
-        RunStats with summary of test run.
+        RunResult with summary of test run.
     """
     logger.log(TEST_LOG_LEVEL, f'starting remote redis test for {op}')
 
-    if op == 'EVICT':
+    if op == 'evict':
         times_ms = redis_ops.test_evict(client, repeat)
-    elif op == 'EXISTS':
+    elif op == 'exists':
         times_ms = redis_ops.test_exists(client, repeat)
-    elif op == 'GET':
+    elif op == 'get':
         times_ms = redis_ops.test_get(client, payload_size, repeat)
-    elif op == 'SET':
+    elif op == 'set':
         times_ms = redis_ops.test_set(client, payload_size, repeat)
     else:
         raise AssertionError(f'Unsupported operation {op}')
@@ -168,13 +153,13 @@ def run_redis(
     avg_time_s = sum(times_ms) / 1000 / len(times_ms)
     payload_mb = payload_size / 1e6
     avg_bandwidth_mbps = (
-        payload_mb / avg_time_s if op in ('GET', 'SET') else None
+        payload_mb / avg_time_s if op in ('get', 'set') else None
     )
 
-    return RunStats(
-        backend='REDIS',
+    return RunResult(
+        backend='redis',
         op=op,
-        payload_size_bytes=payload_size if op in ('GET', 'SET') else None,
+        payload_size_bytes=payload_size if op in ('get', 'set') else None,
         repeat=repeat,
         total_time_ms=sum(times_ms),
         avg_time_ms=sum(times_ms) / len(times_ms),
@@ -193,9 +178,8 @@ async def runner_endpoint(
     *,
     payload_sizes: list[int],
     repeat: int,
-    server: str | None = None,
-    csv_file: str | None = None,
-) -> None:
+    relay_server: str | None = None,
+) -> list[RunResult]:
     """Run matrix of test test configurations with an Endpoint.
 
     Args:
@@ -203,13 +187,14 @@ async def runner_endpoint(
         ops (str): endpoint operations to test.
         payload_sizes (int): bytes to send/receive for GET/SET operations.
         repeat (int): number of times to repeat operations.
-        server (str): relay server address
-        csv_file (str): optional csv filepath to log results to.
+        relay_server (str): relay server address
     """
-    if csv_file is not None:
-        csv_logger = CSVResultLogger(csv_file, RunStats)
-
-    manager = PeerManager(RelayClient(server)) if server is not None else None
+    results: list[RunResult] = []
+    manager = (
+        PeerManager(RelayClient(relay_server))
+        if relay_server is not None
+        else None
+    )
     async with Endpoint(
         name=socket.gethostname(),
         uuid=uuid.uuid4(),
@@ -218,22 +203,17 @@ async def runner_endpoint(
         for op in ops:
             for i, payload_size in enumerate(payload_sizes):
                 # Only need to repeat for payload_size for GET/SET
-                if i == 0 or op in ['GET', 'SET']:
-                    run_stats = await run_endpoint(
+                if i == 0 or op in ['get', 'set']:
+                    result = await run_endpoint(
                         endpoint,
                         remote_endpoint=remote_endpoint,
                         op=op,
                         payload_size=payload_size,
                         repeat=repeat,
                     )
-
-                    logger.log(TEST_LOG_LEVEL, run_stats)
-                    if csv_file is not None:
-                        csv_logger.log(run_stats)
-
-    if csv_file is not None:
-        csv_logger.close()
-        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
+                    logger.log(TEST_LOG_LEVEL, results)
+                    results.append(result)
+    return results
 
 
 def runner_redis(
@@ -243,8 +223,7 @@ def runner_redis(
     *,
     payload_sizes: list[int],
     repeat: int,
-    csv_file: str | None = None,
-) -> None:
+) -> list[RunResult]:
     """Run matrix of test test configurations with a Redis server.
 
     Args:
@@ -253,127 +232,100 @@ def runner_redis(
         ops (str): endpoint operations to test.
         payload_sizes (int): bytes to send/receive for GET/SET operations.
         repeat (int): number of times to repeat operations.
-        csv_file (str): optional csv filepath to log results to.
     """
-    if csv_file is not None:
-        csv_logger = CSVResultLogger(csv_file, RunStats)
-
     client = redis.StrictRedis(host=host, port=port)
+    results: list[RunResult] = []
     for op in ops:
         for i, payload_size in enumerate(payload_sizes):
             # Only need to repeat for payload_size for GET/SET
-            if i == 0 or op in ['GET', 'SET']:
-                run_stats = run_redis(
+            if i == 0 or op in ['get', 'set']:
+                result = run_redis(
                     client,
                     op=op,
                     payload_size=payload_size,
                     repeat=repeat,
                 )
-
-                logger.log(TEST_LOG_LEVEL, run_stats)
-                if csv_file is not None:
-                    csv_logger.log(run_stats)
-
-    if csv_file is not None:
-        csv_logger.close()
-        logger.log(TEST_LOG_LEVEL, f'results logged to {csv_file}')
+                logger.log(TEST_LOG_LEVEL, result)
+                results.append(result)
+    return results
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Remote ops test entrypoint."""
-    argv = argv if argv is not None else sys.argv[1:]
+class Benchmark(ContextManagerAddIn):
+    name = 'Remote Ops'
+    config_type = RunConfig
+    result_type = RunResult
 
-    parser = argparse.ArgumentParser(
-        description='Remote ops performance test.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        'backend',
-        choices=['ENDPOINT', 'REDIS'],
-        help='Remote objects store backend to test',
-    )
-    parser.add_argument(
-        '--endpoint',
-        required='ENDPOINT' in sys.argv,
-        help='Remote Endpoint UUID',
-    )
-    parser.add_argument(
-        '--redis-host',
-        required='REDIS' in sys.argv,
-        help='Redis server hostname/IP',
-    )
-    parser.add_argument(
-        '--redis-port',
-        required='REDIS' in sys.argv,
-        help='Redis server port',
-    )
-    parser.add_argument(
-        '--ops',
-        choices=['GET', 'SET', 'EXISTS', 'EVICT'],
-        nargs='+',
-        required=True,
-        help='Endpoint operations to measure',
-    )
-    parser.add_argument(
-        '--payload-sizes',
-        type=int,
-        nargs='+',
-        default=0,
-        help='Payload sizes for GET/SET operations',
-    )
-    parser.add_argument(
-        '--server',
-        required='ENDPOINT' in sys.argv,
-        help='Relay server address for connecting to the remote endpoint',
-    )
-    parser.add_argument(
-        '--repeat',
-        type=int,
-        default=10,
-        help='Number of times to repeat operations',
-    )
-    parser.add_argument(
-        '--no-uvloop',
-        action='store_true',
-        help='Override using uvloop if available (for ENDPOINT backend only)',
-    )
-    add_logging_options(parser)
-    args = parser.parse_args(argv)
-
-    init_logging(args.log_file, args.log_level, force=True)
-
-    if args.backend == 'ENDPOINT':
-        if not args.no_uvloop:
+    def __init__(
+        self,
+        endpoint: str | None = None,
+        relay_server: str | None = None,
+        redis_host: str | None = None,
+        redis_port: int | None = None,
+        use_uvloop: bool = False,
+    ) -> None:
+        if use_uvloop:
             try:
                 import uvloop
 
                 uvloop.install()
-                logger.info('uvloop available... using as event loop')
+                logger.log(
+                    BENCH_LOG_LEVEL,
+                    'uvloop available... using as event loop',
+                )
             except ImportError:  # pragma: no cover
-                logger.info('uvloop unavailable... using asyncio event loop')
+                logger.log(
+                    BENCH_LOG_LEVEL,
+                    'uvloop unavailable... using asyncio event loop',
+                )
         else:
-            logger.info('uvloop override... using asyncio event loop')
+            logger.log(
+                BENCH_LOG_LEVEL,
+                'uvloop override... using asyncio event loop',
+            )
 
-        asyncio.run(
-            runner_endpoint(
-                uuid.UUID(args.endpoint),
-                args.ops,
-                payload_sizes=args.payload_sizes,
-                repeat=args.repeat,
-                server=args.server,
-                csv_file=args.csv_file,
-            ),
-        )
-    elif args.backend == 'REDIS':
-        runner_redis(
-            args.redis_host,
-            args.redis_port,
-            args.ops,
-            payload_sizes=args.payload_sizes,
-            repeat=args.repeat,
-            csv_file=args.csv_file,
-        )
-    else:
-        raise AssertionError('Unreachable.')
+        self.endpoint = endpoint
+        self.relay_server = relay_server
+        self.redis_host = redis_host
+        self.redis_port = redis_port
+        self.use_uvloop = use_uvloop
+        super().__init__()
 
-    return 0
+    def config(self) -> dict[str, Any]:
+        return {
+            'endpoint': self.endpoint,
+            'relay_server': self.relay_server,
+            'redis_host': self.redis_host,
+            'redis_port': self.redis_port,
+            'use_uvloop': self.use_uvloop,
+        }
+
+    def run(self, config: RunConfig) -> list[RunResult]:
+        if config.backend == 'endpoint':
+            endpoint = (
+                self.endpoint
+                if self.endpoint is None
+                else uuid.UUID(self.endpoint)
+            )
+            results = asyncio.run(
+                runner_endpoint(
+                    endpoint,
+                    config.ops,
+                    payload_sizes=config.payload_sizes,
+                    repeat=config.repeat,
+                    relay_server=self.relay_server,
+                ),
+            )
+        elif config.backend == 'redis':
+            assert self.redis_host is not None
+            assert self.redis_port is not None
+            results = runner_redis(
+                self.redis_host,
+                self.redis_port,
+                config.ops,
+                payload_sizes=config.payload_sizes,
+                repeat=config.repeat,
+            )
+        else:
+            raise AssertionError('Unreachable.')
+
+        return results

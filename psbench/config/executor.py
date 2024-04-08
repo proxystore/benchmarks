@@ -16,6 +16,7 @@ else:  # pragma: <3.11 cover
 import dask
 import globus_compute_sdk
 from parsl.concurrent import ParslPoolExecutor
+from parsl.config import Config
 from pydantic import BaseModel
 
 from psbench.config.parsl import CONFIG_FACTORY
@@ -142,7 +143,7 @@ class ParslConfig(BaseModel):
         }
         return cls(**options)
 
-    def get_executor(self) -> ParslPoolExecutor:
+    def get_config(self) -> Config:
         try:
             factory = CONFIG_FACTORY[self.executor]
         except KeyError as e:
@@ -151,8 +152,10 @@ class ParslConfig(BaseModel):
                 f'Expected one of: {list(CONFIG_FACTORY.keys())}.',
             ) from e
 
-        config = factory(self.run_dir, self.max_workers)
-        return ParslPoolExecutor(config)
+        return factory(self.run_dir, self.max_workers)
+
+    def get_executor(self) -> ParslPoolExecutor:
+        return ParslPoolExecutor(self.get_config())
 
 
 class ExecutorConfig(BaseModel):
