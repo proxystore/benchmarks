@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 
 import pytest
@@ -12,6 +14,8 @@ from psbench.config.executor import DaskConfig
 from psbench.config.executor import ExecutorConfig
 from psbench.config.executor import GlobusComputeConfig
 from psbench.config.executor import ParslConfig
+from psbench.config.executor import ProcessPoolConfig
+from psbench.config.executor import ThreadPoolConfig
 from psbench.executor.dask import DaskExecutor
 from testing.globus_compute import mock_globus_compute
 
@@ -68,7 +72,30 @@ def test_parsl_argparse() -> None:
             parser.parse_args([])
 
 
+def test_process_pool_argparse() -> None:
+    parser = argparse.ArgumentParser()
+    ProcessPoolConfig.add_parser_group(parser)
+    args = parser.parse_args(['--process-pool-max-workers', '1'])
+    config = ProcessPoolConfig.from_args(**vars(args))
+    assert config.max_workers == 1
+
+    config = ProcessPoolConfig.from_args()
+    assert config.max_workers > 0
+
+
+def test_thread_pool_argparse() -> None:
+    parser = argparse.ArgumentParser()
+    ThreadPoolConfig.add_parser_group(parser)
+    args = parser.parse_args(['--thread-pool-max-workers', '1'])
+    config = ThreadPoolConfig.from_args(**vars(args))
+    assert config.max_workers == 1
+
+    config = ThreadPoolConfig.from_args()
+    assert config.max_workers > 0
+
+
 def test_executor_argparse() -> None:
+    # Dask
     parser = argparse.ArgumentParser()
     ExecutorConfig.add_parser_group(parser)
     args = parser.parse_args(['--executor', 'dask'])
@@ -76,6 +103,7 @@ def test_executor_argparse() -> None:
     assert config.kind == 'dask'
     assert isinstance(config.config, DaskConfig)
 
+    # Globus Compute
     parser = argparse.ArgumentParser()
     ExecutorConfig.add_parser_group(parser)
     args = parser.parse_args(
@@ -85,6 +113,7 @@ def test_executor_argparse() -> None:
     assert config.kind == 'globus'
     assert isinstance(config.config, GlobusComputeConfig)
 
+    # Parsl
     parser = argparse.ArgumentParser()
     ExecutorConfig.add_parser_group(parser)
     args = parser.parse_args(
@@ -104,6 +133,23 @@ def test_executor_argparse() -> None:
     assert config.kind == 'parsl'
     assert isinstance(config.config, ParslConfig)
 
+    # ProcessPool
+    parser = argparse.ArgumentParser()
+    ExecutorConfig.add_parser_group(parser)
+    args = parser.parse_args(['--executor', 'process'])
+    config = ExecutorConfig.from_args(**vars(args))
+    assert config.kind == 'process'
+    assert isinstance(config.config, ProcessPoolConfig)
+
+    # ThreadPool
+    parser = argparse.ArgumentParser()
+    ExecutorConfig.add_parser_group(parser)
+    args = parser.parse_args(['--executor', 'thread'])
+    config = ExecutorConfig.from_args(**vars(args))
+    assert config.kind == 'thread'
+    assert isinstance(config.config, ThreadPoolConfig)
+
+    # Missing args when required=True
     parser = argparse.ArgumentParser()
     ExecutorConfig.add_parser_group(
         parser,
@@ -195,3 +241,15 @@ def test_executor_config() -> None:
 
     assert isinstance(executor, GlobusComputeExecutor)
     executor.shutdown()
+
+
+def test_process_pool_config_executor() -> None:
+    config = ProcessPoolConfig(max_workers=1)
+    with config.get_executor() as executor:
+        assert isinstance(executor, ProcessPoolExecutor)
+
+
+def test_thread_pool_config_executor() -> None:
+    config = ThreadPoolConfig(max_workers=1)
+    with config.get_executor() as executor:
+        assert isinstance(executor, ThreadPoolExecutor)

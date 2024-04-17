@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import sys
 from concurrent.futures import Executor
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Literal
 from typing import Optional
@@ -158,10 +161,68 @@ class ParslConfig(BaseModel):
         return ParslPoolExecutor(self.get_config())
 
 
+class ProcessPoolConfig(BaseModel):
+    max_workers: int
+
+    @staticmethod
+    def add_parser_group(
+        parser: argparse.ArgumentParser,
+        required: bool = True,
+    ) -> None:
+        group = parser.add_argument_group(title='Process Pool Configuration')
+
+        group.add_argument(
+            '--process-pool-max-workers',
+            metavar='WORKERS',
+            type=int,
+            help='Number of process in the pool. Default is number of CPUs.',
+        )
+
+    @classmethod
+    def from_args(cls, **kwargs: Any) -> Self:
+        max_workers = kwargs.get('process_pool_max_workers', None)
+        max_workers = (
+            multiprocessing.cpu_count() if max_workers is None else max_workers
+        )
+        return cls(max_workers=max_workers)
+
+    def get_executor(self) -> ProcessPoolExecutor:
+        return ProcessPoolExecutor(self.max_workers)
+
+
+class ThreadPoolConfig(BaseModel):
+    max_workers: int
+
+    @staticmethod
+    def add_parser_group(
+        parser: argparse.ArgumentParser,
+        required: bool = True,
+    ) -> None:
+        group = parser.add_argument_group(title='Thread Pool Configuration')
+
+        group.add_argument(
+            '--thread-pool-max-workers',
+            metavar='WORKERS',
+            type=int,
+            help='Number of threads in the pool. Default is number of CPUs.',
+        )
+
+    @classmethod
+    def from_args(cls, **kwargs: Any) -> Self:
+        max_workers = kwargs.get('thread_pool_max_workers', None)
+        max_workers = (
+            multiprocessing.cpu_count() if max_workers is None else max_workers
+        )
+        return cls(max_workers=max_workers)
+
+    def get_executor(self) -> ThreadPoolExecutor:
+        return ThreadPoolExecutor(self.max_workers)
+
+
 class ExecutorConfig(BaseModel):
-    kind: Literal['dask', 'globus', 'parsl']
+    kind: Literal['dask', 'globus', 'parsl', 'process', 'thread']
     # It would be preferred to type this as:
-    #     config: DaskConfig | GlobusComputeConfig | ParslConfig
+    #     config: DaskConfig | GlobusComputeConfig | ParslConfig | ...
     # but Pydantic v1 handles union types in unexpected ways so type attempt
     # to be coerced incorrectly.
     config: Any
@@ -174,7 +235,7 @@ class ExecutorConfig(BaseModel):
     ) -> None:
         parser.add_argument(
             '--executor',
-            choices=['dask', 'globus', 'parsl'],
+            choices=['dask', 'globus', 'parsl', 'process', 'thread'],
             required=required,
             help='Task executor/workflow engine',
         )
@@ -195,18 +256,30 @@ class ExecutorConfig(BaseModel):
             parser,
             required=required and executor_type == 'parsl',
         )
+        ProcessPoolConfig.add_parser_group(
+            parser,
+            required=required and executor_type == 'process',
+        )
+        ThreadPoolConfig.add_parser_group(
+            parser,
+            required=required and executor_type == 'thread',
+        )
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
         kind = kwargs['executor']
 
-        config: DaskConfig | GlobusComputeConfig | ParslConfig
+        config: Any
         if kind == 'dask':
             config = DaskConfig.from_args(**kwargs)
         elif kind == 'globus':
             config = GlobusComputeConfig.from_args(**kwargs)
         elif kind == 'parsl':
             config = ParslConfig.from_args(**kwargs)
+        elif kind == 'process':
+            config = ProcessPoolConfig.from_args(**kwargs)
+        elif kind == 'thread':
+            config = ThreadPoolConfig.from_args(**kwargs)
         else:
             # Unreachable because of Pydantic type validation
             raise AssertionError(f'Unknown executor type "{kind}".')
