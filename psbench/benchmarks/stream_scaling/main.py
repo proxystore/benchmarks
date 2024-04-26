@@ -137,7 +137,7 @@ class Benchmark(ContextManagerAddIn):
                     # Quick hack because Parsl will accidentally resolve
                     # proxy when it scans tasks inputs for any special
                     # files.
-                    item.__wrapped__ = None
+                    item.__proxy_wrapped__ = None
                 task_future = self.executor.submit(
                     compute_task,
                     item,

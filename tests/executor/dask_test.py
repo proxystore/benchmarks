@@ -46,14 +46,16 @@ def proxy_function(proxy: Proxy[int]) -> Proxy[int]:
 
     result = proxy * 2
 
-    return get_store(proxy).proxy(result)
+    store = get_store(proxy)
+    assert store is not None
+    return store.proxy(result, populate_target=True)
 
 
 def test_submit_proxies(
     local_client: Client,
     local_store: Store[LocalConnector],
 ) -> None:
-    value = local_store.proxy(1)
+    value = local_store.proxy(1, populate_target=True)
 
     with DaskExecutor(local_client) as executor:
         future = executor.submit(proxy_function, value)

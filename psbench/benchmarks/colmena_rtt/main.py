@@ -218,7 +218,7 @@ class Benchmark(ContextManagerAddIn):
         # Make the queues
         queues: ColmenaQueues
         if (
-            self.redis_host is not None or self.redis_port is not None
+            self.redis_host is not None and self.redis_port is not None
         ):  # pragma: no cover
             queues = RedisQueues(
                 topics=['generate'],
