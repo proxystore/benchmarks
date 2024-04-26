@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
@@ -31,8 +32,12 @@ dependencies = [
     "dask==2024.2.0; python_version >= '3.9'",
     "distributed==2023.5.0; python_version < '3.9'",
     "distributed==2024.2.0; python_version >= '3.9'",
-    "globus-compute-endpoint==2.17.0",
-    "globus-compute-sdk==2.17.0",
+    "globus-compute-endpoint==2.19.0",
+    "globus-compute-sdk==2.19.0",
+    # ProxyStore installs kafka-python which is no longer maintained and
+    # does not have a Python 3.12 wheel. This is a fork of kakfa-python that
+    # is being maintained.
+    "kafka-python-ng==2.2.2; python_version >= '3.12'",
     "proxystore[all]==0.6.5",
     "proxystore-ex==0.1.3",
     "pydantic==1.10.14",
