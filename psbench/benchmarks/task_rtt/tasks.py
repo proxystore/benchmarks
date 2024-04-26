@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
+from proxystore.proxy import Proxy
+
 
 class ProxyStats(NamedTuple):
     """Proxy stats from within task."""
@@ -72,16 +74,16 @@ def pong_ipfs(
 
 
 def pong_proxy(
-    data: bytes,
+    data: Proxy[bytes],
     *,
     evict_result: bool = True,
     result_size: int = 0,
     sleep: float = 0,
-) -> tuple[bytes, ProxyStats | None]:
+) -> tuple[Proxy[bytes], ProxyStats | None]:
     """Task that takes a proxy of data and return a proxy of data.
 
     Args:
-        data (bytes): input data.
+        data (Proxy[bytes]): input data.
         evict_result (bool): Set evict flag in returned proxy (default: True).
         result_size (int): size of results byte array.
         sleep (float): seconds to sleep for to simulate work (default: 0). If
@@ -119,7 +121,6 @@ def pong_proxy(
     result_data = randbytes(result_size)
     store = get_store(data)
     if store is None:  # pragma: no cover
-        # init_store does not return None in ProxyStore <= 0.3.3
         raise RuntimeError('Cannot find ProxyStore backend to use.')
     result: Proxy[bytes] = store.proxy(result_data, evict=evict_result)
 

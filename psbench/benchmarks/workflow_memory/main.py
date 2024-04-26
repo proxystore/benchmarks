@@ -19,10 +19,12 @@ else:  # pragma: <3.11 cover
     pass
 
 from proxystore.proxy import Proxy
+from proxystore.proxy import resolve
 from proxystore.store.base import Store
 from proxystore.store.ref import borrow
 from proxystore.store.ref import into_owned
 from proxystore.store.scopes import submit
+from proxystore.store.utils import get_key
 
 from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.workflow_memory.config import DataManagement
@@ -58,7 +60,11 @@ def task_proxy(
     from proxystore.store import get_store
 
     # Force proxies to resolve
-    assert all(isinstance(d, bytes) for d in data)
+    for d in data:
+        # isinstance is not guaranteed to resolve the proxy when
+        # populate_target=True.
+        resolve(d)
+        assert isinstance(d, bytes)
     assert all(is_resolved(d) for d in data)
     time.sleep(sleep)
 
@@ -212,7 +218,7 @@ def run_workflow(
         for stage_index, stage_task_count in enumerate(stage_task_counts):
             # Keep track of what proxies were created for clean up at end
             if data_management == DataManagement.DEFAULT_PROXY:
-                proxy_keys.extend(p.__factory__.key for p in current_data)
+                proxy_keys.extend(get_key(p) for p in current_data)
             new_data = _run_workflow_stage(
                 current_data,
                 executor=executor,
@@ -224,7 +230,7 @@ def run_workflow(
             if data_management is DataManagement.MANUAL_PROXY:
                 assert store is not None
                 for proxy in current_data:
-                    store.evict(proxy.__factory__.key)
+                    store.evict(get_key(proxy))
             current_data = new_data
 
     # Housekeeping to clean up any outstanding memory we might have
@@ -233,7 +239,7 @@ def run_workflow(
     elif data_management is DataManagement.MANUAL_PROXY:
         assert store is not None
         for proxy in current_data:
-            store.evict(proxy.__factory__.key)
+            store.evict(get_key(proxy))
 
     gc.collect()
 

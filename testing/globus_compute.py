@@ -46,9 +46,10 @@ class MockExecutor(globus_compute_sdk.Executor):
         client = client or funcx_client
         self._client = client if client is not None else MockClient()
 
-    def submit(
+    def submit(  # type: ignore[override]
         self,
         func: Callable[..., RT],
+        /,
         *args: Any,
         **kwargs: Any,
     ) -> Future[RT]:
@@ -65,7 +66,8 @@ class MockExecutor(globus_compute_sdk.Executor):
     ) -> Future[RT]:
         args = args if args is not None else ()
         kwargs = kwargs if kwargs is not None else {}
-        return self.submit(self._client._funcs[function_id], *args, **kwargs)
+        func = self._client._funcs[function_id]  # type: ignore[attr-defined]
+        return self.submit(func, *args, **kwargs)
 
     def shutdown(self, *args: Any, **kwargs: Any) -> None:
         """Mock executor shutdown."""

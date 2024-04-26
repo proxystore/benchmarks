@@ -7,6 +7,7 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.utils import get_key
 
 from psbench.benchmarks.workflow_memory.config import DataManagement
 from psbench.benchmarks.workflow_memory.config import RunConfig
@@ -64,7 +65,7 @@ def test_task_proxy(file_store: Store[FileConnector]) -> None:
     assert len(result) == size
     assert (end - start) >= sleep
 
-    key = result.__factory__.key
+    key = get_key(result)
     assert file_store.exists(key)
     file_store.evict(key)
 

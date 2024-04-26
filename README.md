@@ -1,6 +1,7 @@
 # ProxyStore Benchmark Suite
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077901.svg)](https://doi.org/10.5281/zenodo.8077901)
+![GitHub License](https://img.shields.io/github/license/proxystore/benchmarks)
 [![tests](https://github.com/proxystore/proxystore-benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/proxystore/proxystore-benchmarks/actions)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore-benchmarks/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore-benchmarks/main)
 

@@ -5,6 +5,7 @@ from typing import Any
 
 from proxystore.store.base import Store
 from proxystore.store.future import Future
+from proxystore.store.types import StoreConfig
 from proxystore.stream.interface import StreamProducer
 
 from psbench.benchmarks.stream_scaling.shims import ProducerShim
@@ -51,7 +52,7 @@ def generate_data(
 
 
 def generator_task(
-    store_config: dict[str, Any],
+    store_config: StoreConfig,
     stream_config: StreamConfig,
     stop_generator: Future[bool],
     *,

@@ -120,11 +120,7 @@ def sequential_proxy_task(
     store = get_store(data)
     assert store is not None
     result = randbytes(len(data))
-    proxy = store.proxy(result, evict=True)
-    if prepopulate:  # pragma: no cover
-        # Pre-populate proxy target to prevent a double resolve after eviction.
-        # This is a quick hack but is fixed in later ProxyStore versions.
-        proxy.__wrapped__ = result
+    proxy = store.proxy(result, evict=True, populate_target=prepopulate)
     end_generate_timestamp = time.time()
 
     times = TaskTimes(
@@ -135,11 +131,7 @@ def sequential_proxy_task(
         end_generate_timestamp=end_generate_timestamp,
     )
 
-    result_proxy = store.proxy((proxy, times), evict=True)
-    if prepopulate:  # pragma: no cover
-        result_proxy.__wrapped__ = None
-
-    return result_proxy
+    return store.proxy((proxy, times), evict=True, populate_target=prepopulate)
 
 
 def pipelined_task(
@@ -344,27 +336,35 @@ class Benchmark(ContextManagerAddIn):
         }
 
     def run(self, config: RunConfig) -> RunResult:
-        store: Store[Any] | None = self.store
-
-        run_workflow: Callable[..., RunResult]
         method = config.submission_method
         if method == SubmissionMethod.SEQUENTIAL_NO_PROXY:
-            run_workflow = run_sequential_workflow
-            store = None
+            result = run_sequential_workflow(
+                executor=self.executor,
+                store=None,
+                task_chain_length=config.task_chain_length,
+                task_data_bytes=config.task_data_bytes,
+                task_overhead_fraction=config.task_overhead_fraction,
+                task_sleep=config.task_sleep,
+            )
         elif method == SubmissionMethod.SEQUENTIAL_PROXY:
-            run_workflow = run_sequential_workflow
+            result = run_sequential_workflow(
+                executor=self.executor,
+                store=self.store,
+                task_chain_length=config.task_chain_length,
+                task_data_bytes=config.task_data_bytes,
+                task_overhead_fraction=config.task_overhead_fraction,
+                task_sleep=config.task_sleep,
+            )
         elif method == SubmissionMethod.PIPELINED_PROXY_FUTURE:
-            run_workflow = run_pipelined_workflow
+            result = run_pipelined_workflow(
+                executor=self.executor,
+                store=self.store,
+                task_chain_length=config.task_chain_length,
+                task_data_bytes=config.task_data_bytes,
+                task_overhead_fraction=config.task_overhead_fraction,
+                task_sleep=config.task_sleep,
+            )
         else:
             raise AssertionError('Unreachable.')
-
-        result = run_workflow(
-            executor=self.executor,
-            store=store,
-            task_chain_length=config.task_chain_length,
-            task_data_bytes=config.task_data_bytes,
-            task_overhead_fraction=config.task_overhead_fraction,
-            task_sleep=config.task_sleep,
-        )
 
         return result
