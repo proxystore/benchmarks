@@ -49,7 +49,13 @@ class DaskExecutor(Executor):
     ) -> Iterator[T]:
         # Based on the Parsl implementation.
         # https://github.com/Parsl/parsl/blob/7fba7d634ccade76618ee397d3c951c5cbf2cd49/parsl/concurrent/__init__.py#L58
-        futures = self.client.map(function, *iterables, batch_size=chunksize)
+        futures = self.client.map(
+            function,
+            # Dask's Client.map is annotated as Collection[Any] but the
+            # Executor.map is annotated as Iterable[Any].
+            *iterables,  # type: ignore[arg-type]
+            batch_size=chunksize,
+        )
 
         def _result_iterator() -> Generator[T, None, None]:
             futures.reverse()
