@@ -67,7 +67,7 @@ class ResultLogger(Protocol[DTYPE]):
     def close(self) -> None: ...
 
 
-class BasicResultLogger:
+class BasicResultLogger(Generic[DTYPE]):
     def __init__(self, _data_type: type[DTYPE]) -> None:
         self.results: list[DTYPE] = []
 
