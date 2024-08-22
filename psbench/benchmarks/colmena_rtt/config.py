@@ -62,11 +62,11 @@ class RunResult(BaseModel):
             'output_size_bytes': output_size_bytes,
             'proxystore_backend': proxystore_backend,
         }
-        for field in result.timestamp.__fields_set__:
-            if f'time_{field}' in cls.__fields__:  # pragma: no branch
+        for field in result.timestamp.model_fields_set:
+            if f'time_{field}' in cls.model_fields:  # pragma: no branch
                 kwargs[f'time_{field}'] = getattr(result.timestamp, field)
-        for field in result.time.__fields_set__:
-            if f'time_{field}' in cls.__fields__:  # pragma: no branch
+        for field in result.time.model_fields_set:
+            if f'time_{field}' in cls.model_fields:  # pragma: no branch
                 kwargs[f'time_{field}'] = getattr(result.time, field)
         return cls(**kwargs)
 

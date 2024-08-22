@@ -44,6 +44,7 @@ def test_pong_proxy() -> None:
         'pong-proxy-stats-store',
         LocalConnector(),
         register=True,
+        populate_target=False,
     ) as store:
         input_data: Proxy[bytes] = store.proxy(b'abcd')
 
@@ -64,6 +65,7 @@ def test_pong_proxy_stats() -> None:
         LocalConnector(),
         metrics=True,
         register=True,
+        populate_target=False,
     ) as store:
         input_data: Proxy[bytes] = store.proxy(b'abcd')
         _, stats = pong_proxy(input_data, result_size=10)

@@ -130,7 +130,7 @@ class CSVResultLogger(Generic[DTYPE]):
     def log(self, data: DTYPE) -> None:
         """Log new row."""
         if isinstance(data, BaseModel):
-            self.writer.writerow(data.dict())
+            self.writer.writerow(data.model_dump())
         elif dataclasses.is_dataclass(data) and not isinstance(data, type):
             self.writer.writerow(dataclasses.asdict(data))
         elif isinstance(data, NamedTupleProtocol):
@@ -156,7 +156,7 @@ def field_names(data_type: DTYPE) -> Sequence[str]: ...
 def field_names(data_type: DTYPE | type[DTYPE]) -> Sequence[str]:
     """Extract field names from NamedTuple or Dataclass."""
     if isinstance(data_type, (BaseModel, type(BaseModel))):
-        return list(data_type.__fields__.keys())
+        return list(data_type.model_fields.keys())
     elif dataclasses.is_dataclass(data_type):
         return [f.name for f in dataclasses.fields(data_type)]
     elif isinstance(data_type, NamedTupleProtocol):

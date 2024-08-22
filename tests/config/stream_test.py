@@ -52,7 +52,9 @@ def test_stream_config_unknown_stream() -> None:
 def test_stream_config_kafka() -> None:
     config = StreamConfig(kind='kafka', topic='topic', servers=['localhost'])
 
-    with mock.patch('kafka.KafkaProducer'), mock.patch('kafka.KafkaConsumer'):
+    with mock.patch('confluent_kafka.Producer'), mock.patch(
+        'confluent_kafka.Consumer',
+    ):
         publisher = config.get_publisher()
         subscriber = config.get_subscriber()
 

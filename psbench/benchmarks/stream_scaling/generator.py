@@ -4,8 +4,8 @@ import time
 from typing import Any
 
 from proxystore.store.base import Store
+from proxystore.store.config import StoreConfig
 from proxystore.store.future import Future
-from proxystore.store.types import StoreConfig
 from proxystore.stream.interface import StreamProducer
 
 from psbench.benchmarks.stream_scaling.shims import ProducerShim
