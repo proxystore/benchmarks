@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from typing import Any
+from typing import Generator
 from unittest import mock
 
 import pytest
@@ -13,6 +14,18 @@ from psbench.config import StoreConfig
 class _MockDAOSConnector:
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # pragma: no cover
         pass
+
+
+@pytest.fixture(autouse=True)
+def _mock_store_repr() -> Generator[None, None, None]:
+    # __repr__ uses Store.config() which constructs a StoreConfig, a pydantic
+    # BaseModel that will fail validation because we mock all the Connector
+    # types in these tests.
+    with mock.patch(
+        'proxystore.store.base.Store.__repr__',
+        return_value='MockStoreRepr',
+    ):
+        yield
 
 
 def test_store_config_argparse_empty() -> None:

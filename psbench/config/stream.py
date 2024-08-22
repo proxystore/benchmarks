@@ -11,7 +11,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-import kafka
+import confluent_kafka
 from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 from proxystore.stream.shims.kafka import KafkaPublisher
@@ -67,8 +67,8 @@ class StreamConfig(BaseModel):
 
         publisher: Publisher
         if self.kind == 'kafka':
-            producer = kafka.KafkaProducer(
-                bootstrap_servers=self.servers,
+            producer = confluent_kafka.Producer(
+                {'bootstrap_servers': ','.join(self.servers)},
             )
             publisher = KafkaPublisher(producer)
         elif self.kind == 'redis':
@@ -85,10 +85,10 @@ class StreamConfig(BaseModel):
 
         subscriber: Subscriber
         if self.kind == 'kafka':
-            consumer = kafka.KafkaConsumer(
-                self.topic,
-                bootstrap_servers=self.servers,
+            consumer = confluent_kafka.Consumer(
+                {'bootstrap_servers': ','.join(self.servers)},
             )
+            consumer.subscribe([self.topic])
             subscriber = KafkaSubscriber(consumer)
         elif self.kind == 'redis':
             host, port = self.servers[0].split(':')

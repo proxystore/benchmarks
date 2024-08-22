@@ -32,6 +32,7 @@ def file_store(
         'file-store-fixture',
         FileConnector(str(tmp_path / 'store')),
         metrics=True,
+        populate_target=False,
     ) as store:
         with store_registration(store):
             yield store
@@ -39,6 +40,11 @@ def file_store(
 
 @pytest.fixture()
 def local_store() -> Generator[Store[LocalConnector], None, None]:
-    with Store('local-store-fixture', LocalConnector(), metrics=True) as store:
+    with Store(
+        'local-store-fixture',
+        LocalConnector(),
+        metrics=True,
+        populate_target=False,
+    ) as store:
         with store_registration(store):
             yield store
