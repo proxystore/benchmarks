@@ -56,7 +56,7 @@ class StreamConfig(BaseModel):
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
         return cls(
-            kind=kwargs.get('stream', None),
+            kind=kwargs.get('stream'),
             topic=kwargs['stream_topic'],
             servers=kwargs.get('stream_servers', ()),
         )

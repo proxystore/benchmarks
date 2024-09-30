@@ -180,7 +180,7 @@ class ProcessPoolConfig(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
-        max_workers = kwargs.get('process_pool_max_workers', None)
+        max_workers = kwargs.get('process_pool_max_workers')
         max_workers = (
             multiprocessing.cpu_count() if max_workers is None else max_workers
         )
@@ -209,7 +209,7 @@ class ThreadPoolConfig(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
-        max_workers = kwargs.get('thread_pool_max_workers', None)
+        max_workers = kwargs.get('thread_pool_max_workers')
         max_workers = (
             multiprocessing.cpu_count() if max_workers is None else max_workers
         )
