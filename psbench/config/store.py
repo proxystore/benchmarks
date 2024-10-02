@@ -132,7 +132,7 @@ class StoreConfig(BaseModel):
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
-        connector = kwargs.get('ps_connector', None)
+        connector = kwargs.get('ps_connector')
         # Note we drop the "ps_" prefix from the keys here
         options = {k[3:]: v for k, v in kwargs.items() if k.startswith('ps_')}
         return cls(connector=connector, options=options)
