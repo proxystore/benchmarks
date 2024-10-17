@@ -9,12 +9,12 @@ from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
 
+import adios2
 from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
 from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.protocols import Subscriber
 
 from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.stream_scaling.config import RunConfig
@@ -35,6 +35,20 @@ def warmup_task() -> None:
 def compute_task(data: bytes, sleep: float) -> None:
     # Resolve data if necessary
     assert isinstance(data, bytes)
+
+    time.sleep(sleep)
+
+
+def compute_task_adios(
+    step: int,
+    sleep: float,
+    adios_file: str,
+    topic: str,
+) -> None:
+    with adios2.FileReader(adios_file) as reader:
+        array = reader.read(topic, step_selection=[step, 1])
+        data = array.tobytes()
+        assert isinstance(data, bytes)
 
     time.sleep(sleep)
 
@@ -120,7 +134,9 @@ class Benchmark(ContextManagerAddIn):
             collections.deque()
         )
 
-        consumer: Subscriber
+        # The type of consumer is almost that of the Subscriber protocol but
+        # the Adios2Subscriber is slightly different.
+        consumer: Any
         if config.method in ('default', 'proxy'):
             subscriber = self.stream_config.get_subscriber()
             assert subscriber is not None
@@ -142,6 +158,7 @@ class Benchmark(ContextManagerAddIn):
             consumer = Adios2Subscriber(
                 config.adios_file,
                 topic=self.stream_config.topic,
+                direct=False,
             )
         else:
             raise AssertionError(f'Unsupported method {config.method}.')
@@ -158,11 +175,20 @@ class Benchmark(ContextManagerAddIn):
                     # proxy when it scans tasks inputs for any special
                     # files.
                     item.__proxy_wrapped__ = None
-                task_future = self.executor.submit(
-                    compute_task,
-                    item,
-                    sleep=config.task_sleep,
-                )
+                if config.method == 'adios':
+                    task_future = self.executor.submit(
+                        compute_task_adios,
+                        item,
+                        sleep=config.task_sleep,
+                        adios_file=config.adios_file,
+                        topic=self.stream_config.topic,
+                    )
+                else:
+                    task_future = self.executor.submit(
+                        compute_task,
+                        item,
+                        sleep=config.task_sleep,
+                    )
                 logger.log(
                     TEST_LOG_LEVEL,
                     f'Submitted compute task {i+1}/{config.task_count}',
