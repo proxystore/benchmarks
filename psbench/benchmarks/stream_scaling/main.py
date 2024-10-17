@@ -2,33 +2,34 @@ from __future__ import annotations
 
 import collections
 import logging
-import sys
+import os
+import shutil
 import time
+from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
-
-from concurrent.futures import Executor
 
 from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
 from proxystore.stream.interface import StreamConsumer
+from proxystore.stream.protocols import Subscriber
 
 from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.config import RunResult
 from psbench.benchmarks.stream_scaling.generator import generator_task
+from psbench.benchmarks.stream_scaling.shims import Adios2Subscriber
 from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
 from psbench.logging import TEST_LOG_LEVEL
 
 logger = logging.getLogger('stream-scaling')
+
+
+def warmup_task() -> None:
+    pass
 
 
 def compute_task(data: bytes, sleep: float) -> None:
@@ -64,22 +65,19 @@ class Benchmark(ContextManagerAddIn):
 
     def __init__(
         self,
-        consumer: StreamConsumer[bytes],
         executor: Executor,
         store: Store[Any],
         stream_config: StreamConfig,
     ) -> None:
-        self.consumer = consumer
         self.executor = executor
         self.store = store
         self.stream_config = stream_config
-        super().__init__([self.consumer, self.executor, self.store])
+        super().__init__([self.executor, self.store])
 
     def config(self) -> dict[str, Any]:
         return {
             'executor': self.executor.__class__.__name__,
             'connector': self.store.connector.__class__.__name__,
-            'subscriber': self.consumer.subscriber.__class__.__name__,
             'stream-config': self.stream_config,
         }
 
@@ -94,18 +92,19 @@ class Benchmark(ContextManagerAddIn):
             f'Generator item interval: {producer_interval}',
         )
 
+        logger.log(TEST_LOG_LEVEL, 'Submitting warm up task')
+        self.executor.submit(warmup_task).result()
+        logger.log(TEST_LOG_LEVEL, 'Warmup task completed')
+
         stop_generator: ProxyFuture[bool] = self.store.future()
         generator_task_future = self.executor.submit(
             generator_task,
+            run_config=config,
             store_config=self.store.config(),
             stream_config=self.stream_config,
             stop_generator=stop_generator,
-            item_size_bytes=config.data_size_bytes,
-            max_items=config.task_count,
             pregenerate=pregen_data,
             interval=producer_interval,
-            topic=self.stream_config.topic,
-            use_proxies=config.use_proxies,
         )
         logger.log(
             TEST_LOG_LEVEL,
@@ -114,17 +113,38 @@ class Benchmark(ContextManagerAddIn):
             f'max_items={config.task_count}, '
             f'interval_seconds={producer_interval}, '
             f'pregenerate={pregen_data}, '
-            f'use_proxies={config.use_proxies}',
+            f'method={config.method}',
         )
         completed_tasks = 0
         running_tasks: collections.deque[Future[bytes] | Future[None]] = (
             collections.deque()
         )
 
-        consumer = ConsumerShim(
-            self.consumer,
-            direct_from_subscriber=not config.use_proxies,
-        )
+        consumer: Subscriber
+        if config.method in ('default', 'proxy'):
+            subscriber = self.stream_config.get_subscriber()
+            assert subscriber is not None
+            base_consumer = StreamConsumer[bytes](subscriber)
+            consumer = ConsumerShim(
+                base_consumer,
+                direct_from_subscriber=config.method == 'default',
+            )
+        elif config.method == 'adios':
+            waited = 0
+            while True:
+                if waited > 60:
+                    raise RuntimeError('Timeout waiting for ADIOS file.')
+                if os.path.exists(config.adios_file):
+                    break
+                time.sleep(1)
+                waited += 1
+
+            consumer = Adios2Subscriber(
+                config.adios_file,
+                topic=self.stream_config.topic,
+            )
+        else:
+            raise AssertionError(f'Unsupported method {config.method}.')
 
         start = time.time()
 
@@ -169,6 +189,8 @@ class Benchmark(ContextManagerAddIn):
             'Finished submitting new compute tasks',
         )
 
+        consumer.close()
+
         logger.log(TEST_LOG_LEVEL, 'Waiting on generator task')
         generator_task_future.result()
 
@@ -182,6 +204,9 @@ class Benchmark(ContextManagerAddIn):
 
         logger.log(TEST_LOG_LEVEL, 'All compute tasks finished')
 
+        if config.method == 'adios':
+            shutil.rmtree(config.adios_file)
+
         end = time.time()
 
         assert self.stream_config.kind is not None
@@ -192,7 +217,7 @@ class Benchmark(ContextManagerAddIn):
             data_size_bytes=config.data_size_bytes,
             task_count=config.task_count,
             task_sleep=config.task_sleep,
-            use_proxies=config.use_proxies,
+            method=config.method,
             workers=config.max_workers,
             completed_tasks=completed_tasks,
             start_submit_tasks_timestamp=start,

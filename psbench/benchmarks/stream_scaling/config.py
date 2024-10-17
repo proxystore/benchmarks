@@ -20,7 +20,8 @@ class RunConfig(BaseModel):
     max_workers: int
     task_count: int
     task_sleep: float
-    use_proxies: bool
+    method: str
+    adios_file: str
 
 
 class RunResult(BaseModel):
@@ -30,7 +31,7 @@ class RunResult(BaseModel):
     data_size_bytes: int
     task_count: int
     task_sleep: float
-    use_proxies: bool
+    method: str
     workers: int
     completed_tasks: int
     start_submit_tasks_timestamp: float
@@ -40,9 +41,10 @@ class RunResult(BaseModel):
 class BenchmarkMatrix(BaseModel):
     data_size_bytes: List[int]  # noqa: UP006
     max_workers: int
-    stream_method: List[Literal['default', 'proxy']]  # noqa: UP006
+    stream_method: List[Literal['default', 'proxy', 'adios']]  # noqa: UP006
     task_count: int
     task_sleep: int
+    adios_file: str
 
     @staticmethod
     def add_parser_group(parser: argparse.ArgumentParser) -> None:
@@ -64,7 +66,7 @@ class BenchmarkMatrix(BaseModel):
         )
         group.add_argument(
             '--stream-method',
-            choices=['default', 'proxy'],
+            choices=['default', 'proxy', 'adios'],
             nargs='+',
             required=True,
             help='Stream method',
@@ -83,6 +85,11 @@ class BenchmarkMatrix(BaseModel):
             type=float,
             help='Stream processing task sleep time',
         )
+        group.add_argument(
+            '--adios-file',
+            default='/tmp/psbench-adios-stream',
+            help='ADIOS stream file path',
+        )
 
     @classmethod
     def from_args(cls, **kwargs: Any) -> Self:
@@ -92,6 +99,7 @@ class BenchmarkMatrix(BaseModel):
             stream_method=kwargs['stream_method'],
             task_count=kwargs['task_count'],
             task_sleep=kwargs['task_sleep'],
+            adios_file=kwargs['adios_file'],
         )
 
     def configs(self) -> tuple[RunConfig, ...]:
@@ -101,7 +109,8 @@ class BenchmarkMatrix(BaseModel):
                 max_workers=self.max_workers,
                 task_count=self.task_count,
                 task_sleep=self.task_sleep,
-                use_proxies=method == 'proxy',
+                method=method,
+                adios_file=self.adios_file,
             )
             for size, method in itertools.product(
                 self.data_size_bytes,

@@ -7,7 +7,10 @@ from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
 from proxystore.store.future import Future
 from proxystore.stream.interface import StreamProducer
+from proxystore.stream.protocols import Publisher
 
+from psbench.benchmarks.stream_scaling.config import RunConfig
+from psbench.benchmarks.stream_scaling.shims import Adios2Publisher
 from psbench.benchmarks.stream_scaling.shims import ProducerShim
 from psbench.config.stream import StreamConfig
 from psbench.utils import randbytes
@@ -15,7 +18,7 @@ from psbench.utils import wait_until
 
 
 def generate_data(
-    producer: ProducerShim,
+    publisher: Publisher,
     stop_generator: Future[bool],
     *,
     item_size_bytes: int,
@@ -43,45 +46,52 @@ def generate_data(
             data = randbytes(item_size_bytes)
 
         assert data is not None
-        producer.send(topic, data)
+        publisher.send(topic, data)
         sent_items += 1
 
         wait_until(interval_end)
 
-    producer.close_topic(topic)
-
 
 def generator_task(
+    run_config: RunConfig,
     store_config: StoreConfig,
     stream_config: StreamConfig,
     stop_generator: Future[bool],
     *,
-    item_size_bytes: int,
-    max_items: int,
-    topic: str,
     interval: float = 0,
     pregenerate: bool = False,
-    use_proxies: bool = True,
 ) -> None:
-    store: Store[Any] = Store.from_config(store_config)
-    publisher = stream_config.get_publisher()
-    assert publisher is not None
-
-    producer = StreamProducer[bytes](publisher, {topic: store})
-    producer_shim = ProducerShim(
-        producer,
-        direct_to_publisher=not use_proxies,
-        proxy_evict=True,
-    )
+    publisher: Publisher
+    if run_config.method in ('default', 'proxy'):
+        base_publisher = stream_config.get_publisher()
+        assert base_publisher is not None
+        store: Store[Any] = Store.from_config(store_config)
+        producer = StreamProducer[bytes](
+            base_publisher,
+            {stream_config.topic: store},
+        )
+        publisher = ProducerShim(
+            producer,
+            direct_to_publisher=run_config.method == 'default',
+        )
+    elif run_config.method == 'adios':
+        publisher = Adios2Publisher(run_config.adios_file)
+    else:
+        raise AssertionError(f'Unknown stream method {run_config.method}.')
 
     generate_data(
-        producer_shim,
+        publisher,
         stop_generator,
-        item_size_bytes=item_size_bytes,
-        max_items=max_items,
+        item_size_bytes=run_config.data_size_bytes,
+        max_items=run_config.task_count,
         pregenerate=pregenerate,
         interval=interval,
-        topic=topic,
+        topic=stream_config.topic,
     )
 
-    producer.close(stores=False)
+    if run_config.method in ('default', 'proxy'):
+        assert isinstance(publisher, ProducerShim)
+        publisher.close_topic(stream_config.topic)
+        publisher.producer.close(stores=False)
+    else:
+        publisher.close()
