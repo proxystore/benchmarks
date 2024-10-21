@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 
@@ -14,23 +15,31 @@ from psbench.config import StreamConfig
 from testing.stream import create_stream_pair
 
 
-@pytest.mark.parametrize('use_proxies', (True, False))
+@pytest.mark.parametrize('method', ('default', 'proxy', 'adios'))
 def test_benchmark(
-    use_proxies: bool,
+    method: str,
     file_store: Store[FileConnector],
     thread_executor: ThreadPoolExecutor,
+    tmp_path: pathlib.Path,
 ) -> None:
+    if method == 'adios':
+        try:
+            import adios2  # noqa: F401
+        except ImportError:  # pragma: no cover
+            pytest.skip()
+
     stream_config = StreamConfig(
         kind='redis',
         topic='topic',
-        servers=['localhost'],
+        servers=['localhost:1234'],
     )
     run_config = RunConfig(
         data_size_bytes=100,
         max_workers=thread_executor._max_workers,
         task_count=8,
         task_sleep=0.001,
-        use_proxies=use_proxies,
+        method=method,
+        adios_file=str(tmp_path / 'adios-stream'),
     )
 
     with contextlib.ExitStack() as stack:
@@ -44,9 +53,15 @@ def test_benchmark(
                 return_value=producer.publisher,
             ),
         )
+        stack.enter_context(
+            mock.patch(
+                'psbench.config.stream.StreamConfig.get_subscriber',
+                return_value=consumer.subscriber,
+            ),
+        )
 
         benchmark = stack.enter_context(
-            Benchmark(consumer, thread_executor, file_store, stream_config),
+            Benchmark(thread_executor, file_store, stream_config),
         )
 
         benchmark.config()

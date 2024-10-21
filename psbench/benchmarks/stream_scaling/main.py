@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import collections
 import logging
-import sys
+import os
+import shutil
 import time
+from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
-
-from concurrent.futures import Executor
 
 from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
@@ -24,16 +19,43 @@ from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.config import RunResult
 from psbench.benchmarks.stream_scaling.generator import generator_task
+from psbench.benchmarks.stream_scaling.shims import Adios2Subscriber
 from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
 from psbench.logging import TEST_LOG_LEVEL
 
+adios_import_error: Exception | None = None
+try:
+    import adios2
+except ImportError as e:  # pragma: no cover
+    adios_import_error = e
+
 logger = logging.getLogger('stream-scaling')
+
+
+def warmup_task() -> None:
+    pass
 
 
 def compute_task(data: bytes, sleep: float) -> None:
     # Resolve data if necessary
     assert isinstance(data, bytes)
+
+    time.sleep(sleep)
+
+
+def compute_task_adios(
+    step: int,
+    sleep: float,
+    adios_file: str,
+    topic: str,
+    expected_size: int,
+) -> None:
+    with adios2.FileReader(adios_file) as reader:
+        array = reader.read(topic, step_selection=[step, 1])
+        data = array.tobytes()
+        assert len(data) == expected_size
+        assert isinstance(data, bytes)
 
     time.sleep(sleep)
 
@@ -64,26 +86,28 @@ class Benchmark(ContextManagerAddIn):
 
     def __init__(
         self,
-        consumer: StreamConsumer[bytes],
         executor: Executor,
         store: Store[Any],
         stream_config: StreamConfig,
     ) -> None:
-        self.consumer = consumer
         self.executor = executor
         self.store = store
         self.stream_config = stream_config
-        super().__init__([self.consumer, self.executor, self.store])
+        super().__init__([self.executor, self.store])
 
     def config(self) -> dict[str, Any]:
         return {
             'executor': self.executor.__class__.__name__,
             'connector': self.store.connector.__class__.__name__,
-            'subscriber': self.consumer.subscriber.__class__.__name__,
             'stream-config': self.stream_config,
         }
 
     def run(self, config: RunConfig) -> RunResult:
+        if (
+            config.method == 'adios' and adios_import_error is not None
+        ):  # pragma: no cover
+            raise adios_import_error
+
         compute_workers = config.max_workers - 1
         producer_interval = config.task_sleep / compute_workers
         pregen_data = pregenerate(config.data_size_bytes, producer_interval)
@@ -94,18 +118,19 @@ class Benchmark(ContextManagerAddIn):
             f'Generator item interval: {producer_interval}',
         )
 
+        logger.log(TEST_LOG_LEVEL, 'Submitting warm up task')
+        self.executor.submit(warmup_task).result()
+        logger.log(TEST_LOG_LEVEL, 'Warmup task completed')
+
         stop_generator: ProxyFuture[bool] = self.store.future()
         generator_task_future = self.executor.submit(
             generator_task,
+            run_config=config,
             store_config=self.store.config(),
             stream_config=self.stream_config,
             stop_generator=stop_generator,
-            item_size_bytes=config.data_size_bytes,
-            max_items=config.task_count,
             pregenerate=pregen_data,
             interval=producer_interval,
-            topic=self.stream_config.topic,
-            use_proxies=config.use_proxies,
         )
         logger.log(
             TEST_LOG_LEVEL,
@@ -114,17 +139,41 @@ class Benchmark(ContextManagerAddIn):
             f'max_items={config.task_count}, '
             f'interval_seconds={producer_interval}, '
             f'pregenerate={pregen_data}, '
-            f'use_proxies={config.use_proxies}',
+            f'method={config.method}',
         )
         completed_tasks = 0
         running_tasks: collections.deque[Future[bytes] | Future[None]] = (
             collections.deque()
         )
 
-        consumer = ConsumerShim(
-            self.consumer,
-            direct_from_subscriber=not config.use_proxies,
-        )
+        # The type of consumer is almost that of the Subscriber protocol but
+        # the Adios2Subscriber is slightly different.
+        consumer: Any
+        if config.method in ('default', 'proxy'):
+            subscriber = self.stream_config.get_subscriber()
+            assert subscriber is not None
+            base_consumer = StreamConsumer[bytes](subscriber)
+            consumer = ConsumerShim(
+                base_consumer,
+                direct_from_subscriber=config.method == 'default',
+            )
+        elif config.method == 'adios':
+            waited = 0
+            while True:
+                if waited > 60:  # pragma: no cover
+                    raise RuntimeError('Timeout waiting for ADIOS file.')
+                if os.path.exists(config.adios_file):
+                    break
+                time.sleep(1)
+                waited += 1
+
+            consumer = Adios2Subscriber(
+                config.adios_file,
+                topic=self.stream_config.topic,
+                direct=False,
+            )
+        else:
+            raise AssertionError(f'Unsupported method {config.method}.')
 
         start = time.time()
 
@@ -138,11 +187,21 @@ class Benchmark(ContextManagerAddIn):
                     # proxy when it scans tasks inputs for any special
                     # files.
                     item.__proxy_wrapped__ = None
-                task_future = self.executor.submit(
-                    compute_task,
-                    item,
-                    sleep=config.task_sleep,
-                )
+                if config.method == 'adios':
+                    task_future = self.executor.submit(
+                        compute_task_adios,
+                        item,
+                        sleep=config.task_sleep,
+                        adios_file=config.adios_file,
+                        topic=self.stream_config.topic,
+                        expected_size=config.data_size_bytes,
+                    )
+                else:
+                    task_future = self.executor.submit(
+                        compute_task,
+                        item,
+                        sleep=config.task_sleep,
+                    )
                 logger.log(
                     TEST_LOG_LEVEL,
                     f'Submitted compute task {i+1}/{config.task_count}',
@@ -169,6 +228,8 @@ class Benchmark(ContextManagerAddIn):
             'Finished submitting new compute tasks',
         )
 
+        consumer.close()
+
         logger.log(TEST_LOG_LEVEL, 'Waiting on generator task')
         generator_task_future.result()
 
@@ -182,6 +243,9 @@ class Benchmark(ContextManagerAddIn):
 
         logger.log(TEST_LOG_LEVEL, 'All compute tasks finished')
 
+        if config.method == 'adios':
+            shutil.rmtree(config.adios_file)
+
         end = time.time()
 
         assert self.stream_config.kind is not None
@@ -192,7 +256,7 @@ class Benchmark(ContextManagerAddIn):
             data_size_bytes=config.data_size_bytes,
             task_count=config.task_count,
             task_sleep=config.task_sleep,
-            use_proxies=config.use_proxies,
+            method=config.method,
             workers=config.max_workers,
             completed_tasks=completed_tasks,
             start_submit_tasks_timestamp=start,

@@ -7,8 +7,6 @@ import sys
 from datetime import datetime
 from typing import Sequence
 
-from proxystore.stream.interface import StreamConsumer
-
 from psbench.benchmarks.stream_scaling.config import BenchmarkMatrix
 from psbench.benchmarks.stream_scaling.main import Benchmark
 from psbench.config import ExecutorConfig
@@ -69,13 +67,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     store = store_config.get_store()
     assert store is not None
 
-    subscriber = stream_config.get_subscriber()
-    assert subscriber is not None
-
-    consumer: StreamConsumer[bytes] = StreamConsumer(subscriber)
-
     benchmark = Benchmark(
-        consumer,
         executor,
         store,
         stream_config=stream_config,
@@ -84,12 +76,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
     with CSVResultLogger(csv_file, benchmark.result_type) as csv_logger:
-        runner(
-            benchmark,
-            matrix.configs(),
-            csv_logger,
-            repeat=general_config.repeat,
-        )
+        with benchmark:
+            runner(
+                benchmark,
+                matrix.configs(),
+                csv_logger,
+                repeat=general_config.repeat,
+            )
 
     logger.log(
         BENCH_LOG_LEVEL,

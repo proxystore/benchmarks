@@ -40,6 +40,7 @@ def test_benchmark_matrix_configs() -> None:
         stream_method=['default', 'proxy'],
         task_count=5,
         task_sleep=6,
+        adios_file='/tmp/adios-stream',
     )
 
     configs = matrix.configs()

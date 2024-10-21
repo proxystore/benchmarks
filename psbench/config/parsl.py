@@ -3,7 +3,6 @@ from __future__ import annotations
 import multiprocessing
 
 from parsl.addresses import address_by_hostname
-from parsl.addresses import address_by_interface
 from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
@@ -52,11 +51,9 @@ def get_htex_polaris_headless(
     executor = HighThroughputExecutor(
         label='htex-polaris-headless',
         max_workers_per_node=workers_per_node,
-        address=address_by_interface('bond0'),
-        cpu_affinity='block-reverse',
+        cpu_affinity='alternating',
         prefetch_capacity=0,
         provider=LocalProvider(
-            channel=LocalChannel(),
             launcher=MpiExecLauncher(
                 bind_cmd='--cpu-bind',
                 overrides='--depth=64 --ppn 1',

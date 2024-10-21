@@ -36,8 +36,8 @@ def test_stream_scaling_main(tmp_path: pathlib.Path) -> None:
     with disable_logging('psbench.run.stream_scaling'), mock.patch(
         'psbench.config.StoreConfig.get_store',
     ), mock.patch(
-        'psbench.config.StreamConfig.get_subscriber',
+        'psbench.config.ExecutorConfig.get_executor',
     ), mock.patch(
-        'psbench.run.stream_scaling.StreamConsumer',
+        'psbench.run.stream_scaling.runner',
     ):
         main(argv)
