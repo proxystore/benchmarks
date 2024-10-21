@@ -92,6 +92,6 @@ def generator_task(
     if run_config.method in ('default', 'proxy'):
         assert isinstance(publisher, ProducerShim)
         publisher.close_topic(stream_config.topic)
-        publisher.producer.close(stores=False)
+        publisher.close()
     else:
         publisher.close()

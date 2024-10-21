@@ -7,17 +7,25 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-import adios2
 import numpy
 from proxystore.proxy import Proxy
 from proxystore.stream.interface import StreamConsumer
 from proxystore.stream.interface import StreamProducer
+
+adios_import_error: Exception | None = None
+try:
+    import adios2
+except ImportError as e:  # pragma: no cover
+    adios_import_error = e
 
 CLOSE_SENTINAL = b'<publisher-close-topic-sentinal>'
 
 
 class Adios2Publisher:
     def __init__(self, stream_file: str) -> None:
+        if adios_import_error is not None:  # pragma: no cover
+            raise adios_import_error
+
         self.stream = adios2.Stream(stream_file, 'w')
 
     def close(self) -> None:
@@ -43,6 +51,9 @@ class Adios2Subscriber:
         topic: str,
         direct: bool = True,
     ) -> None:
+        if adios_import_error is not None:  # pragma: no cover
+            raise adios_import_error
+
         self.stream = adios2.Stream(stream_file, 'r')
         self.topic = topic
         self.direct = direct
@@ -54,7 +65,7 @@ class Adios2Subscriber:
         # Cycle to the next step internally in self.stream.
         next(self.stream)
 
-        if self.direct:
+        if self.direct:  # pragma: no cover
             array = self.stream.read(self.topic)
             message = array.tobytes()
             return message

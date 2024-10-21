@@ -22,6 +22,12 @@ def test_benchmark(
     thread_executor: ThreadPoolExecutor,
     tmp_path: pathlib.Path,
 ) -> None:
+    if method == 'adios':
+        try:
+            import adios2  # noqa: F401
+        except ImportError:  # pragma: no cover
+            pytest.skip()
+
     stream_config = StreamConfig(
         kind='redis',
         topic='topic',

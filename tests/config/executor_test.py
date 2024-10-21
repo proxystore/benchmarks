@@ -216,11 +216,7 @@ def test_parsl_config_htex_local(tmp_path: pathlib.Path) -> None:
         run_dir=str(tmp_path),
         max_workers=1,
     )
-    with mock.patch(
-        'psbench.config.parsl.address_by_interface',
-        return_value='localhost',
-    ):
-        config.get_config()
+    config.get_config()
 
 
 def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
@@ -229,11 +225,7 @@ def test_parsl_config_htex_polaris_headless(tmp_path: pathlib.Path) -> None:
         run_dir=str(tmp_path),
         max_workers=256,
     )
-    with mock.patch(
-        'psbench.config.parsl.address_by_interface',
-        return_value='localhost',
-    ):
-        config.get_config()
+    config.get_config()
 
 
 def test_executor_config() -> None:

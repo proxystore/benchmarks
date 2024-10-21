@@ -104,6 +104,12 @@ def test_generator_task(
     file_store: Store[FileConnector],
     tmp_path: pathlib.Path,
 ) -> None:
+    if method == 'adios':
+        try:
+            import adios2  # noqa: F401
+        except ImportError:  # pragma: no cover
+            pytest.skip()
+
     run_config = RunConfig(
         data_size_bytes=100,
         max_workers=1,

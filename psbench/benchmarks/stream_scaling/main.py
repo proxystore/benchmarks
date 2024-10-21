@@ -9,7 +9,6 @@ from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
 
-import adios2
 from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
@@ -24,6 +23,12 @@ from psbench.benchmarks.stream_scaling.shims import Adios2Subscriber
 from psbench.benchmarks.stream_scaling.shims import ConsumerShim
 from psbench.config import StreamConfig
 from psbench.logging import TEST_LOG_LEVEL
+
+adios_import_error: Exception | None = None
+try:
+    import adios2
+except ImportError as e:  # pragma: no cover
+    adios_import_error = e
 
 logger = logging.getLogger('stream-scaling')
 
@@ -98,6 +103,11 @@ class Benchmark(ContextManagerAddIn):
         }
 
     def run(self, config: RunConfig) -> RunResult:
+        if (
+            config.method == 'adios' and adios_import_error is not None
+        ):  # pragma: no cover
+            raise adios_import_error
+
         compute_workers = config.max_workers - 1
         producer_interval = config.task_sleep / compute_workers
         pregen_data = pregenerate(config.data_size_bytes, producer_interval)
@@ -150,7 +160,7 @@ class Benchmark(ContextManagerAddIn):
         elif config.method == 'adios':
             waited = 0
             while True:
-                if waited > 60:
+                if waited > 60:  # pragma: no cover
                     raise RuntimeError('Timeout waiting for ADIOS file.')
                 if os.path.exists(config.adios_file):
                     break
