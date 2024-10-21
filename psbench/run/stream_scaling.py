@@ -76,12 +76,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     csv_file = os.path.join(general_config.run_dir, general_config.csv_file)
     with CSVResultLogger(csv_file, benchmark.result_type) as csv_logger:
-        runner(
-            benchmark,
-            matrix.configs(),
-            csv_logger,
-            repeat=general_config.repeat,
-        )
+        with benchmark:
+            runner(
+                benchmark,
+                matrix.configs(),
+                csv_logger,
+                repeat=general_config.repeat,
+            )
 
     logger.log(
         BENCH_LOG_LEVEL,

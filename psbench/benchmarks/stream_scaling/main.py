@@ -44,10 +44,12 @@ def compute_task_adios(
     sleep: float,
     adios_file: str,
     topic: str,
+    expected_size: int,
 ) -> None:
     with adios2.FileReader(adios_file) as reader:
         array = reader.read(topic, step_selection=[step, 1])
         data = array.tobytes()
+        assert len(data) == expected_size
         assert isinstance(data, bytes)
 
     time.sleep(sleep)
@@ -182,6 +184,7 @@ class Benchmark(ContextManagerAddIn):
                         sleep=config.task_sleep,
                         adios_file=config.adios_file,
                         topic=self.stream_config.topic,
+                        expected_size=config.data_size_bytes,
                     )
                 else:
                     task_future = self.executor.submit(
