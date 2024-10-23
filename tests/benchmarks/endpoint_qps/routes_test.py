@@ -17,7 +17,7 @@ PAYLOAD = 100
 QUERIES = 10
 
 
-@pytest.fixture()
+@pytest.fixture
 def connector() -> Generator[Any, None, None]:
     with mock.patch('proxystore.connectors.endpoint.EndpointConnector'):
         from proxystore.connectors.endpoint import EndpointConnector

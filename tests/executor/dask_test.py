@@ -11,7 +11,7 @@ from proxystore.store.base import Store
 from psbench.executor.dask import DaskExecutor
 
 
-@pytest.fixture()
+@pytest.fixture
 def local_client() -> Client:
     client = Client(
         n_workers=1,

@@ -10,7 +10,7 @@ import psbench.benchmarks.remote_ops.redis_ops as ops
 from testing.mocking import MockStrictRedis
 
 
-@pytest.fixture()
+@pytest.fixture
 def client() -> Generator[redis.StrictRedis[Any], None, None]:
     return MockStrictRedis()  # type: ignore
 
