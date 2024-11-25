@@ -12,10 +12,10 @@ from psbench.config.stream import StreamConfig
 __all__ = [
     'DaskConfig',
     'ExecutorConfig',
-    'GlobusComputeConfig',
-    'ParslConfig',
     'GeneralConfig',
+    'GlobusComputeConfig',
+    'IPFSConfig',
+    'ParslConfig',
     'StoreConfig',
     'StreamConfig',
-    'IPFSConfig',
 ]
