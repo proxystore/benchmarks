@@ -204,7 +204,7 @@ class Benchmark(ContextManagerAddIn):
                     )
                 logger.log(
                     TEST_LOG_LEVEL,
-                    f'Submitted compute task {i+1}/{config.task_count}',
+                    f'Submitted compute task {i + 1}/{config.task_count}',
                 )
                 running_tasks.append(task_future)
 
