@@ -127,7 +127,7 @@ class Thinker(BaseThinker):
                     )
                     logger.log(
                         TEST_LOG_LEVEL,
-                        f'Submitted task {i+1}/{self.task_repeat} '
+                        f'Submitted task {i + 1}/{self.task_repeat} '
                         f'(input_size={input_size}, '
                         f'output_size={output_size}, '
                         f'sleep={self.task_sleep}).',

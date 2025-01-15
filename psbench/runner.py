@@ -51,7 +51,7 @@ def runner(
 
             logger.log(
                 BENCH_LOG_LEVEL,
-                f'Run {i+1}/{repeat} completed in {run_time:.3f}s',
+                f'Run {i + 1}/{repeat} completed in {run_time:.3f}s',
             )
 
         avg_run_time = sum(run_times) / len(run_times)
