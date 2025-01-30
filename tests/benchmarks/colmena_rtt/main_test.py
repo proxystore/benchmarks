@@ -84,9 +84,12 @@ def test_benchmark_with_globus_compute(tmp_path: pathlib.Path) -> None:
         reuse_inputs=False,
     )
 
-    with mock_globus_compute(), mock.patch(
-        'colmena.task_server.globus.Executor',
-        MockExecutor,
+    with (
+        mock_globus_compute(),
+        mock.patch(
+            'colmena.task_server.globus.Executor',
+            MockExecutor,
+        ),
     ):
         with Benchmark(gc_config, store=None) as benchmark:
             results = benchmark.run(run_config)

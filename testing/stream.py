@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import queue
-from typing import Generator
+from collections.abc import Generator
 
 from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store

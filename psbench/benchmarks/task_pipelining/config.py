@@ -5,7 +5,7 @@ import enum
 import itertools
 import sys
 from typing import Any
-from typing import List
+from typing import List  # noqa: UP035
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

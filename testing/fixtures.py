@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Generator
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
-from typing import Generator
 
 import pytest
 from proxystore.connectors.file import FileConnector

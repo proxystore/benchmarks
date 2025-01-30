@@ -4,6 +4,7 @@ import csv
 import dataclasses
 import os
 import sys
+from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import cast
@@ -13,7 +14,6 @@ from typing import NamedTuple
 from typing import overload
 from typing import Protocol
 from typing import runtime_checkable
-from typing import Sequence
 from typing import TypeVar
 from typing import Union
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import contextlib
 import sys
+from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
-from typing import Sequence
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover

@@ -4,8 +4,8 @@ import argparse
 import logging
 import os
 import sys
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from psbench.benchmarks.workflow_memory.config import BenchmarkMatrix
 from psbench.benchmarks.workflow_memory.main import Benchmark

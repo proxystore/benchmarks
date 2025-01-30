@@ -26,9 +26,12 @@ def call_directly(func, *args, **kwargs):
 def test_run(
     route: Literal['GET', 'SET', 'EXISTS', 'EVICT', 'ENDPOINT'],
 ) -> None:
-    with mock.patch(
-        'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
-    ), mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly):
+    with (
+        mock.patch(
+            'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
+        ),
+        mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly),
+    ):
         run('UUID', route, payload_size=1, queries=2, sleep=0, workers=2)
 
 
@@ -41,9 +44,12 @@ def test_benchmark() -> None:
         sleep_seconds=0,
         workers=1,
     )
-    with mock.patch(
-        'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
-    ), mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly):
+    with (
+        mock.patch(
+            'psbench.benchmarks.endpoint_qps.main.EndpointConnector',
+        ),
+        mock.patch('multiprocessing.pool.Pool.apply_async', new=call_directly),
+    ):
         with Benchmark() as benchmark:
             benchmark.config()
             result = benchmark.run(config)

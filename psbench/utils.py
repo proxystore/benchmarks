@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import os
 import random
-import sys
 import time
 
 
 def randbytes(size: int) -> bytes:
     """Get random byte string of specified size.
 
-    Uses `random.randbytes()` in Python 3.9 or newer and
-    `os.urandom()` in Python 3.8 and older.
+    This method previously existed for Python 3.8 and older compatibility
+    but now remains because it's used in many places throughout the codebase.
 
     Args:
         size (int): size of byte string to return.
@@ -18,10 +17,7 @@ def randbytes(size: int) -> bytes:
     Returns:
         random byte string.
     """
-    if sys.version_info >= (3, 9) and size < 1e9:  # pragma: >=3.9 cover
-        return random.randbytes(size)
-    else:  # pragma: <3.9 cover
-        return os.urandom(size)
+    return random.randbytes(size)
 
 
 def make_parent_dirs(filepath: str) -> None:

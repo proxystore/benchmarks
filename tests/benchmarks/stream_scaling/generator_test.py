@@ -125,9 +125,12 @@ def test_generator_task(
         servers=['localhost:1234'],
     )
 
-    with mock.patch(
-        'psbench.benchmarks.stream_scaling.generator.generate_data',
-    ) as mock_generate, mock.patch('psbench.config.stream.RedisPublisher'):
+    with (
+        mock.patch(
+            'psbench.benchmarks.stream_scaling.generator.generate_data',
+        ) as mock_generate,
+        mock.patch('psbench.config.stream.RedisPublisher'),
+    ):
         generator_task(
             run_config,
             file_store.config(),

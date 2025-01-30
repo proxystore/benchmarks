@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 from unittest import mock
 
 import pytest
@@ -100,8 +100,11 @@ def test_store_config_globus() -> None:
         connector='globus',
         options={'globus_config': '/tmp/file'},
     )
-    with mock.patch('psbench.config.store.GlobusConnector'), mock.patch(
-        'psbench.config.store.GlobusEndpoints.from_json',
+    with (
+        mock.patch('psbench.config.store.GlobusConnector'),
+        mock.patch(
+            'psbench.config.store.GlobusEndpoints.from_json',
+        ),
     ):
         assert config.get_store(register=False) is not None
 
@@ -152,9 +155,12 @@ def test_store_config_register() -> None:
         connector='redis',
         options={'host': 'localhost', 'port': 1234},
     )
-    with mock.patch('psbench.config.store.RedisConnector'), mock.patch(
-        'psbench.config.store.register_store',
-    ) as mock_register:
+    with (
+        mock.patch('psbench.config.store.RedisConnector'),
+        mock.patch(
+            'psbench.config.store.register_store',
+        ) as mock_register,
+    ):
         assert config.get_store(register=True) is not None
         assert mock_register.call_count == 1
 
