@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import uuid
+from collections.abc import Generator
 from concurrent.futures import Future
 from typing import Any
 from typing import Callable
-from typing import Generator
 from typing import TypeVar
 from unittest import mock
 
@@ -77,10 +77,13 @@ class MockExecutor(globus_compute_sdk.Executor):
 @contextlib.contextmanager
 def mock_globus_compute() -> Generator[None, None, None]:
     """Context manager that mocks Globus Compute Executor."""
-    with mock.patch(
-        'globus_compute_sdk.Client',
-        MockClient,
-    ), mock.patch('globus_compute_sdk.Executor', MockExecutor):
+    with (
+        mock.patch(
+            'globus_compute_sdk.Client',
+            MockClient,
+        ),
+        mock.patch('globus_compute_sdk.Executor', MockExecutor),
+    ):
         yield
 
 

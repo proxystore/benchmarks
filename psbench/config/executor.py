@@ -3,13 +3,13 @@ from __future__ import annotations
 import argparse
 import multiprocessing
 import sys
+from collections.abc import Sequence
 from concurrent.futures import Executor
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Literal
 from typing import Optional
-from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

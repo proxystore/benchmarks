@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import statistics
 import time
-from typing import Sequence
+from collections.abc import Sequence
 from typing import TypeVar
 
 from pydantic import BaseModel

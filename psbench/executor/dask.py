@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
+from collections.abc import Iterable
+from collections.abc import Iterator
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Callable
-from typing import Generator
-from typing import Iterable
-from typing import Iterator
 from typing import TypeVar
 
 if sys.version_info >= (3, 10):  # pragma: >=3.10 cover

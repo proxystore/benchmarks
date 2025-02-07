@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 from unittest import mock
 
 
@@ -39,7 +39,11 @@ class MockStrictRedis:
 
 @contextlib.contextmanager
 def disable_logging(path: str) -> Generator[None, None, None]:
-    with mock.patch(f'{path}.runner'), mock.patch(
-        f'{path}.init_logging',
-    ), mock.patch(f'{path}.CSVResultLogger'):
+    with (
+        mock.patch(f'{path}.runner'),
+        mock.patch(
+            f'{path}.init_logging',
+        ),
+        mock.patch(f'{path}.CSVResultLogger'),
+    ):
         yield

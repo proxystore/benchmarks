@@ -32,9 +32,14 @@ def test_main(tmp_path: pathlib.Path) -> None:
         str(tmp_path / 'dump'),
     ]
 
-    with disable_logging('psbench.run.workflow_memory'), mock.patch(
-        'psbench.config.StoreConfig.get_store',
-    ), mock.patch(
-        'psbench.run.workflow_memory.SystemMemoryProfiler',
-    ), mock_globus_compute():
+    with (
+        disable_logging('psbench.run.workflow_memory'),
+        mock.patch(
+            'psbench.config.StoreConfig.get_store',
+        ),
+        mock.patch(
+            'psbench.run.workflow_memory.SystemMemoryProfiler',
+        ),
+        mock_globus_compute(),
+    ):
         main(args)

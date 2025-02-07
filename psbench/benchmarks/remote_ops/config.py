@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from typing import Any
-from typing import List
+from typing import List  # noqa: UP035
 from typing import Literal
 from typing import Optional
-from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

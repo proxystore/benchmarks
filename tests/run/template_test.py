@@ -20,7 +20,11 @@ def test_main(tmp_path: pathlib.Path) -> None:
         'UUID',
     ]
 
-    with disable_logging('psbench.run.template'), mock.patch(
-        'psbench.config.StoreConfig.get_store',
-    ), mock_globus_compute():
+    with (
+        disable_logging('psbench.run.template'),
+        mock.patch(
+            'psbench.config.StoreConfig.get_store',
+        ),
+        mock_globus_compute(),
+    ):
         main(args)

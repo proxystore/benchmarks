@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Sequence
 from typing import Any
 from typing import Optional
-from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

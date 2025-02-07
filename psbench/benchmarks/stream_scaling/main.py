@@ -13,7 +13,7 @@ from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.future import Future as ProxyFuture
-from proxystore.stream.interface import StreamConsumer
+from proxystore.stream import StreamConsumer
 
 from psbench.benchmarks.protocol import ContextManagerAddIn
 from psbench.benchmarks.stream_scaling.config import RunConfig

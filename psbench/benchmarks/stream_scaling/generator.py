@@ -6,8 +6,8 @@ from typing import Any
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
 from proxystore.store.future import Future
-from proxystore.stream.interface import StreamProducer
-from proxystore.stream.protocols import Publisher
+from proxystore.stream import StreamProducer
+from proxystore.stream.protocols import MessagePublisher
 
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.shims import Adios2Publisher
@@ -18,7 +18,7 @@ from psbench.utils import wait_until
 
 
 def generate_data(
-    publisher: Publisher,
+    publisher: MessagePublisher,
     stop_generator: Future[bool],
     *,
     item_size_bytes: int,
@@ -46,7 +46,7 @@ def generate_data(
             data = randbytes(item_size_bytes)
 
         assert data is not None
-        publisher.send(topic, data)
+        publisher.send_message(topic, data)
         sent_items += 1
 
         wait_until(interval_end)
@@ -61,14 +61,14 @@ def generator_task(
     interval: float = 0,
     pregenerate: bool = False,
 ) -> None:
-    publisher: Publisher
+    publisher: MessagePublisher
     if run_config.method in ('default', 'proxy'):
         base_publisher = stream_config.get_publisher()
         assert base_publisher is not None
         store: Store[Any] = Store.from_config(store_config)
         producer = StreamProducer[bytes](
             base_publisher,
-            {stream_config.topic: store},
+            stores={stream_config.topic: store},
         )
         publisher = ProducerShim(
             producer,
