@@ -31,7 +31,7 @@ repos:
         additional_dependencies:
           - dask[distributed]==2024.8.1
           - globus-compute-sdk==2.27.*
-          - proxystore==0.7.*
+          - proxystore==0.8.*
           - proxystore-ex==0.1.3
           - pydantic==2.8.*
           - types-psutil

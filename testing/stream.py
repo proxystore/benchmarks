@@ -6,8 +6,8 @@ from collections.abc import Generator
 
 from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
-from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.interface import StreamProducer
+from proxystore.stream import StreamConsumer
+from proxystore.stream import StreamProducer
 from proxystore.stream.shims.queue import QueuePublisher
 from proxystore.stream.shims.queue import QueueSubscriber
 
@@ -26,6 +26,6 @@ def create_stream_pair(
     publisher = QueuePublisher({topic: queue_})
     subscriber = QueueSubscriber(queue_)
 
-    with StreamProducer[bytes](publisher, {topic: store}) as producer:
+    with StreamProducer[bytes](publisher, stores={topic: store}) as producer:
         with StreamConsumer[bytes](subscriber) as consumer:
             yield producer, consumer

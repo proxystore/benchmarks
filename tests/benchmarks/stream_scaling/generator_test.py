@@ -8,6 +8,7 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
 from proxystore.store.future import Future
+from proxystore.stream.protocols import MessagePublisher
 
 from psbench.benchmarks.stream_scaling.config import RunConfig
 from psbench.benchmarks.stream_scaling.generator import generate_data
@@ -129,7 +130,10 @@ def test_generator_task(
         mock.patch(
             'psbench.benchmarks.stream_scaling.generator.generate_data',
         ) as mock_generate,
-        mock.patch('psbench.config.stream.RedisPublisher'),
+        mock.patch(
+            'psbench.config.stream.RedisPublisher',
+            spec=MessagePublisher,
+        ),
     ):
         generator_task(
             run_config,

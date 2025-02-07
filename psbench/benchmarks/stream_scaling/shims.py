@@ -9,8 +9,9 @@ else:  # pragma: <3.11 cover
 
 import numpy
 from proxystore.proxy import Proxy
-from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.interface import StreamProducer
+from proxystore.stream import StreamConsumer
+from proxystore.stream import StreamProducer
+from proxystore.stream.protocols import MessagePublisher
 
 adios_import_error: Exception | None = None
 try:
@@ -31,7 +32,7 @@ class Adios2Publisher:
     def close(self) -> None:
         self.stream.close()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         self.stream.begin_step()
         array = numpy.frombuffer(message, dtype=numpy.int8)
         self.stream.write(
@@ -93,6 +94,7 @@ class ConsumerShim:
             data = next(self.consumer.subscriber)
             if data == CLOSE_SENTINAL:
                 raise StopIteration
+            assert isinstance(data, (Proxy, bytes))
             return data
         else:
             return next(self.consumer)
@@ -112,15 +114,17 @@ class ProducerShim:
         self.direct_to_publisher = direct_to_publisher
         self.proxy_evict = proxy_evict
 
-    def send(self, topic: str, data: bytes) -> None:
+    def send_message(self, topic: str, data: bytes) -> None:
+        assert isinstance(self.producer.publisher, MessagePublisher)
         if self.direct_to_publisher:
-            self.producer.publisher.send(topic, data)
+            self.producer.publisher.send_message(topic, data)
         else:
             self.producer.send(topic, data, evict=self.proxy_evict)
 
     def close_topic(self, topic: str) -> None:
+        assert isinstance(self.producer.publisher, MessagePublisher)
         if self.direct_to_publisher:
-            self.producer.publisher.send(topic, CLOSE_SENTINAL)
+            self.producer.publisher.send_message(topic, CLOSE_SENTINAL)
         else:
             self.producer.close_topics(topic)
 
