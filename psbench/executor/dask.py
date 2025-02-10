@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from collections.abc import Iterator
 from concurrent.futures import Executor
 from concurrent.futures import Future
+from typing import Any
 from typing import Callable
 from typing import TypeVar
 
@@ -13,11 +14,6 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
     from typing import ParamSpec
 else:  # pragma: <3.10 cover
     from typing_extensions import ParamSpec
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
 
 from dask.distributed import Client
 
@@ -42,8 +38,8 @@ class DaskExecutor(Executor):
 
     def map(
         self,
-        function: Callable[P, T],
-        *iterables: Iterable[P.args],
+        function: Callable[..., T],
+        *iterables: Iterable[Any],
         timeout: float | None = None,
         chunksize: int = 1,
     ) -> Iterator[T]:
