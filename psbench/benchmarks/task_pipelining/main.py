@@ -4,20 +4,13 @@ from __future__ import annotations
 
 import logging
 import queue
-import sys
 import threading
 import time
+from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
 from typing import Callable
 from typing import NamedTuple
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
-
-from concurrent.futures import Executor
 
 from parsl.concurrent import ParslPoolExecutor
 from proxystore.proxy import Proxy
@@ -189,7 +182,7 @@ def run_sequential_workflow(
     if store is not None:
         data = store.proxy(data, evict=True, populate_target=True)
 
-    sequential_task: Callable[..., tuple[Any, TaskTimes]]
+    sequential_task: Callable[..., Any]
     if store is None:
         sequential_task = sequential_no_proxy_task
     else:
@@ -200,7 +193,7 @@ def run_sequential_workflow(
     for _ in range(task_chain_length):
         task_submitted = time.time()
         future: Future[Any] = executor.submit(
-            sequential_task,
+            sequential_task,  # type: ignore[arg-type]
             data,
             overhead_fraction=task_overhead_fraction,
             sleep=task_sleep,
