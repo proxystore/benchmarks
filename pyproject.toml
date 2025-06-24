@@ -190,7 +190,7 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ["F401", "D104"]
 "*/*_test.py" = ["D10"]
-"benchmarks/*" = ["D10"]
+"psbench/*" = ["D10", "PT"]
 "tests/conftest.py" = ["F401"]
 
 [tool.ruff.lint.pydocstyle]

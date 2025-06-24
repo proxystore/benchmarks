@@ -29,24 +29,24 @@ class RunConfig(BaseModel):
 class RunResult(BaseModel):
     backend: BACKEND_TYPE
     op: OP_TYPE
-    payload_size_bytes: Optional[int]  # noqa: UP007
+    payload_size_bytes: Optional[int]  # noqa: UP045
     repeat: int
     total_time_ms: float
     avg_time_ms: float
     min_time_ms: float
     max_time_ms: float
     stdev_time_ms: float
-    avg_bandwidth_mbps: Optional[float]  # noqa: UP007
+    avg_bandwidth_mbps: Optional[float]  # noqa: UP045
 
 
 class BenchmarkMatrix(BaseModel):
     backend: BACKEND_TYPE
-    endpoint: Optional[str]  # noqa: UP007
-    redis_host: Optional[str]  # noqa: UP007
-    redis_port: Optional[int]  # noqa: UP007
+    endpoint: Optional[str]  # noqa: UP045
+    redis_host: Optional[str]  # noqa: UP045
+    redis_port: Optional[int]  # noqa: UP045
     ops: List[OP_TYPE]  # noqa: UP006
     payload_sizes: List[int]  # noqa: UP006
-    relay_server: Optional[str]  # noqa: UP007
+    relay_server: Optional[str]  # noqa: UP045
     repeat: int
     use_uvloop: bool
 

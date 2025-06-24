@@ -27,9 +27,9 @@ from psbench.executor.dask import DaskExecutor
 
 
 class DaskConfig(BaseModel):
-    scheduler_address: Optional[str] = None  # noqa: UP007
+    scheduler_address: Optional[str] = None  # noqa: UP045
     threaded_workers: bool = False
-    workers: Optional[int] = None  # noqa: UP007
+    workers: Optional[int] = None  # noqa: UP045
 
     @staticmethod
     def add_parser_group(
