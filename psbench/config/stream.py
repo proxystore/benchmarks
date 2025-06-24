@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 
 class StreamConfig(BaseModel):
-    kind: Optional[str]  # noqa: UP007
+    kind: Optional[str]  # noqa: UP045
     topic: str
     servers: Sequence[str]
 

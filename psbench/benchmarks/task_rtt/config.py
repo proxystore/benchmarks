@@ -28,14 +28,14 @@ class RunResult(BaseModel):
     output_size_bytes: int
     task_sleep_seconds: float
     total_time_ms: float
-    input_get_ms: Optional[float] = None  # noqa: UP007
-    input_put_ms: Optional[float] = None  # noqa: UP007
-    input_proxy_ms: Optional[float] = None  # noqa: UP007
-    input_resolve_ms: Optional[float] = None  # noqa: UP007
-    output_get_ms: Optional[float] = None  # noqa: UP007
-    output_put_ms: Optional[float] = None  # noqa: UP007
-    output_proxy_ms: Optional[float] = None  # noqa: UP007
-    output_resolve_ms: Optional[float] = None  # noqa: UP007
+    input_get_ms: Optional[float] = None  # noqa: UP045
+    input_put_ms: Optional[float] = None  # noqa: UP045
+    input_proxy_ms: Optional[float] = None  # noqa: UP045
+    input_resolve_ms: Optional[float] = None  # noqa: UP045
+    output_get_ms: Optional[float] = None  # noqa: UP045
+    output_put_ms: Optional[float] = None  # noqa: UP045
+    output_proxy_ms: Optional[float] = None  # noqa: UP045
+    output_resolve_ms: Optional[float] = None  # noqa: UP045
 
 
 class BenchmarkMatrix(BaseModel):

@@ -33,7 +33,7 @@ class RunConfig(BaseModel):
 
 class RunResult(BaseModel):
     executor: str
-    connector: Optional[str]  # noqa: UP007
+    connector: Optional[str]  # noqa: UP045
     data_management: str
     stage_task_counts: str
     stage_bytes_sizes: str

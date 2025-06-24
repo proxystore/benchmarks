@@ -17,8 +17,8 @@ from pydantic import BaseModel
 
 class IPFSConfig(BaseModel):
     use_ipfs: bool
-    local_dir: Optional[str]  # noqa: UP007
-    remote_dir: Optional[str]  # noqa: UP007
+    local_dir: Optional[str]  # noqa: UP045
+    remote_dir: Optional[str]  # noqa: UP045
 
     @staticmethod
     def add_parser_group(

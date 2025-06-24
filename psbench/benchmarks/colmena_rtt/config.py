@@ -72,8 +72,8 @@ class RunResult(BaseModel):
 
 
 class BenchmarkMatrix(BaseModel):
-    redis_host: Optional[str]  # noqa: UP007
-    redis_port: Optional[int]  # noqa: UP007
+    redis_host: Optional[str]  # noqa: UP045
+    redis_port: Optional[int]  # noqa: UP045
     input_sizes: List[int]  # noqa: UP006
     output_sizes: List[int]  # noqa: UP006
     task_sleep: float

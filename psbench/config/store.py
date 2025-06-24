@@ -28,7 +28,7 @@ from pydantic import Field
 
 
 class StoreConfig(BaseModel):
-    connector: Optional[str] = None  # noqa: UP007
+    connector: Optional[str] = None  # noqa: UP045
     options: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
 
     @staticmethod
