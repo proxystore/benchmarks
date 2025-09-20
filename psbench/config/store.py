@@ -152,7 +152,7 @@ class StoreConfig(BaseModel):
             # import to here.
             from proxystore_ex.connectors.daos import DAOSConnector
 
-            connector = DAOSConnector(
+            connector = DAOSConnector(  # type: ignore[assignment]
                 pool=self.options['daos_pool'],
                 container=self.options['daos_container'],
                 namespace=self.options['daos_namespace'],
@@ -172,20 +172,20 @@ class StoreConfig(BaseModel):
                 self.options['port'],
             )
         elif self.connector == 'margo':
-            connector = MargoConnector(
+            connector = MargoConnector(  # type: ignore[assignment]
                 port=self.options['port'],
                 protocol=self.options['margo_protocol'],
                 address=self.options['address'],
                 interface=self.options['interface'],
             )
         elif self.connector == 'ucx':
-            connector = UCXConnector(
+            connector = UCXConnector(  # type: ignore[assignment]
                 port=self.options['port'],
                 interface=self.options['interface'],
                 address=self.options['address'],
             )
         elif self.connector == 'zmq':
-            connector = ZeroMQConnector(
+            connector = ZeroMQConnector(  # type: ignore[assignment]
                 port=self.options['port'],
                 interface=self.options['interface'],
                 address=self.options['address'],

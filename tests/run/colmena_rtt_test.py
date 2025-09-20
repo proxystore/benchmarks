@@ -43,8 +43,8 @@ def test_main_bad_executor(tmp_path: pathlib.Path) -> None:
         with pytest.raises(
             ValueError,
             match=(
-                'This benchmark only supports the Globus Compute and Parsl '
-                'executors.'
+                r'This benchmark only supports the Globus Compute and Parsl '
+                r'executors'
             ),
         ):
             main(args)

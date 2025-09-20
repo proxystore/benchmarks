@@ -60,7 +60,7 @@ def test_generator_interval(file_store: Store[FileConnector]) -> None:
     interval = 0.01
     topic = 'topic'
 
-    with create_stream_pair(file_store, topic) as (producer, consumer):
+    with create_stream_pair(file_store, topic) as (producer, _):
         start = time.perf_counter()
         producer_shim = ProducerShim(producer)
         generate_data(
