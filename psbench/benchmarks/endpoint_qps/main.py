@@ -9,9 +9,9 @@ import math
 import multiprocessing
 import sys
 import time
+from collections.abc import Callable
 from statistics import stdev
 from typing import Any
-from typing import Callable
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     pass

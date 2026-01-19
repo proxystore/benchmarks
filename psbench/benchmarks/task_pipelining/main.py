@@ -6,10 +6,10 @@ import logging
 import queue
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
-from typing import Callable
 from typing import NamedTuple
 
 from parsl.concurrent import ParslPoolExecutor
@@ -296,7 +296,12 @@ def run_pipelined_workflow(
 
     task_timestamps = [
         mid.collate(start, end)
-        for start, mid, end in zip(task_submitted, task_times, task_received)
+        for start, mid, end in zip(
+            task_submitted,
+            task_times,
+            task_received,
+            strict=True,
+        )
     ]
 
     return RunResult(

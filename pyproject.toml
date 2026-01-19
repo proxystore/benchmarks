@@ -14,11 +14,10 @@ maintainers = [
 ]
 description = "ProxyStore benchmark suite."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "MIT"}
 classifiers = [
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -29,10 +28,8 @@ classifiers = [
 dependencies = [
     "adios2==2.10.1",
     "colmena==0.7.1",
-    "dask==2023.5.0; python_version < '3.10'",
-    "dask==2025.1.0; python_version >= '3.10'",
-    "distributed==2023.5.0; python_version < '3.10'",
-    "distributed==2025.1.0; python_version >= '3.10'",
+    "dask==2025.1.0",
+    "distributed==2025.1.0",
     "globus-compute-endpoint==3.0.*",
     "globus-compute-sdk==3.0.*",
     "proxystore[all]==0.8.*",
@@ -114,7 +111,7 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 79
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.format]
 indent-style = "space"
