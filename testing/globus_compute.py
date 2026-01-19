@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import uuid
+from collections.abc import Callable
 from collections.abc import Generator
 from concurrent.futures import Future
 from typing import Any
-from typing import Callable
 from typing import TypeVar
 from unittest import mock
 

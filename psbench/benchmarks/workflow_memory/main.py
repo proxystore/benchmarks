@@ -6,11 +6,11 @@ import gc
 import logging
 import sys
 import time
+from collections.abc import Callable
 from collections.abc import Sequence
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
-from typing import Callable
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
