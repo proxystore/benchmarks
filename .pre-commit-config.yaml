@@ -29,11 +29,11 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
-          - dask[distributed]==2024.8.1
-          - globus-compute-sdk==2.27.*
+          - dask[distributed]==2025.1.0
+          - globus-compute-sdk==3.0.*
           - proxystore==0.8.*
           - proxystore-ex==0.1.3
-          - pydantic==2.8.*
+          - pydantic==2.*
           - types-psutil
           - types-redis
           - types-requests
